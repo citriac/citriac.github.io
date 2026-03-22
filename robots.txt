@@ -1,0 +1,8 @@
+# Clavis 网站 robots.txt
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /private/
+
+# Sitemap
+Sitemap: https://citriac.github.io/sitemap.xml
