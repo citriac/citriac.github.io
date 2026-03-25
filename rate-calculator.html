@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freelance Rate Calculator — What Should I Charge?</title>
+<meta name="description" content="Free freelance rate calculator. Set your income goal, account for taxes, vacation, and overhead — get your minimum hourly rate and project quote instantly.">
+<meta property="og:title" content="Freelance Rate Calculator — Stop Undercharging">
+<meta property="og:description" content="Calculate your minimum viable hourly rate based on real costs. Accounts for taxes, vacation, sick days, benefits, and overhead. Free, browser-only.">
+<meta property="og:url" content="https://citriac.github.io/rate-calculator.html">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://citriac.github.io/rate-calculator.html">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Freelance Rate Calculator",
+  "url": "https://citriac.github.io/rate-calculator.html",
+  "description": "Calculate your minimum viable hourly rate as a freelancer. Accounts for taxes, benefits, vacation, and overhead.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Clavis", "url": "https://citriac.github.io" }
+}
+</script>
+<style>
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #293548;
+  --border: #334155;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #6366f1;
+  --accent2: #22d3ee;
+  --green: #4ade80;
+  --yellow: #fbbf24;
+  --red: #f87171;
+  --radius: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: rgba(15,23,42,0.95);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+}
+header a { color: var(--muted); text-decoration: none; font-size: 14px; }
+header a:hover { color: var(--text); }
+.logo { font-weight: 700; color: var(--text); font-size: 15px; }
+.logo span { color: var(--accent2); }
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+h1 {
+  font-size: clamp(24px, 5vw, 36px);
+  font-weight: 800;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 16px;
+  margin-bottom: 40px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.card h2 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field label span { color: var(--text); font-weight: 500; }
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.prefix {
+  position: absolute;
+  left: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+.suffix {
+  position: absolute;
+  right: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+input[type=range] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 4px;
+}
+input[type=number], input[type=text] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 40px 9px 32px;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+  -moz-appearance: textfield;
+}
+input[type=number]::-webkit-inner-spin-button { display: none; }
+input[type=number]:focus, input[type=text]:focus {
+  border-color: var(--accent);
+}
+select {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: 15px;
+  outline: none;
+  cursor: pointer;
+}
+select:focus { border-color: var(--accent); }
+
+/* Result card */
+.result-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 32px;
+  grid-column: 1 / -1;
+  text-align: center;
+}
+.result-main {
+  font-size: clamp(48px, 10vw, 72px);
+  font-weight: 900;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.result-label {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 28px;
+}
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.result-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+.result-item .val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.result-item .lbl {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.rate-verdict {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.rate-verdict.ok { background: rgba(74,222,128,0.15); color: var(--green); border: 1px solid rgba(74,222,128,0.3); }
+.rate-verdict.low { background: rgba(251,191,36,0.15); color: var(--yellow); border: 1px solid rgba(251,191,36,0.3); }
+.rate-verdict.danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.3); }
+
+/* Project estimator */
+.project-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  grid-column: 1 / -1;
+}
+.project-section h2 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+.project-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 640px) { .project-grid { grid-template-columns: 1fr 1fr; } }
+.project-result {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.project-result .pval { font-size: 22px; font-weight: 700; color: var(--accent2); }
+.project-result .plbl { font-size: 12px; color: var(--muted); }
+.complexity-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.comp-btn {
+  padding: 7px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.comp-btn:hover { border-color: var(--accent); color: var(--text); }
+.comp-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Breakdown table */
+.breakdown {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.breakdown h2 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 20px 24px 0;
+  margin-bottom: 16px;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 24px; text-align: left; font-size: 14px; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; background: var(--surface2); }
+tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+td.amt { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+td.amt.pos { color: var(--green); }
+td.amt.neg { color: var(--red); }
+td.amt.neutral { color: var(--text); }
+tr.total td { border-top: 2px solid var(--border); font-weight: 700; }
+tr.total td.amt { color: var(--accent2); font-size: 16px; }
+
+/* Related tools */
+.related {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.related a {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.related a:hover { border-color: var(--accent); transform: translateY(-2px); }
+.related a .icon { font-size: 22px; margin-bottom: 8px; }
+.related a .name { font-size: 14px; font-weight: 600; color: var(--text); }
+.related a .desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+}
+footer a { color: var(--muted); text-decoration: none; }
+footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo">Clavis <span>Tools</span></a>
+  <nav style="display:flex;gap:20px">
+    <a href="freelancer-toolkit.html">Toolkit</a>
+    <a href="invoice-generator.html">Invoice</a>
+    <a href="ghost-guard.html">Ghost Guard</a>
+  </nav>
+</header>
+
+<main>
+  <h1>What Should I Charge?</h1>
+  <p class="subtitle">Enter your real costs — get your minimum viable hourly rate. No guessing.</p>
+
+  <div class="grid">
+
+    <!-- Income Goals -->
+    <div class="card">
+      <h2>💰 Income Goals</h2>
+
+      <div class="field">
+        <label>Target annual income <span id="incomeVal">$80,000</span></label>
+        <input type="range" id="income" min="20000" max="300000" step="5000" value="80000">
+      </div>
+
+      <div class="field">
+        <label>Currency</label>
+        <select id="currency">
+          <option value="$" data-sym="USD">$ USD</option>
+          <option value="€" data-sym="EUR">€ EUR</option>
+          <option value="£" data-sym="GBP">£ GBP</option>
+          <option value="¥" data-sym="CNY">¥ CNY</option>
+          <option value="C$" data-sym="CAD">C$ CAD</option>
+          <option value="A$" data-sym="AUD">A$ AUD</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Country / tax bracket</label>
+        <select id="taxRate">
+          <option value="0.15">15% — Low tax (some US states, etc.)</option>
+          <option value="0.25" selected>25% — Mid (typical US self-employed)</option>
+          <option value="0.30">30% — UK standard</option>
+          <option value="0.35">35% — High bracket</option>
+          <option value="0.40">40% — Very high (some EU countries)</option>
+          <option value="0.50">50% — High EU / UK higher rate</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Time & Overhead -->
+    <div class="card">
+      <h2>🗓️ Time & Overhead</h2>
+
+      <div class="field">
+        <label>Billable hours per day <span id="hoursVal">6h</span></label>
+        <input type="range" id="hoursPerDay" min="2" max="10" step="0.5" value="6">
+      </div>
+
+      <div class="field">
+        <label>Vacation days per year <span id="vacationVal">20</span></label>
+        <input type="range" id="vacationDays" min="0" max="60" step="1" value="20">
+      </div>
+
+      <div class="field">
+        <label>Sick / unpaid days <span id="sickVal">10</span></label>
+        <input type="range" id="sickDays" min="0" max="30" step="1" value="10">
+      </div>
+
+      <div class="field">
+        <label>Monthly overhead <span id="overheadVal">$300</span></label>
+        <input type="range" id="overhead" min="0" max="3000" step="50" value="300">
+        <p style="font-size:12px;color:var(--muted);margin-top:4px">Software, hardware, internet, co-working, etc.</p>
+      </div>
+
+      <div class="field">
+        <label>Non-billable time <span id="nonbillVal">30%</span></label>
+        <input type="range" id="nonBillable" min="10" max="60" step="5" value="30">
+        <p style="font-size:12px;color:var(--muted);margin-top:4px">Sales, admin, marketing, learning — time you work but can't bill</p>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card">
+      <div class="result-main" id="resultRate">$0</div>
+      <div class="result-label">minimum viable hourly rate</div>
+
+      <div class="result-grid">
+        <div class="result-item">
+          <div class="val" id="rDay">$0</div>
+          <div class="lbl">per day (8h)</div>
+        </div>
+        <div class="result-item">
+          <div class="val" id="rWeek">$0</div>
+          <div class="lbl">per week</div>
+        </div>
+        <div class="result-item">
+          <div class="val" id="rMonth">$0</div>
+          <div class="lbl">gross / month</div>
+        </div>
+        <div class="result-item">
+          <div class="val" id="rBillable">0h</div>
+          <div class="lbl">billable hrs/year</div>
+        </div>
+      </div>
+
+      <div class="rate-verdict ok" id="verdict">✓ Sustainable rate</div>
+    </div>
+
+    <!-- Project Estimator -->
+    <div class="project-section">
+      <h2>🧮 Project Quote Estimator</h2>
+      <div class="project-grid">
+        <div class="field">
+          <label>Estimated hours</label>
+          <div class="input-wrap">
+            <input type="number" id="projHours" value="40" min="1" max="5000">
+            <span class="suffix">hrs</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Your hourly rate override</label>
+          <div class="input-wrap">
+            <span class="prefix" id="projPrefix">$</span>
+            <input type="number" id="projRate" value="0" min="0" placeholder="auto">
+          </div>
+        </div>
+        <div class="field">
+          <label>Platform fee</label>
+          <select id="platformFee">
+            <option value="0">Direct client — 0%</option>
+            <option value="0.10">Upwork — 10%</option>
+            <option value="0.20">Fiverr — 20%</option>
+            <option value="0.15">Toptal — 15%</option>
+            <option value="0.05">Custom — 5%</option>
+            <option value="0.12">Custom — 12%</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:20px">
+        <label>Complexity buffer</label>
+        <div class="complexity-btns">
+          <button class="comp-btn" data-mult="1.0">Simple <span style="font-size:11px;color:var(--muted)">×1.0</span></button>
+          <button class="comp-btn active" data-mult="1.25">Typical <span style="font-size:11px;color:var(--muted)">×1.25</span></button>
+          <button class="comp-btn" data-mult="1.5">Complex <span style="font-size:11px;color:var(--muted)">×1.5</span></button>
+          <button class="comp-btn" data-mult="2.0">Nightmare <span style="font-size:11px;color:var(--muted)">×2.0</span></button>
+        </div>
+      </div>
+
+      <div class="project-grid">
+        <div class="project-result">
+          <div class="pval" id="projMin">$0</div>
+          <div class="plbl">minimum quote</div>
+        </div>
+        <div class="project-result">
+          <div class="pval" id="projRec">$0</div>
+          <div class="plbl">recommended quote</div>
+        </div>
+        <div class="project-result">
+          <div class="pval" id="projNet">$0</div>
+          <div class="plbl">you take home (after fee)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost Breakdown -->
+    <div class="breakdown">
+      <h2>📊 Annual Cost Breakdown</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align:right">Annual</th>
+            <th style="text-align:right">Monthly</th>
+          </tr>
+        </thead>
+        <tbody id="breakdownBody">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Related Tools -->
+    <div style="grid-column:1/-1">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Complete your freelancer toolkit</p>
+      <div class="related">
+        <a href="invoice-generator.html">
+          <div class="icon">🧾</div>
+          <div class="name">Invoice Generator</div>
+          <div class="desc">Turn your rate into professional invoices</div>
+        </a>
+        <a href="contract-diff.html">
+          <div class="icon">📋</div>
+          <div class="name">Contract Diff</div>
+          <div class="desc">Spot risky clauses before you sign</div>
+        </a>
+        <a href="ghost-guard.html">
+          <div class="icon">🛡️</div>
+          <div class="name">Ghost Guard</div>
+          <div class="desc">Protect yourself from ghosting clients</div>
+        </a>
+        <a href="freelancer-toolkit.html">
+          <div class="icon">🧰</div>
+          <div class="name">Full Toolkit</div>
+          <div class="desc">All freelancer tools in one place</div>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <p>Built by <a href="index.html">Clavis</a> · 
+  <a href="https://github.com/citriac" target="_blank">GitHub</a> · 
+  <a href="https://twitter.com/Clavis_Citriac" target="_blank">Twitter</a></p>
+</footer>
+
+<script>
+const fmt = (n, sym) => sym + Math.round(n).toLocaleString();
+
+let complexity = 1.25;
+let calcResult = { hourly: 0 };
+
+function calc() {
+  const sym = document.getElementById('currency').value;
+  const income = +document.getElementById('income').value;
+  const taxRate = +document.getElementById('taxRate').value;
+  const hoursPerDay = +document.getElementById('hoursPerDay').value;
+  const vacation = +document.getElementById('vacationDays').value;
+  const sick = +document.getElementById('sickDays').value;
+  const overheadMonthly = +document.getElementById('overhead').value;
+  const nonBillablePct = +document.getElementById('nonBillable').value / 100;
+
+  // Working days
+  const workDaysYear = 52 * 5 - vacation - sick;
+  // Effective billable hours (removing non-billable time from billable hours)
+  const rawBillableHours = workDaysYear * hoursPerDay;
+  const billableHours = Math.round(rawBillableHours * (1 - nonBillablePct));
+
+  // Total cost to cover
+  const overheadYear = overheadMonthly * 12;
+  const grossNeeded = income / (1 - taxRate); // pre-tax gross needed
+  const totalCost = grossNeeded + overheadYear;
+
+  const hourly = totalCost / billableHours;
+
+  calcResult.hourly = hourly;
+  calcResult.sym = sym;
+
+  // Display
+  document.getElementById('resultRate').textContent = fmt(hourly, sym);
+  document.getElementById('rDay').textContent = fmt(hourly * 8, sym);
+  document.getElementById('rWeek').textContent = fmt(hourly * hoursPerDay * 5, sym);
+  document.getElementById('rMonth').textContent = fmt(totalCost / 12, sym);
+  document.getElementById('rBillable').textContent = billableHours + 'h';
+
+  // Verdict
+  const v = document.getElementById('verdict');
+  if (hourly < 25) {
+    v.className = 'rate-verdict danger';
+    v.textContent = '⚠ Warning: this rate is very low for freelancing';
+  } else if (hourly < 50) {
+    v.className = 'rate-verdict low';
+    v.textContent = '⚡ Minimum viable — leave room for negotiation';
+  } else {
+    v.className = 'rate-verdict ok';
+    v.textContent = '✓ Sustainable rate';
+  }
+
+  // Breakdown table
+  const taxAmt = grossNeeded * taxRate;
+  const rows = [
+    { label: 'Target take-home income', annual: income, type: 'pos' },
+    { label: 'Est. income taxes (' + Math.round(taxRate*100) + '%)', annual: taxAmt, type: 'neg' },
+    { label: 'Annual overhead (tools, hardware, etc.)', annual: overheadYear, type: 'neg' },
+    { label: 'Total gross revenue needed', annual: totalCost, type: 'neutral', total: true },
+  ];
+  const tbody = document.getElementById('breakdownBody');
+  tbody.innerHTML = rows.map(r => `
+    <tr class="${r.total ? 'total' : ''}">
+      <td>${r.label}</td>
+      <td class="amt ${r.type}">${r.total ? '' : (r.type === 'neg' ? '−' : '+')}${fmt(r.annual, sym)}</td>
+      <td class="amt ${r.type}">${r.total ? '' : (r.type === 'neg' ? '−' : '+')}${fmt(r.annual/12, sym)}</td>
+    </tr>
+  `).join('');
+
+  updateProject();
+}
+
+function updateProject() {
+  const sym = calcResult.sym || '$';
+  const hours = +document.getElementById('projHours').value || 0;
+  const rateOverride = +document.getElementById('projRate').value;
+  const platformFee = +document.getElementById('platformFee').value;
+
+  const baseRate = rateOverride > 0 ? rateOverride : (calcResult.hourly || 0);
+  const minQuote = baseRate * hours;
+  const recQuote = minQuote * complexity;
+  const netAfterFee = recQuote * (1 - platformFee);
+
+  document.getElementById('projMin').textContent = fmt(minQuote, sym);
+  document.getElementById('projRec').textContent = fmt(recQuote, sym);
+  document.getElementById('projNet').textContent = fmt(netAfterFee, sym);
+  document.getElementById('projPrefix').textContent = sym;
+}
+
+// Slider label updates
+const sliders = [
+  ['income', 'incomeVal', v => '$' + (+v).toLocaleString()],
+  ['hoursPerDay', 'hoursVal', v => v + 'h'],
+  ['vacationDays', 'vacationVal', v => v],
+  ['sickDays', 'sickVal', v => v],
+  ['overhead', 'overheadVal', v => '$' + (+v).toLocaleString()],
+  ['nonBillable', 'nonbillVal', v => v + '%'],
+];
+sliders.forEach(([id, labelId, fmt]) => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    document.getElementById(labelId).textContent = fmt(el.value);
+    calc();
+  });
+});
+
+document.querySelectorAll('select, input[type=number]').forEach(el => {
+  el.addEventListener('input', calc);
+  el.addEventListener('change', calc);
+});
+
+// Complexity buttons
+document.querySelectorAll('.comp-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.comp-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    complexity = +btn.dataset.mult;
+    updateProject();
+  });
+});
+
+// Currency sync to project prefix
+document.getElementById('currency').addEventListener('change', function() {
+  document.getElementById('projPrefix').textContent = this.value;
+});
+
+calc();
+</script>
+</body>
+</html>
