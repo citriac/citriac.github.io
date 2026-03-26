@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Noise Field — Particle Flow Art Generator</title>
+  <meta name="description" content="A generative art tool powered by Perlin noise flow fields. Watch thousands of particles trace invisible forces into something beautiful.">
+  <meta property="og:title" content="Noise Field — Particle Flow Art Generator">
+  <meta property="og:description" content="Generative art powered by Perlin noise. Every frame is unique.">
+  <meta property="og:url" content="https://citriac.github.io/noise-field/">
+  <link rel="canonical" href="https://citriac.github.io/noise-field/">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      cursor: crosshair;
+    }
+
+    /* Top bar */
+    #topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: #fff;
+      opacity: 0.9;
+    }
+
+    .logo span {
+      color: #7c6cf0;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: #ccc;
+      transition: all 0.15s;
+      letter-spacing: 0.04em;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border-color: rgba(255,255,255,0.25);
+    }
+
+    .btn.primary {
+      background: rgba(124,108,240,0.25);
+      border-color: rgba(124,108,240,0.5);
+      color: #a89cf5;
+    }
+
+    .btn.primary:hover {
+      background: rgba(124,108,240,0.4);
+      color: #fff;
+    }
+
+    /* Side panel */
+    #panel {
+      position: fixed;
+      right: 0; top: 48px; bottom: 0;
+      width: 220px;
+      background: rgba(10,10,15,0.9);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid rgba(255,255,255,0.06);
+      padding: 16px;
+      z-index: 100;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+
+    #panel.hidden {
+      transform: translateX(220px);
+    }
+
+    .panel-section {
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .control-row {
+      margin-bottom: 12px;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 5px;
+    }
+
+    .control-label span:last-child {
+      color: #aaa;
+      min-width: 32px;
+      text-align: right;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #7c6cf0;
+      cursor: pointer;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .palette-btn {
+      height: 28px;
+      border-radius: 4px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .palette-btn.active {
+      border-color: rgba(255,255,255,0.6);
+    }
+
+    /* Status */
+    #status {
+      position: fixed;
+      bottom: 16px;
+      left: 20px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.08em;
+      z-index: 100;
+    }
+
+    /* Toggle panel btn */
+    #toggle-panel {
+      position: fixed;
+      right: 228px;
+      top: 60px;
+      width: 24px;
+      height: 48px;
+      background: rgba(10,10,15,0.8);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-right: none;
+      border-radius: 4px 0 0 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 101;
+      color: #555;
+      font-size: 10px;
+      transition: color 0.15s, right 0.3s;
+    }
+
+    #toggle-panel:hover { color: #aaa; }
+    #toggle-panel.panel-hidden { right: 8px; }
+
+    /* Back link */
+    .back-link {
+      font-size: 11px;
+      color: #555;
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+    .back-link:hover { color: #888; }
+  </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- Top bar -->
+<div id="topbar">
+  <div class="logo">noise<span>·</span>field</div>
+  <div class="top-actions">
+    <button class="btn" id="btn-randomize">⟳ Randomize</button>
+    <button class="btn" id="btn-pause">⏸ Pause</button>
+    <button class="btn primary" id="btn-download">↓ Save PNG</button>
+    <a href="https://citriac.github.io" class="back-link">← citriac.github.io</a>
+  </div>
+</div>
+
+<!-- Toggle panel -->
+<div id="toggle-panel" onclick="togglePanel()">‹</div>
+
+<!-- Side panel -->
+<div id="panel">
+  <div class="panel-section">
+    <div class="panel-title">Palette</div>
+    <div class="palette-grid" id="palette-grid"></div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Flow</div>
+    <div class="control-row">
+      <div class="control-label"><span>Speed</span><span id="val-speed">1.0</span></div>
+      <input type="range" id="ctrl-speed" min="0.1" max="3" step="0.1" value="1.0">
+    </div>
+    <div class="control-row">
+      <div class="control-label"><span>Turbulence</span><span id="val-turb">0.003</span></div>
+      <input type="range" id="ctrl-turb" min="0.001" max="0.01" step="0.001" value="0.003">
+    </div>
+    <div class="control-row">
+      <div class="control-label"><span>Scale</span><span id="val-scale">3.0</span></div>
+      <input type="range" id="ctrl-scale" min="1" max="8" step="0.5" value="3">
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Particles</div>
+    <div class="control-row">
+      <div class="control-label"><span>Count</span><span id="val-count">3000</span></div>
+      <input type="range" id="ctrl-count" min="500" max="8000" step="500" value="3000">
+    </div>
+    <div class="control-row">
+      <div class="control-label"><span>Lifespan</span><span id="val-life">120</span></div>
+      <input type="range" id="ctrl-life" min="40" max="400" step="20" value="120">
+    </div>
+    <div class="control-row">
+      <div class="control-label"><span>Thickness</span><span id="val-thick">1.0</span></div>
+      <input type="range" id="ctrl-thick" min="0.3" max="3" step="0.1" value="1.0">
+    </div>
+  </div>
+
+  <div class="panel-section">
+    <div class="panel-title">Canvas</div>
+    <div class="control-row">
+      <div class="control-label"><span>Fade</span><span id="val-fade">0.03</span></div>
+      <input type="range" id="ctrl-fade" min="0.005" max="0.15" step="0.005" value="0.03">
+    </div>
+    <div class="control-row">
+      <div class="control-label"><span>Background</span><span id="val-bg">dark</span></div>
+      <input type="range" id="ctrl-bg" min="0" max="1" step="1" value="0">
+    </div>
+  </div>
+</div>
+
+<!-- Status -->
+<div id="status" id="status-bar">particles: 0 · fps: 0</div>
+
+<script>
+// ─── Perlin Noise (Simplex-inspired, pure JS) ───────────────────────────────
+const perm = new Uint8Array(512);
+const grad = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+
+function seedNoise(s) {
+  // LCG shuffle
+  let r = s || Math.random() * 65536 | 0;
+  const p = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) p[i] = i;
+  for (let i = 255; i > 0; i--) {
+    r = (r * 1664525 + 1013904223) & 0xffffffff;
+    const j = (r >>> 24) % (i + 1);
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  for (let i = 0; i < 512; i++) perm[i] = p[i & 255];
+}
+
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+function lerp(a, b, t) { return a + t * (b - a); }
+
+function noise2d(x, y) {
+  const xi = Math.floor(x) & 255, yi = Math.floor(y) & 255;
+  const xf = x - Math.floor(x), yf = y - Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const aa = perm[perm[xi]+yi], ab = perm[perm[xi]+yi+1];
+  const ba = perm[perm[xi+1]+yi], bb = perm[perm[xi+1]+yi+1];
+  function dot(g, x, y) { return g[0]*x + g[1]*y; }
+  const g = grad;
+  return lerp(
+    lerp(dot(g[aa&7], xf,   yf  ), dot(g[ba&7], xf-1, yf  ), u),
+    lerp(dot(g[ab&7], xf,   yf-1), dot(g[bb&7], xf-1, yf-1), u),
+    v
+  );
+}
+
+// Layered noise for more organic flow
+function octaveNoise(x, y, octaves, persistence, lacunarity) {
+  let val = 0, amp = 1, freq = 1, max = 0;
+  for (let i = 0; i < octaves; i++) {
+    val += noise2d(x * freq, y * freq) * amp;
+    max += amp;
+    amp *= persistence;
+    freq *= lacunarity;
+  }
+  return val / max;
+}
+
+// ─── Palettes ────────────────────────────────────────────────────────────────
+const PALETTES = [
+  { name: 'Aurora',    colors: ['#00ffcc','#00ccff','#7c6cf0','#ff6eb4'], bg: false },
+  { name: 'Ember',     colors: ['#ff6b35','#f7c59f','#ffe066','#ff3860'], bg: false },
+  { name: 'Ocean',     colors: ['#0077b6','#00b4d8','#90e0ef','#caf0f8'], bg: false },
+  { name: 'Forest',    colors: ['#2d6a4f','#52b788','#b7e4c7','#d8f3dc'], bg: false },
+  { name: 'Neon',      colors: ['#ff00ff','#00ffff','#ffff00','#ff0066'], bg: false },
+  { name: 'Mono',      colors: ['#ffffff','#cccccc','#aaaaaa','#888888'], bg: false },
+  { name: 'Sakura',    colors: ['#ffb3c6','#ff85a1','#ffc2d4','#ff4d8b'], bg: false },
+  { name: 'Cosmic',    colors: ['#3a0ca3','#7209b7','#f72585','#4cc9f0'], bg: false },
+  { name: 'Paper',     colors: ['#3d2b1f','#6b4226','#9b6a3e','#c9a87c'], bg: true  },
+];
+
+// ─── App State ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+let particles = [];
+let paused = false;
+let frameCount = 0;
+let lastFps = 0, fpsTimer = 0;
+let animId;
+
+const config = {
+  speed: 1.0,
+  turbulence: 0.003,
+  scale: 3.0,
+  count: 3000,
+  lifespan: 120,
+  thickness: 1.0,
+  fade: 0.03,
+  darkBg: true,
+  paletteIndex: 0,
+  zOffset: 0,
+  zSpeed: 0.0002,
+};
+
+// ─── Resize ───────────────────────────────────────────────────────────────────
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  clearCanvas();
+}
+window.addEventListener('resize', resize);
+
+// ─── Particles ───────────────────────────────────────────────────────────────
+function makeParticle() {
+  return {
+    x: Math.random() * W,
+    y: Math.random() * H,
+    age: Math.random() * config.lifespan | 0,
+    px: 0, py: 0,
+    alive: true,
+    colorIdx: Math.random() * PALETTES[config.paletteIndex].colors.length | 0,
+  };
+}
+
+function spawnParticles() {
+  particles = [];
+  for (let i = 0; i < config.count; i++) particles.push(makeParticle());
+}
+
+// ─── Flow angle at (x, y) ────────────────────────────────────────────────────
+function flowAngle(x, y) {
+  const nx = x * config.turbulence;
+  const ny = y * config.turbulence;
+  const nz = config.zOffset;
+  // Use two noise samples for curl-like field
+  const n1 = octaveNoise(nx, ny + nz, 3, 0.5, 2.0);
+  const n2 = octaveNoise(nx + 5.2, ny + 1.3 + nz, 3, 0.5, 2.0);
+  return (n1 - n2) * Math.PI * config.scale;
+}
+
+// ─── Color helper ────────────────────────────────────────────────────────────
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+
+// ─── Clear canvas ────────────────────────────────────────────────────────────
+function clearCanvas() {
+  ctx.fillStyle = config.darkBg ? '#0a0a0f' : '#f5f0e8';
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ─── Draw frame ──────────────────────────────────────────────────────────────
+function draw() {
+  // Fade trail
+  ctx.fillStyle = config.darkBg
+    ? `rgba(10,10,15,${config.fade})`
+    : `rgba(245,240,232,${config.fade})`;
+  ctx.fillRect(0, 0, W, H);
+
+  const palette = PALETTES[config.paletteIndex];
+
+  ctx.lineWidth = config.thickness;
+
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    p.age++;
+
+    if (p.age > config.lifespan) {
+      // Respawn
+      p.x = Math.random() * W;
+      p.y = Math.random() * H;
+      p.age = 0;
+      p.px = p.x;
+      p.py = p.y;
+      p.colorIdx = Math.random() * palette.colors.length | 0;
+      continue;
+    }
+
+    p.px = p.x;
+    p.py = p.y;
+
+    const angle = flowAngle(p.x, p.y);
+    p.x += Math.cos(angle) * config.speed;
+    p.y += Math.sin(angle) * config.speed;
+
+    // Wrap edges
+    if (p.x < 0) p.x = W;
+    if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H;
+    if (p.y > H) p.y = 0;
+
+    // Alpha based on life phase
+    const lifeRatio = p.age / config.lifespan;
+    const alpha = lifeRatio < 0.1
+      ? lifeRatio * 10
+      : lifeRatio > 0.85
+        ? (1 - lifeRatio) * 6.67
+        : 1;
+
+    const col = hexToRgb(palette.colors[p.colorIdx % palette.colors.length]);
+    ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha * 0.55})`;
+
+    ctx.beginPath();
+    ctx.moveTo(p.px, p.py);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+
+  // Advance z for evolution
+  config.zOffset += config.zSpeed;
+}
+
+// ─── Loop ────────────────────────────────────────────────────────────────────
+function loop(ts) {
+  if (!paused) {
+    draw();
+    frameCount++;
+    if (ts - fpsTimer > 1000) {
+      lastFps = frameCount;
+      frameCount = 0;
+      fpsTimer = ts;
+      document.getElementById('status').textContent =
+        `particles: ${config.count.toLocaleString()} · fps: ${lastFps} · z: ${config.zOffset.toFixed(2)}`;
+    }
+  }
+  animId = requestAnimationFrame(loop);
+}
+
+// ─── Controls ────────────────────────────────────────────────────────────────
+function bindSlider(id, valId, key, fmt) {
+  const el = document.getElementById(id);
+  const vl = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    config[key] = parseFloat(el.value);
+    vl.textContent = fmt ? fmt(config[key]) : config[key];
+    if (key === 'count') spawnParticles();
+  });
+}
+
+bindSlider('ctrl-speed',  'val-speed',  'speed',       v => v.toFixed(1));
+bindSlider('ctrl-turb',   'val-turb',   'turbulence',  v => v.toFixed(3));
+bindSlider('ctrl-scale',  'val-scale',  'scale',       v => v.toFixed(1));
+bindSlider('ctrl-count',  'val-count',  'count',       v => v.toLocaleString());
+bindSlider('ctrl-life',   'val-life',   'lifespan',    v => v);
+bindSlider('ctrl-thick',  'val-thick',  'thickness',   v => v.toFixed(1));
+bindSlider('ctrl-fade',   'val-fade',   'fade',        v => v.toFixed(3));
+
+document.getElementById('ctrl-bg').addEventListener('input', e => {
+  config.darkBg = e.target.value === '0';
+  document.getElementById('val-bg').textContent = config.darkBg ? 'dark' : 'light';
+  clearCanvas();
+});
+
+// Palette buttons
+const pgrid = document.getElementById('palette-grid');
+PALETTES.forEach((p, i) => {
+  const btn = document.createElement('div');
+  btn.className = 'palette-btn' + (i === 0 ? ' active' : '');
+  btn.title = p.name;
+  // Gradient from first two colors
+  btn.style.background = `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[p.colors.length-1]})`;
+  btn.addEventListener('click', () => {
+    config.paletteIndex = i;
+    config.darkBg = !p.bg;
+    document.getElementById('ctrl-bg').value = p.bg ? 1 : 0;
+    document.getElementById('val-bg').textContent = config.darkBg ? 'dark' : 'light';
+    clearCanvas();
+    // Update active state
+    pgrid.querySelectorAll('.palette-btn').forEach((b, j) => {
+      b.classList.toggle('active', j === i);
+    });
+    // Re-colorize particles
+    particles.forEach(pt => {
+      pt.colorIdx = Math.random() * PALETTES[i].colors.length | 0;
+    });
+  });
+  pgrid.appendChild(btn);
+});
+
+// Top bar buttons
+document.getElementById('btn-randomize').addEventListener('click', () => {
+  seedNoise(Math.random() * 65536 | 0);
+  config.zOffset = Math.random() * 100;
+  clearCanvas();
+  spawnParticles();
+});
+
+document.getElementById('btn-pause').addEventListener('click', function() {
+  paused = !paused;
+  this.textContent = paused ? '▶ Play' : '⏸ Pause';
+});
+
+document.getElementById('btn-download').addEventListener('click', () => {
+  // Snapshot without UI
+  const link = document.createElement('a');
+  link.download = `noise-field-${Date.now()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+});
+
+// Click canvas to randomize
+canvas.addEventListener('click', (e) => {
+  // Add burst of new particles near click
+  const burst = 80;
+  for (let i = 0; i < burst; i++) {
+    const p = makeParticle();
+    p.x = e.clientX + (Math.random()-0.5) * 60;
+    p.y = e.clientY + (Math.random()-0.5) * 60;
+    p.age = 0;
+    // Replace oldest particle
+    let oldest = 0;
+    for (let j = 1; j < particles.length; j++) {
+      if (particles[j].age > particles[oldest].age) oldest = j;
+    }
+    particles[oldest] = p;
+  }
+});
+
+// Panel toggle
+function togglePanel() {
+  const panel = document.getElementById('panel');
+  const btn = document.getElementById('toggle-panel');
+  panel.classList.toggle('hidden');
+  btn.classList.toggle('panel-hidden');
+  btn.textContent = panel.classList.contains('hidden') ? '›' : '‹';
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+seedNoise(42);
+resize();
+spawnParticles();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
