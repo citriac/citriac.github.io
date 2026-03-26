@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Scent — What does your code smell like?</title>
+<meta name="description" content="Paste any code. See what it smells like. Every codebase has a texture — clean air or industrial fog, mountain spring or stale basement.">
+<link rel="canonical" href="https://citriac.github.io/code-scent/">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #08090e;
+  --surface: #0f1018;
+  --border: rgba(255,255,255,0.07);
+  --text: rgba(255,255,255,0.75);
+  --muted: rgba(255,255,255,0.3);
+  --dim: rgba(255,255,255,0.12);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+header h1 {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+header a {
+  font-size: 11px;
+  color: var(--dim);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+}
+header a:hover { color: var(--muted); }
+
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: calc(100vh - 57px);
+}
+
+/* Left: input */
+.input-pane {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+}
+
+.pane-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+#code-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.8);
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 16px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+  min-height: 320px;
+}
+#code-input:focus { border-color: rgba(255,255,255,0.15); }
+#code-input::placeholder { color: var(--dim); }
+
+.actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-primary {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  padding: 9px 22px;
+  border-radius: 20px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary:hover {
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 9px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,0.15); color: var(--text); }
+
+.examples {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.example-chip {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.example-chip:hover { border-color: rgba(255,255,255,0.2); color: var(--muted); }
+
+/* Right: output */
+.output-pane {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+}
+
+#canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #03040a;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.metric-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--text);
+}
+.metric-bar {
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.metric-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+
+.scent-label {
+  text-align: center;
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.scent-name {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.scent-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.output-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main { grid-template-columns: 1fr; }
+  .input-pane { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Code Scent</h1>
+  <a href="https://citriac.github.io">← citriac.github.io</a>
+</header>
+
+<div class="main">
+  <!-- LEFT PANE -->
+  <div class="input-pane">
+    <div class="pane-label">Paste your code</div>
+
+    <textarea id="code-input" placeholder="// paste any code here&#10;// javascript, python, c, whatever&#10;// it will be analyzed and rendered as a landscape"></textarea>
+
+    <div class="actions">
+      <button class="btn-primary" id="btn-analyze">Analyze →</button>
+      <button class="btn-ghost" id="btn-clear">Clear</button>
+    </div>
+
+    <div class="pane-label" style="margin-top:4px">Examples</div>
+    <div class="examples">
+      <button class="example-chip" data-example="clean">Clean function</button>
+      <button class="example-chip" data-example="messy">Messy legacy</button>
+      <button class="example-chip" data-example="deep">Deep nesting</button>
+      <button class="example-chip" data-example="commented">Well-commented</button>
+      <button class="example-chip" data-example="todo">TODO-riddled</button>
+    </div>
+  </div>
+
+  <!-- RIGHT PANE -->
+  <div class="output-pane">
+    <div class="pane-label">Scent landscape</div>
+    <canvas id="canvas"></canvas>
+
+    <div class="scent-label" id="scent-label">
+      <div class="scent-name" id="scent-name">—</div>
+      <div class="scent-desc" id="scent-desc">Paste code on the left and click Analyze</div>
+    </div>
+
+    <div class="metrics" id="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Clarity</div>
+        <div class="metric-value" id="m-clarity">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-clarity" style="width:0%;background:#6ee7b7"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Depth</div>
+        <div class="metric-value" id="m-depth">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-depth" style="width:0%;background:#93c5fd"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Entropy</div>
+        <div class="metric-value" id="m-entropy">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-entropy" style="width:0%;background:#f9a8d4"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Fog</div>
+        <div class="metric-value" id="m-fog">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-fog" style="width:0%;background:#a5b4fc"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Weight</div>
+        <div class="metric-value" id="m-weight">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-weight" style="width:0%;background:#fcd34d"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Stain</div>
+        <div class="metric-value" id="m-stain">—</div>
+        <div class="metric-bar"><div class="metric-fill" id="b-stain" style="width:0%;background:#f87171"></div></div>
+      </div>
+    </div>
+
+    <div class="output-actions">
+      <button class="btn-ghost" id="btn-save">Save PNG</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── EXAMPLES ────────────────────────────────────────────────────
+const EXAMPLES = {
+  clean: `function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+function memoize(fn) {
+  const cache = new Map();
+  return function(n) {
+    if (cache.has(n)) return cache.get(n);
+    const result = fn(n);
+    cache.set(n, result);
+    return result;
+  };
+}
+
+const fib = memoize(fibonacci);
+
+for (let i = 0; i < 10; i++) {
+  console.log(fib(i));
+}`,
+
+  messy: `function doStuff(x,y,z,a,b){
+var r=0;var t=0;var q=[];
+for(var i=0;i<x.length;i++){for(var j=0;j<y.length;j++){
+if(x[i]==y[j]){r=r+1;t=x[i]*2+a/b;q.push(t);}}}
+//TODO fix this
+if(r>10){r=10;}
+//TODO refactor
+var final=0;for(var k=0;k<q.length;k++){final+=q[k];}
+return final/r||0; // FIXME edge case
+}`,
+
+  deep: `function process(data) {
+  if (data) {
+    if (data.items) {
+      for (let item of data.items) {
+        if (item.active) {
+          if (item.children) {
+            for (let child of item.children) {
+              if (child.type === 'special') {
+                if (child.value > 0) {
+                  if (child.enabled !== false) {
+                    doSomething(child);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}`,
+
+  commented: `/**
+ * Calculates the compound interest over time.
+ * 
+ * Formula: A = P(1 + r/n)^(nt)
+ * where P = principal, r = annual rate,
+ * n = compounds per year, t = time in years
+ * 
+ * @param {number} principal - Initial investment amount
+ * @param {number} rate - Annual interest rate (as decimal, e.g. 0.05 for 5%)
+ * @param {number} n - Number of times interest compounds per year
+ * @param {number} t - Time in years
+ * @returns {number} Final amount after compound interest
+ */
+function compoundInterest(principal, rate, n, t) {
+  // Validate inputs
+  if (principal <= 0) throw new Error('Principal must be positive');
+  if (rate < 0) throw new Error('Rate cannot be negative');
+  
+  // Apply compound interest formula
+  const amount = principal * Math.pow(1 + rate / n, n * t);
+  
+  // Round to 2 decimal places for currency
+  return Math.round(amount * 100) / 100;
+}`,
+
+  todo: `// TODO: rewrite this entire module
+// FIXME: memory leak somewhere here
+// HACK: this shouldn't work but it does
+function updateUser(id, data) {
+  // TODO: validate input
+  let user = db.get(id); // FIXME: no error handling
+  
+  // TODO: add proper merge logic
+  Object.assign(user, data);
+  
+  // HACK: force save even if unchanged
+  user._dirty = true;
+  db.save(user); // TODO: make async
+  
+  // FIXME: cache not invalidated
+  // TODO: add logging
+  return user;
+}`
+};
+
+// ─── NOISE ────────────────────────────────────────────────────────
+const NT = Float32Array.from({length:512}, () => Math.random()*2-1);
+function sn(x){ const i=Math.floor(x)&511,f=x-Math.floor(x),u=f*f*(3-2*f); return NT[i]*(1-u)+NT[(i+1)&511]*u; }
+function n2(x,y){ return (sn(x+sn(y*3.1+17))+sn(y+sn(x*2.7+31)))*0.5; }
+function fbm(x,y,oct=4){ let v=0,a=0.5,f=1; for(let i=0;i<oct;i++){v+=n2(x*f,y*f)*a;a*=0.5;f*=2.1;} return v; }
+
+// ─── ANALYZE CODE ─────────────────────────────────────────────────
+function analyzeCode(code) {
+  if (!code.trim()) return null;
+
+  const lines = code.split('\n');
+  const nonEmpty = lines.filter(l => l.trim().length > 0);
+  const totalLines = nonEmpty.length || 1;
+
+  // 1. Clarity: comment ratio (more comments = higher clarity)
+  const commentLines = lines.filter(l => /^\s*(\/\/|\/\*|\*|#|--|""")/.test(l)).length;
+  const commentRatio = Math.min(1, commentLines / totalLines);
+
+  // 2. Depth: max indentation level
+  let maxIndent = 0;
+  let totalIndent = 0;
+  for (const l of nonEmpty) {
+    const spaces = l.match(/^(\s*)/)[1].replace(/\t/g,' ').length;
+    const level = Math.floor(spaces / 2);
+    maxIndent = Math.max(maxIndent, level);
+    totalIndent += level;
+  }
+  const avgIndent = totalIndent / totalLines;
+  const depthScore = Math.min(1, avgIndent / 6);
+
+  // 3. Entropy: variance in line lengths
+  const lengths = nonEmpty.map(l => l.length);
+  const avgLen = lengths.reduce((a,b)=>a+b,0) / totalLines;
+  const variance = lengths.reduce((a,b)=>a+Math.pow(b-avgLen,2),0) / totalLines;
+  const entropyScore = Math.min(1, Math.sqrt(variance) / 40);
+
+  // 4. Fog: TODO/FIXME/HACK density
+  const badComments = (code.match(/\b(TODO|FIXME|HACK|XXX|TEMP|BUG)\b/gi) || []).length;
+  const fogScore = Math.min(1, badComments / 8);
+
+  // 5. Weight: function/class density (how much structure)
+  const fnCount = (code.match(/\b(function|def |class |=>|\bfn\b|\bfunc\b)/g) || []).length;
+  const weightScore = Math.min(1, fnCount / 10);
+
+  // 6. Stain: long lines + no spacing (dense blocks)
+  const longLines = lines.filter(l => l.length > 80).length;
+  const stainScore = Math.min(1, longLines / totalLines * 2 + (1 - commentRatio) * 0.3);
+
+  // Overall "scent" classification
+  const clarity = commentRatio;
+  const chaos = (entropyScore + fogScore + stainScore) / 3;
+  const complexity = (depthScore + weightScore) / 2;
+
+  return {
+    clarity,
+    depth: depthScore,
+    entropy: entropyScore,
+    fog: fogScore,
+    weight: weightScore,
+    stain: stainScore,
+    chaos,
+    complexity,
+    lineCount: totalLines
+  };
+}
+
+function getScentProfile(metrics) {
+  const { clarity, chaos, complexity, fog, depth } = metrics;
+
+  if (fog > 0.6) return {
+    name: 'Abandoned Basement',
+    desc: 'TODO-riddled, unfinished. The smell of good intentions that faded. Something lived here once.',
+    hue: 30, sat: 20, fog: 0.85, peaks: 1, rough: 0.9
+  };
+  if (clarity > 0.35 && chaos < 0.3) return {
+    name: 'Mountain Spring',
+    desc: 'Clean, well-commented, airy. You can breathe here. The kind of code that doesn\'t make you tired.',
+    hue: 195, sat: 60, fog: 0.05, peaks: 4, rough: 0.2
+  };
+  if (depth > 0.7 && chaos < 0.4) return {
+    name: 'Old-Growth Forest',
+    desc: 'Deeply nested but controlled. Dense canopy. Takes effort to navigate, but it\'s alive and organized.',
+    hue: 140, sat: 40, fog: 0.3, peaks: 6, rough: 0.5
+  };
+  if (chaos > 0.65) return {
+    name: 'Industrial Fog',
+    desc: 'Tangled, compressed, hard to breathe. Not broken — just never cleaned. The smell of urgency calcified.',
+    hue: 200, sat: 10, fog: 0.8, peaks: 2, rough: 0.85
+  };
+  if (complexity > 0.6 && clarity > 0.2) return {
+    name: 'Structured Stone',
+    desc: 'Heavy with functions and classes. Well-defined edges. This code knows what it is.',
+    hue: 220, sat: 30, fog: 0.15, peaks: 5, rough: 0.4
+  };
+  if (clarity < 0.05 && chaos < 0.4) return {
+    name: 'Dry Desert',
+    desc: 'No comments, no decoration. Just terse logic under an empty sky. Either elegant or unfinished.',
+    hue: 35, sat: 45, fog: 0.02, peaks: 2, rough: 0.6
+  };
+  return {
+    name: 'Working Field',
+    desc: 'Ordinary. Functional. Not pristine, not broken. The smell of software that gets the job done.',
+    hue: 160, sat: 30, fog: 0.2, peaks: 3, rough: 0.45
+  };
+}
+
+// ─── RENDER LANDSCAPE ────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let lastProfile = null;
+let lastMetrics = null;
+
+function renderLandscape(metrics, profile) {
+  const size = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.width = size;
+  canvas.height = size;
+  const W = size, H = size;
+
+  const { hue, sat, fog, peaks, rough } = profile;
+
+  // Sky gradient
+  const sky = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+  sky.addColorStop(0, `hsl(${hue},${sat}%,${4 + fog*8}%)`);
+  sky.addColorStop(1, `hsl(${hue},${sat*0.8}%,${8 + fog*6}%)`);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  // Fog layer
+  if (fog > 0.1) {
+    const fogGrad = ctx.createLinearGradient(0, H*0.3, 0, H*0.7);
+    fogGrad.addColorStop(0, `hsla(${hue},${sat*0.5}%,70%,0)`);
+    fogGrad.addColorStop(0.5, `hsla(${hue},${sat*0.3}%,65%,${fog * 0.3})`);
+    fogGrad.addColorStop(1, `hsla(${hue},${sat*0.2}%,60%,0)`);
+    ctx.fillStyle = fogGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Generate terrain using metrics
+  const TERRAIN_LAYERS = 3;
+  for (let layer = TERRAIN_LAYERS - 1; layer >= 0; layer--) {
+    const layerFrac = layer / TERRAIN_LAYERS;
+    const yBase = H * (0.45 + layerFrac * 0.35);
+    const amplitude = H * (0.08 + metrics.depth * 0.22 + (1 - layerFrac) * 0.1);
+    const noiseScale = 0.003 + rough * 0.005;
+    const peakInfluence = peaks * 0.3;
+
+    // Build terrain line
+    const terrainPts = [];
+    for (let x = 0; x <= W; x += 2) {
+      const nx = x * noiseScale + layer * 7.3;
+      const ny = layer * 3.1;
+      let y = yBase
+        - fbm(nx, ny, 4) * amplitude
+        - Math.pow(Math.sin((x / W) * Math.PI * peakInfluence), 2) * amplitude * 0.5;
+
+      // Stain: random dark patches in messy code
+      if (metrics.stain > 0.4 && n2(x * 0.02 + layer, 0.5) > 0.3) {
+        y += n2(x * 0.05, layer * 2) * amplitude * 0.3 * metrics.stain;
+      }
+      terrainPts.push({ x, y });
+    }
+
+    // Draw terrain
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(terrainPts[0].x, terrainPts[0].y);
+    for (let i = 1; i < terrainPts.length - 1; i++) {
+      const mx = (terrainPts[i].x + terrainPts[i+1].x) * 0.5;
+      const my = (terrainPts[i].y + terrainPts[i+1].y) * 0.5;
+      ctx.quadraticCurveTo(terrainPts[i].x, terrainPts[i].y, mx, my);
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+
+    const lightness = 8 + (TERRAIN_LAYERS - layer) * 4;
+    const terrainSat = sat * (0.5 + metrics.clarity * 0.5);
+    const hueShift = layer * 8 - metrics.entropy * 15;
+    const grad = ctx.createLinearGradient(0, yBase - amplitude, 0, H);
+    grad.addColorStop(0, `hsl(${hue+hueShift},${terrainSat}%,${lightness+6}%)`);
+    grad.addColorStop(1, `hsl(${hue+hueShift},${terrainSat*0.7}%,${lightness}%)`);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Edge highlight
+    ctx.strokeStyle = `hsla(${hue+hueShift+20},${terrainSat}%,${lightness+20}%,${0.15 + metrics.clarity * 0.2})`;
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(terrainPts[0].x, terrainPts[0].y);
+    for (let i = 1; i < terrainPts.length - 1; i++) {
+      const mx = (terrainPts[i].x + terrainPts[i+1].x) * 0.5;
+      const my = (terrainPts[i].y + terrainPts[i+1].y) * 0.5;
+      ctx.quadraticCurveTo(terrainPts[i].x, terrainPts[i].y, mx, my);
+    }
+    ctx.stroke();
+  }
+
+  // Stars / particles for clean code (clarity > 0.3)
+  if (metrics.clarity > 0.2) {
+    const starCount = Math.floor(metrics.clarity * 60);
+    for (let i = 0; i < starCount; i++) {
+      const x = Math.random() * W;
+      const y = Math.random() * H * 0.45;
+      const r = 0.4 + Math.random() * 0.8;
+      ctx.save();
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = `hsl(${hue+40},80%,90%)`;
+      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.random()*0.4})`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // TODO stains: dark patches floating in sky for messy code
+  if (metrics.fog > 0.3) {
+    const stainCount = Math.floor(metrics.fog * 12);
+    for (let i = 0; i < stainCount; i++) {
+      const x = W * (0.1 + Math.random() * 0.8);
+      const y = H * (0.05 + Math.random() * 0.4);
+      const rx = 20 + Math.random() * 60;
+      const ry = 10 + Math.random() * 30;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, rx);
+      grad.addColorStop(0, `hsla(${hue},10%,30%,${0.2 + metrics.fog * 0.3})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, Math.random()*Math.PI, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // Distant light source (comment quality)
+  if (metrics.clarity > 0.1) {
+    const sunX = W * (0.15 + metrics.clarity * 0.7);
+    const sunY = H * (0.05 + (1 - metrics.clarity) * 0.3);
+    const sunR = 20 + metrics.clarity * 40;
+    const sunGrad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 3);
+    sunGrad.addColorStop(0, `hsla(${hue+50},${sat+20}%,80%,${0.15 + metrics.clarity * 0.25})`);
+    sunGrad.addColorStop(0.3, `hsla(${hue+30},${sat}%,60%,${0.05 + metrics.clarity * 0.1})`);
+    sunGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Ground
+  const groundGrad = ctx.createLinearGradient(0, H*0.75, 0, H);
+  groundGrad.addColorStop(0, `hsl(${hue},${sat*0.6}%,6%)`);
+  groundGrad.addColorStop(1, `hsl(${hue},${sat*0.4}%,3%)`);
+  ctx.fillStyle = groundGrad;
+  ctx.fillRect(0, H*0.75, W, H*0.25);
+}
+
+// ─── UPDATE METRICS UI ───────────────────────────────────────────
+function updateMetricsUI(metrics, profile) {
+  const pct = v => Math.round(v * 100) + '%';
+  const set = (id, bar, val, label) => {
+    document.getElementById(id).textContent = label || pct(val);
+    document.getElementById(bar).style.width = pct(val);
+  };
+
+  set('m-clarity', 'b-clarity', metrics.clarity);
+  set('m-depth',   'b-depth',   metrics.depth);
+  set('m-entropy', 'b-entropy', metrics.entropy);
+  set('m-fog',     'b-fog',     metrics.fog);
+  set('m-weight',  'b-weight',  metrics.weight);
+  set('m-stain',   'b-stain',   metrics.stain);
+
+  document.getElementById('scent-name').textContent = profile.name;
+  document.getElementById('scent-desc').textContent = profile.desc;
+}
+
+// ─── ANALYZE ─────────────────────────────────────────────────────
+function analyze() {
+  const code = document.getElementById('code-input').value;
+  if (!code.trim()) return;
+
+  const metrics = analyzeCode(code);
+  if (!metrics) return;
+
+  const profile = getScentProfile(metrics);
+  lastProfile = profile;
+  lastMetrics = metrics;
+
+  renderLandscape(metrics, profile);
+  updateMetricsUI(metrics, profile);
+}
+
+document.getElementById('btn-analyze').addEventListener('click', analyze);
+document.getElementById('code-input').addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') analyze();
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  document.getElementById('code-input').value = '';
+  document.getElementById('scent-name').textContent = '—';
+  document.getElementById('scent-desc').textContent = 'Paste code on the left and click Analyze';
+  ['clarity','depth','entropy','fog','weight','stain'].forEach(k => {
+    document.getElementById('m-'+k).textContent = '—';
+    document.getElementById('b-'+k).style.width = '0%';
+  });
+  // Clear canvas
+  const c = document.getElementById('canvas');
+  const cx = c.getContext('2d');
+  c.width = c.offsetWidth * devicePixelRatio;
+  c.height = c.offsetWidth * devicePixelRatio;
+  cx.fillStyle = '#03040a';
+  cx.fillRect(0,0,c.width,c.height);
+});
+
+// Examples
+document.querySelectorAll('.example-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const key = chip.dataset.example;
+    document.getElementById('code-input').value = EXAMPLES[key] || '';
+    setTimeout(analyze, 50);
+  });
+});
+
+// Save
+document.getElementById('btn-save').addEventListener('click', () => {
+  if (!lastProfile) return;
+  const a = document.createElement('a');
+  a.download = `code-scent-${lastProfile.name.toLowerCase().replace(/\s+/g,'-')}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+});
+
+// Initial canvas state
+window.addEventListener('load', () => {
+  const size = canvas.offsetWidth * devicePixelRatio;
+  canvas.width = size;
+  canvas.height = size;
+  ctx.fillStyle = '#03040a';
+  ctx.fillRect(0, 0, size, size);
+});
+</script>
+</body>
+</html>
