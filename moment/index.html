@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moment — This second, as a shape</title>
+<meta name="description" content="Every moment has a shape. 3am looks nothing like noon. Open it now and see what this second looks like.">
+<link rel="canonical" href="https://citriac.github.io/moment/">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: #03030a;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+/* Time label - bottom center */
+#time-label {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+  pointer-events: none;
+}
+#time-display {
+  font-size: 48px;
+  font-weight: 100;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.12);
+  font-variant-numeric: tabular-nums;
+  transition: color 2s ease;
+}
+#time-display.visible { color: rgba(255,255,255,0.7); }
+#moment-desc {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  margin-top: 6px;
+}
+
+/* Top left */
+#title {
+  position: fixed;
+  top: 24px; left: 28px;
+  z-index: 10;
+}
+#title h1 {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+#title a {
+  font-size: 10px;
+  color: rgba(255,255,255,0.12);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+}
+#title a:hover { color: rgba(255,255,255,0.4); }
+
+/* Top right controls */
+#controls {
+  position: fixed;
+  top: 24px; right: 24px;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+.ctrl-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+}
+
+/* Subtle info on hover over canvas */
+#hover-info {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+  z-index: 5;
+}
+#hover-info.show { opacity: 1; }
+#hover-info p {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  line-height: 2;
+}
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div id="title">
+  <h1>Moment</h1>
+  <a href="https://citriac.github.io">← citriac.github.io</a>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="btn-time">Show Time</button>
+  <button class="ctrl-btn" id="btn-save">Save PNG</button>
+</div>
+
+<div id="time-label">
+  <div id="time-display">00:00:00</div>
+  <div id="moment-desc">–</div>
+</div>
+
+<div id="hover-info">
+  <p>this is what<br><span id="hover-time">–</span><br>looks like</p>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2;
+  cy = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── SIMPLE NOISE ────────────────────────────────────────────────
+const NT = Float32Array.from({length:512}, () => Math.random() * 2 - 1);
+function snoise(x) {
+  const i = Math.floor(x) & 511;
+  const f = x - Math.floor(x);
+  const u = f*f*(3-2*f);
+  return NT[i]*(1-u) + NT[(i+1)&511]*u;
+}
+function noise2(x,y) {
+  return (snoise(x + snoise(y*3.1+17)) + snoise(y + snoise(x*2.7+31))) * 0.5;
+}
+
+// ─── TIME QUALITIES ──────────────────────────────────────────────
+// Maps the current time to a set of perceptual qualities
+
+function getMomentQualities(now) {
+  const h = now.getHours();       // 0–23
+  const m = now.getMinutes();     // 0–59
+  const s = now.getSeconds();     // 0–59
+  const ms = now.getMilliseconds();
+  const dow = now.getDay();       // 0=Sun … 6=Sat
+  const month = now.getMonth();   // 0–11
+
+  // Smooth time fractions
+  const hourFrac = (h + m/60 + s/3600) / 24;         // 0→1 over day
+  const minFrac  = (m + s/60 + ms/60000) / 60;
+  const secFrac  = (s + ms/1000) / 60;
+
+  // ── Energy curve: bell peak at noon, trough at 4am
+  // Use a double-cosine: (1 - cos(hourFrac*2π)) * 0.5 → sine-like, but shift so peak=noon
+  const shifted = hourFrac - 0.5; // shift so 0.5 (noon) = 0 → peak
+  const energy = 1 - Math.abs(shifted) * 2; // linear: 1 at noon, 0 at midnight edges
+  // Soften: midnightEnergy ≈ 0.1, noonEnergy ≈ 1.0
+  const energySmooth = 0.1 + 0.9 * Math.pow(energy, 1.5);
+
+  // ── Sharpness: late night/early morning = sharp+inward, daytime = rounded
+  // 0am–5am: sharp (spiky), 6am–10am: softening, 10am–2pm: smooth, 3pm–7pm: medium, 8pm–midnight: contracting
+  let sharpness;
+  if (h < 5)       sharpness = 0.8 + (5-h)*0.04;
+  else if (h < 10) sharpness = 0.8 - (h-5)*0.12;
+  else if (h < 14) sharpness = 0.2 + Math.abs(h-12)*0.02;
+  else if (h < 19) sharpness = 0.25 + (h-14)*0.05;
+  else             sharpness = 0.5 + (h-19)*0.06;
+
+  // ── Texture density from minutes
+  const textureDensity = 0.3 + minFrac * 0.7;
+
+  // ── Rotation from seconds (slow drift)
+  const rotation = secFrac * Math.PI * 2 * 0.25; // one slow rotation per 4 minutes
+
+  // ── Weekday color shift
+  // Mon=0° cool, Tue=30°, Wed=60° green, Thu=90°, Fri=120° warm, Sat=180°, Sun=240° blue
+  const dowHues = [240, 200, 160, 120, 40, 20, 270]; // Sun-Sat
+  const baseHue = dowHues[dow];
+
+  // ── Season (month) affects saturation and lightness
+  // Spring(2-4): fresh green, Summer(5-7): hot saturated, Autumn(8-10): amber, Winter(11-1): cold blue
+  let seasonSat, seasonLight, seasonHueShift;
+  if (month >= 2 && month <= 4)       { seasonSat=0.7; seasonLight=0.55; seasonHueShift=30; }
+  else if (month >= 5 && month <= 7)  { seasonSat=0.9; seasonLight=0.6;  seasonHueShift=0; }
+  else if (month >= 8 && month <= 10) { seasonSat=0.75; seasonLight=0.5; seasonHueShift=-20; }
+  else                                { seasonSat=0.5;  seasonLight=0.45; seasonHueShift=-40; }
+
+  // ── Moment description
+  const descriptions = [
+    'the dead hour',      // 0
+    'deepest quiet',      // 1
+    'before the world',   // 2
+    'just darkness',      // 3
+    'still dark',         // 4
+    'almost morning',     // 5
+    'first light',        // 6
+    'waking',             // 7
+    'beginning',          // 8
+    'mid-morning',        // 9
+    'getting there',      // 10
+    'almost noon',        // 11
+    'high noon',          // 12
+    'over the peak',      // 13
+    'afternoon',          // 14
+    'slow afternoon',     // 15
+    'golden hour near',   // 16
+    'golden',             // 17
+    'dusk',               // 18
+    'fading light',       // 19
+    'evening',            // 20
+    'night beginning',    // 21
+    'late night',         // 22
+    'almost midnight',    // 23
+  ];
+
+  return {
+    hourFrac, minFrac, secFrac,
+    energy: energySmooth,
+    sharpness,
+    textureDensity,
+    rotation,
+    baseHue: (baseHue + seasonHueShift + 360) % 360,
+    saturation: seasonSat,
+    lightness: seasonLight,
+    description: descriptions[h],
+    h, m, s, ms, dow
+  };
+}
+
+// ─── SHAPE GENERATION ────────────────────────────────────────────
+const N_PTS = 128;
+let phase = 0;
+
+function buildShape(q, time) {
+  const pts = [];
+  const R0 = Math.min(W, H) * 0.22;
+
+  for (let i = 0; i < N_PTS; i++) {
+    const a = (i / N_PTS) * Math.PI * 2 + q.rotation + phase;
+
+    // Base radius modulated by energy
+    let r = R0 * (0.5 + q.energy * 0.6);
+
+    // Sharpness: spiky vs smooth
+    if (q.sharpness > 0.4) {
+      // Pointed inward spikes at night
+      const spikes = 5 + Math.floor(q.sharpness * 8);
+      r += Math.pow(Math.abs(Math.sin(a * spikes)), 2 - q.sharpness) * R0 * q.sharpness * 0.6;
+      r -= Math.abs(Math.cos(a * (spikes+1))) * R0 * q.sharpness * 0.3;
+    } else {
+      // Daytime: smooth bulge outward
+      r += Math.sin(a * 3 + time * 0.3) * R0 * (1 - q.sharpness) * 0.3;
+    }
+
+    // Texture from minutes
+    r += noise2(a * q.textureDensity * 4 + time * 0.1, q.minFrac * 3) * R0 * 0.2 * q.textureDensity;
+
+    // Second tremor
+    r += Math.sin(a * 12 + q.secFrac * Math.PI * 2) * R0 * 0.04;
+
+    // Breathing (very slow)
+    r += Math.sin(time * 0.5 + a * 0.5) * R0 * 0.06;
+
+    r = Math.max(R0 * 0.15, r);
+
+    pts.push({
+      x: cx + Math.cos(a) * r,
+      y: cy + Math.sin(a) * r,
+      r
+    });
+  }
+  return pts;
+}
+
+// ─── DRAW ─────────────────────────────────────────────────────────
+function drawMoment(q, pts, time) {
+  const hue = q.baseHue;
+  const sat = Math.round(q.saturation * 100);
+  const light = Math.round(q.lightness * 100);
+
+  // Background
+  const bgLight = Math.round(3 + q.energy * 3);
+  ctx.fillStyle = `hsl(${hue},${Math.round(sat*0.3)}%,${bgLight}%)`;
+  ctx.fillRect(0, 0, W, H);
+
+  // Outer glow layers
+  for (let pass = 3; pass >= 0; pass--) {
+    const glowSize = [120, 60, 25, 8][pass];
+    const glowAlpha = [0.03, 0.06, 0.12, 0.3][pass];
+    const offset = [8, 4, 2, 0][pass];
+
+    ctx.save();
+    ctx.shadowBlur = glowSize;
+    ctx.shadowColor = `hsla(${hue},${sat}%,${light}%,0.8)`;
+    ctx.strokeStyle = `hsla(${hue},${sat}%,${light}%,${glowAlpha})`;
+    ctx.lineWidth = pass === 0 ? 1.5 : 0.5;
+
+    ctx.beginPath();
+    for (let i = 0; i <= N_PTS; i++) {
+      const p = pts[i % N_PTS];
+      const px = p.x + offset * Math.cos((i/N_PTS)*Math.PI*2);
+      const py = p.y + offset * Math.sin((i/N_PTS)*Math.PI*2);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Fill interior
+  ctx.save();
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W,H)*0.25);
+  grad.addColorStop(0, `hsla(${(hue+30)%360},${sat}%,${light+10}%,${0.06 + q.energy * 0.1})`);
+  grad.addColorStop(0.6, `hsla(${hue},${sat}%,${light}%,${0.03 + q.energy * 0.05})`);
+  grad.addColorStop(1, `hsla(${hue},${sat}%,${light}%,0)`);
+
+  ctx.beginPath();
+  for (let i = 0; i <= N_PTS; i++) {
+    const p = pts[i % N_PTS];
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.restore();
+
+  // Inner detail lines (textural)
+  if (q.textureDensity > 0.4) {
+    const lines = Math.floor(q.textureDensity * 8);
+    for (let l = 0; l < lines; l++) {
+      const frac = (l + 1) / (lines + 1);
+      const innerPts = buildShape({...q, energy: q.energy * frac * 0.7, sharpness: q.sharpness * (1-frac*0.5)}, time + l*0.3);
+
+      ctx.save();
+      ctx.strokeStyle = `hsla(${(hue+l*15)%360},${sat}%,${light}%,${0.04 * (1-frac)})`;
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      for (let i = 0; i <= N_PTS; i++) {
+        const p = innerPts[i % N_PTS];
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Ambient particles for certain hours
+  if (q.h >= 22 || q.h <= 5) {
+    // Night stars
+    const stars = 30 + Math.floor(q.energy * 20);
+    for (let s = 0; s < stars; s++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 0.3 + Math.random() * 0.45;
+      const x = cx + Math.cos(angle) * Math.min(W,H) * dist;
+      const y = cy + Math.sin(angle) * Math.min(W,H) * dist;
+      ctx.save();
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = `hsl(${hue},${sat}%,80%)`;
+      ctx.fillStyle = `rgba(255,255,255,${0.1 + Math.random() * 0.3})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 0.6 + Math.random(), 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+// ─── ANIMATION LOOP ───────────────────────────────────────────────
+let showTime = false;
+let lastRender = 0;
+
+function animate(ts) {
+  requestAnimationFrame(animate);
+
+  // Throttle to ~30fps for performance
+  if (ts - lastRender < 33) return;
+  lastRender = ts;
+
+  const t = ts * 0.001;
+  phase += 0.002;
+
+  const now = new Date();
+  const q = getMomentQualities(now);
+  const pts = buildShape(q, t);
+
+  drawMoment(q, pts, t);
+
+  // Update time display
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('time-display').textContent = `${hh}:${mm}:${ss}`;
+  document.getElementById('moment-desc').textContent = q.description;
+  document.getElementById('hover-time').textContent = `${hh}:${mm}`;
+
+  if (showTime) {
+    document.getElementById('time-display').classList.add('visible');
+  } else {
+    document.getElementById('time-display').classList.remove('visible');
+  }
+}
+requestAnimationFrame(animate);
+
+// ─── CONTROLS ────────────────────────────────────────────────────
+const btnTime = document.getElementById('btn-time');
+btnTime.addEventListener('click', () => {
+  showTime = !showTime;
+  btnTime.textContent = showTime ? 'Hide Time' : 'Show Time';
+  btnTime.style.color = showTime ? 'rgba(255,255,255,0.8)' : '';
+});
+
+document.getElementById('btn-save').addEventListener('click', () => {
+  const a = document.createElement('a');
+  const now = new Date();
+  const ts = `${now.getHours()}-${now.getMinutes()}`;
+  a.download = `moment-${ts}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+});
+
+// Click canvas to toggle time
+canvas.addEventListener('click', () => {
+  showTime = !showTime;
+  btnTime.textContent = showTime ? 'Hide Time' : 'Show Time';
+  document.getElementById('time-display').classList.toggle('visible', showTime);
+});
+
+// Hover: show info
+const hoverInfo = document.getElementById('hover-info');
+canvas.addEventListener('mouseenter', () => hoverInfo.classList.add('show'));
+canvas.addEventListener('mouseleave', () => hoverInfo.classList.remove('show'));
+setTimeout(() => hoverInfo.classList.remove('show'), 3000);
+</script>
+</body>
+</html>
