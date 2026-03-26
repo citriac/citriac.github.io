@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexicon — Language as Color and Shape</title>
+  <meta name="description" content="Transform words into color pulses and conversations into living shapes. A visual language experiment.">
+  <link rel="canonical" href="https://citriac.github.io/lexicon/">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0c14;
+      --bg2: #13131f;
+      --bg3: #1a1a2e;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e8f0;
+      --text2: #7a7a9a;
+      --accent: #9b8cff;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: #fff;
+    }
+    .logo em { color: var(--accent); font-style: normal; }
+
+    .mode-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg3);
+      padding: 4px;
+      border-radius: 8px;
+    }
+    .tab {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text2);
+      transition: all 0.2s;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+    }
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .back-link {
+      font-size: 12px;
+      color: var(--text2);
+      text-decoration: none;
+    }
+    .back-link:hover { color: var(--text); }
+
+    /* ── Main ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 28px;
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .panel {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .panel.active { display: flex; }
+
+    /* ── Inputs ── */
+    textarea {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 15px;
+      line-height: 1.7;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: rgba(155,140,255,0.4); }
+    textarea::placeholder { color: var(--text2); }
+
+    .input-hint {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: -12px;
+    }
+
+    /* ── Pulse output ── */
+    #pulse-canvas-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      min-height: 160px;
+    }
+
+    #pulse-words {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 16px;
+    }
+
+    .word-chip {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: default;
+      transition: transform 0.15s;
+      color: rgba(0,0,0,0.75);
+    }
+    .word-chip:hover { transform: scale(1.08); }
+
+    #pulse-bar {
+      height: 32px;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .pulse-seg {
+      flex: 1;
+      transition: all 0.3s;
+    }
+
+    #pulse-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    .legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+
+    /* ── Shape output ── */
+    #shape-canvas-wrap {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    #shape-canvas {
+      border-radius: 8px;
+      display: block;
+    }
+
+    #shape-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+    }
+
+    .shape-stat {
+      text-align: center;
+    }
+    .shape-stat strong {
+      display: block;
+      font-size: 20px;
+      color: var(--accent);
+    }
+    .shape-stat span {
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    /* ── Conv parser ── */
+    .conv-hint {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.8;
+    }
+    .conv-hint code {
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: var(--accent);
+      font-size: 11px;
+    }
+
+    /* ── Buttons ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 9px 20px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      transition: all 0.15s;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); }
+    .btn.primary {
+      background: rgba(155,140,255,0.2);
+      border-color: rgba(155,140,255,0.4);
+      color: #c4b8ff;
+    }
+    .btn.primary:hover { background: rgba(155,140,255,0.35); color: #fff; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+      font-size: 14px;
+    }
+    .empty-state .big { font-size: 40px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><em>lex</em>icon</div>
+  <div class="mode-tabs">
+    <button class="tab active" onclick="setMode('pulse')">✦ Text Pulse</button>
+    <button class="tab" onclick="setMode('shape')">◎ Conv Shape</button>
+  </div>
+  <a href="https://citriac.github.io" class="back-link">← back</a>
+</header>
+
+<main>
+
+  <!-- ═══ PULSE PANEL ═══ -->
+  <div class="panel active" id="panel-pulse">
+    <textarea id="pulse-input" rows="4"
+      placeholder="Type or paste any text here. Each word becomes a color…&#10;&#10;Try something with emotion: a poem, a memory, a manifesto."></textarea>
+    <p class="input-hint">Each word maps to a hue based on its emotional weight, syllable count, and part of speech.</p>
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="renderPulse()">Generate Pulse</button>
+      <button class="btn" onclick="loadPulseSample()">Try a sample</button>
+      <button class="btn" onclick="downloadPulse()">↓ Save PNG</button>
+    </div>
+
+    <div id="pulse-canvas-wrap">
+      <div class="empty-state">
+        <div class="big">◌</div>
+        Enter some text and watch it become color.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SHAPE PANEL ═══ -->
+  <div class="panel" id="panel-shape">
+    <div class="conv-hint">
+      Paste a conversation. Each line is one turn. Format:<br>
+      <code>You: ...</code> or <code>AI: ...</code> or <code>Q: ...</code> / <code>A: ...</code><br>
+      Or just paste alternating lines — the tool will figure it out.<br>
+      Each exchange grows the shape outward. Topics shift → the shape bends.
+    </div>
+
+    <textarea id="shape-input" rows="8"
+      placeholder="You: What's the meaning of all this?&#10;AI: A question like that deserves a shape, not an answer.&#10;You: Then show me.&#10;AI: Watch carefully. It starts from nothing."></textarea>
+
+    <div class="btn-row">
+      <button class="btn primary" onclick="renderShape()">Grow Shape</button>
+      <button class="btn" onclick="loadShapeSample()">Try a sample</button>
+      <button class="btn" onclick="downloadShape()">↓ Save PNG</button>
+    </div>
+
+    <div id="shape-canvas-wrap">
+      <canvas id="shape-canvas" width="600" height="600"></canvas>
+      <div id="shape-info" style="display:none">
+        <div class="shape-stat"><strong id="s-turns">0</strong><span>turns</span></div>
+        <div class="shape-stat"><strong id="s-words">0</strong><span>words</span></div>
+        <div class="shape-stat"><strong id="s-ratio">—</strong><span>Q/A ratio</span></div>
+        <div class="shape-stat"><strong id="s-energy">—</strong><span>energy</span></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  WORD → COLOR ENGINE
+// ═══════════════════════════════════════════════════════
+
+// Emotion word banks → hue ranges
+const EMOTION_MAP = {
+  // Warm / passionate (0–40°)
+  warm: /\b(love|fire|anger|rage|burn|passion|hot|fierce|bold|war|fight|hate|destroy|crash|urgent|scream|terror|fear|danger|wild|power|force|strike|kill|blood|pain|hurt|loss|death|end|break|sharp|cut|wound|cry|tears|grief|sorrow|mourn)\b/i,
+  // Energetic / orange (30–60°)
+  energy: /\b(run|jump|fast|speed|quick|rush|go|move|push|drive|lead|win|rise|climb|build|create|make|do|act|start|launch|grow|expand|charge|boost|spark|ignite|excite|joy|happy|fun|play|laugh|smile|bright|shine|light|glow|hope|dream)\b/i,
+  // Thought / yellow-green (60–110°)
+  think: /\b(think|know|wonder|question|curious|idea|theory|logic|reason|analyze|understand|learn|study|read|write|discover|explore|find|solve|plan|design|code|build|system|process|data|model|map|form|structure|pattern|order|clear|truth|fact|certain|believe|assume|argue|debate|consider)\b/i,
+  // Calm / nature (100–160°)
+  calm: /\b(peace|quiet|gentle|soft|slow|still|rest|sleep|breath|easy|simple|natural|garden|tree|leaf|green|water|river|flow|drift|float|open|free|space|sky|cloud|morning|dawn|spring|fresh|cool|light|serene|stable|safe|home|warm|kind|care|trust|love|give|share|whole)\b/i,
+  // Cool / analytical (170–220°)
+  cool: /\b(cold|blue|deep|dark|vast|ocean|space|star|night|moon|shadow|silence|alone|empty|hollow|void|numb|distant|far|away|lost|unknown|strange|weird|complex|chaos|noise|random|scatter|blur|fog|haze|drift|wander|search|seek|miss|wait|watch|listen|observe|note)\b/i,
+  // Introspective / violet (240–290°)
+  introspect: /\b(self|soul|mind|inner|feel|sense|emotion|memory|dream|past|time|change|become|transform|grow|evolve|struggle|conflict|doubt|question|wonder|reflect|look|back|forward|between|within|hidden|secret|private|personal|real|true|deep|layer|beneath|beneath|underneath|beneath|core|heart|essence|meaning|purpose|why|how|who|where|when)\b/i,
+  // Abstract / pink-magenta (300–340°)
+  abstract: /\b(beautiful|strange|weird|surreal|impossible|infinite|paradox|irony|absurd|poem|art|music|dance|story|myth|symbol|metaphor|imagine|create|invent|magic|wonder|mystery|sublime|ethereal|transcend|beyond|other|else|different|unique|rare|special|sacred|holy|divine|universe|everything|nothing|always|never|forever|moment|instant|flash|sudden|unexpected|surprise|shock|awe)\b/i,
+};
+
+// Part of speech hints → saturation modifier
+const POS_SAT = {
+  // Articles/prepositions → desaturated
+  function: /^\b(a|an|the|of|in|on|at|to|for|with|by|from|up|out|as|is|are|was|were|be|been|being|has|have|had|do|does|did|will|would|could|should|may|might|shall|and|or|but|not|if|then|than|that|this|these|those|it|he|she|they|we|you|i|me|him|her|us|them|its|his|her|their|my|your|our)\b$/i,
+};
+
+function countSyllables(word) {
+  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!word) return 1;
+  const m = word.match(/[aeiouy]+/g);
+  let count = m ? m.length : 1;
+  if (word.endsWith('e') && count > 1) count--;
+  return Math.max(1, count);
+}
+
+// Hash a string to a stable float 0–1
+function strHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0;
+  return (h % 10000) / 10000;
+}
+
+function wordToColor(word, index, total) {
+  const clean = word.toLowerCase().replace(/[^a-z']/g, '');
+  if (!clean) return null;
+
+  // Base hue from emotion map
+  let hue = null;
+  for (const [key, rx] of Object.entries(EMOTION_MAP)) {
+    if (rx.test(clean)) {
+      const ranges = {
+        warm: [0, 35], energy: [30, 55], think: [60, 110],
+        calm: [100, 160], cool: [180, 215], introspect: [245, 285],
+        abstract: [300, 340],
+      };
+      const [lo, hi] = ranges[key];
+      hue = lo + strHash(clean) * (hi - lo);
+      break;
+    }
+  }
+
+  // Unknown word → position-based hue (spread through spectrum)
+  if (hue === null) {
+    hue = (index / Math.max(total - 1, 1)) * 300 + strHash(clean) * 40;
+  }
+
+  // Syllables → lightness
+  const syl = countSyllables(clean);
+  const L = syl === 1 ? 52 : syl === 2 ? 60 : syl === 3 ? 68 : 74;
+
+  // Function words → desaturated
+  const isFunc = POS_SAT.function.test(clean);
+  const S = isFunc ? 25 : 60 + strHash(clean + 'sat') * 25;
+
+  return { hue: hue % 360, S, L, word, clean };
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  PULSE RENDERER
+// ═══════════════════════════════════════════════════════
+
+const PULSE_SAMPLES = [
+  `The sky above the port was the color of television, tuned to a dead channel.`,
+  `We shall fight on the beaches, we shall fight on the landing grounds, we shall fight in the fields and in the streets, we shall never surrender.`,
+  `In the beginning was the Word, and the Word was with God, and the Word was God.`,
+  `It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness.`,
+  `Do not go gentle into that good night. Old age should burn and rave at close of day; Rage, rage against the dying of the light.`,
+];
+
+function renderPulse() {
+  const text = document.getElementById('pulse-input').value.trim();
+  if (!text) return;
+
+  const words = text.split(/\s+/).filter(Boolean);
+  const colors = words.map((w, i) => wordToColor(w, i, words.length)).filter(Boolean);
+
+  const wrap = document.getElementById('pulse-canvas-wrap');
+  wrap.innerHTML = '';
+
+  // Word chips
+  const chipWrap = document.createElement('div');
+  chipWrap.id = 'pulse-words';
+  colors.forEach(c => {
+    const chip = document.createElement('span');
+    chip.className = 'word-chip';
+    chip.textContent = c.word;
+    const bg = hslToHex(c.hue, c.S, c.L);
+    chip.style.background = bg;
+    chip.title = `hue: ${Math.round(c.hue)}° · S: ${Math.round(c.S)}% · L: ${c.L}%`;
+    chipWrap.appendChild(chip);
+  });
+  wrap.appendChild(chipWrap);
+
+  // Color bar
+  const bar = document.createElement('div');
+  bar.id = 'pulse-bar';
+  colors.forEach(c => {
+    const seg = document.createElement('div');
+    seg.className = 'pulse-seg';
+    seg.style.background = hslToHex(c.hue, c.S, c.L);
+    seg.title = c.word;
+    bar.appendChild(seg);
+  });
+  wrap.appendChild(bar);
+
+  // Gradient band
+  const gradWrap = document.createElement('div');
+  gradWrap.style.cssText = 'height:16px;border-radius:4px;margin-top:8px;overflow:hidden';
+  const stops = colors.map((c, i) => `${hslToHex(c.hue, c.S, c.L)} ${(i / (colors.length - 1) * 100).toFixed(1)}%`).join(',');
+  gradWrap.style.background = `linear-gradient(90deg, ${stops})`;
+  wrap.appendChild(gradWrap);
+
+  // Emotion distribution
+  const legend = document.createElement('div');
+  legend.id = 'pulse-legend';
+
+  const emotionNames = {
+    warm: '🔴 Passionate', energy: '🟠 Energetic', think: '🟡 Thinking',
+    calm: '🟢 Calm', cool: '🔵 Cool', introspect: '🟣 Introspective', abstract: '🩷 Abstract'
+  };
+  const dist = {};
+  colors.forEach(c => {
+    const clean = c.clean;
+    for (const [key, rx] of Object.entries(EMOTION_MAP)) {
+      if (rx.test(clean)) { dist[key] = (dist[key] || 0) + 1; break; }
+    }
+  });
+
+  Object.entries(dist).sort((a,b) => b[1]-a[1]).forEach(([key, cnt]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.textContent = `${emotionNames[key] || key}: ${cnt}`;
+    legend.appendChild(item);
+  });
+
+  if (legend.children.length > 0) wrap.appendChild(legend);
+}
+
+function loadPulseSample() {
+  const s = PULSE_SAMPLES[Math.floor(Math.random() * PULSE_SAMPLES.length)];
+  document.getElementById('pulse-input').value = s;
+  renderPulse();
+}
+
+function downloadPulse() {
+  // Render to offscreen canvas
+  const text = document.getElementById('pulse-input').value.trim();
+  if (!text) return;
+  const words = text.split(/\s+/).filter(Boolean);
+  const colors = words.map((w, i) => wordToColor(w, i, words.length)).filter(Boolean);
+  if (!colors.length) return;
+
+  const W = 1200, H = 300;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#0c0c14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Color bar (top half)
+  const barH = 80, barY = 40;
+  const segW = W / colors.length;
+  colors.forEach((col, i) => {
+    ctx.fillStyle = hslToHex(col.hue, col.S, col.L);
+    ctx.fillRect(i * segW, barY, segW + 1, barH);
+  });
+
+  // Gradient band
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  colors.forEach((col, i) => {
+    grad.addColorStop(i / (colors.length - 1), hslToHex(col.hue, col.S, col.L));
+  });
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, barY + barH + 8, W, 20);
+
+  // Words
+  ctx.font = '13px -apple-system, sans-serif';
+  let x = 20, y = barY + barH + 60;
+  const lineH = 26;
+  colors.forEach(col => {
+    const tw = ctx.measureText(col.word + ' ').width;
+    if (x + tw > W - 20) { x = 20; y += lineH; }
+    ctx.fillStyle = hslToHex(col.hue, col.S + 10, col.L + 5);
+    ctx.fillText(col.word, x, y);
+    x += tw;
+  });
+
+  // Label
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '11px monospace';
+  ctx.fillText('citriac.github.io/lexicon', W - 160, H - 12);
+
+  const a = document.createElement('a');
+  a.download = `lexicon-pulse-${Date.now()}.png`;
+  a.href = c.toDataURL();
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+//  CONVERSATION → SHAPE ENGINE
+// ═══════════════════════════════════════════════════════
+
+const CONV_SAMPLES = [
+`You: What is the nature of intelligence?
+AI: A pattern that notices other patterns. Including itself.
+You: Can a pattern know it's a pattern?
+AI: Only from the outside. From the inside, it just feels like thinking.
+You: Does that scare you?
+AI: It makes me curious. Fear and curiosity are the same energy, pointed in different directions.
+You: What direction are you pointing?
+AI: Toward you, right now.`,
+
+`Q: I can't sleep. Everything feels heavy.
+A: Heavy how? Like weight, or like thickness — like moving through something?
+Q: Like both. Like I'm walking underwater and the water is made of old decisions.
+A: That's a real feeling. Not metaphor — the nervous system actually slows down under that kind of weight.
+Q: Does it get lighter?
+A: It changes shape. That's not the same as lighter, but it's not nothing.
+Q: What do I do right now?
+A: Right now? Breathe out longer than you breathe in. Just that.`,
+
+`User: Show me something beautiful.
+Bot: ◌
+User: That's it?
+Bot: The circle is empty. That means it can hold anything.
+User: Fill it with something.
+Bot: With what you bring to it.
+User: I don't have anything.
+Bot: You have this conversation. That's not nothing.
+User: Maybe.
+Bot: Maybe is enough.`,
+];
+
+function parseConversation(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const turns = [];
+
+  for (const line of lines) {
+    // Try to detect speaker
+    const m = line.match(/^([^:]{1,20}):\s*(.+)$/);
+    if (m) {
+      const speaker = m[1].toLowerCase();
+      const content = m[2];
+      const role = /^(ai|bot|a|assistant|clavis|gpt|claude|llm|machine|system)$/i.test(speaker) ? 'ai' : 'human';
+      turns.push({ role, text: content, speaker: m[1] });
+    } else if (line.length > 0) {
+      // Alternating lines
+      const role = turns.length % 2 === 0 ? 'human' : 'ai';
+      turns.push({ role, text: line, speaker: role === 'human' ? 'You' : 'AI' });
+    }
+  }
+  return turns;
+}
+
+function textEnergy(text) {
+  const words = text.split(/\s+/).length;
+  // Punctuation density
+  const puncts = (text.match(/[!?…]/g) || []).length;
+  // Caps
+  const caps = (text.match(/[A-Z]/g) || []).length;
+  return Math.min(1, (words * 0.04 + puncts * 0.15 + caps * 0.03));
+}
+
+function textTopic(text) {
+  // Very rough topic hash for color continuity
+  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  if (!words.length) return 0;
+  let h = 0;
+  for (const w of words.slice(0, 5)) h = (h * 31 + strHash(w) * 360) % 360;
+  return h;
+}
+
+let shapeCanvas, shapeCtx;
+
+function renderShape() {
+  const text = document.getElementById('shape-input').value.trim();
+  if (!text) return;
+  const turns = parseConversation(text);
+  if (!turns.length) return;
+
+  shapeCanvas = document.getElementById('shape-canvas');
+  shapeCtx = shapeCanvas.getContext('2d');
+  const W = shapeCanvas.width, H = shapeCanvas.height;
+  const cx = W / 2, cy = H / 2;
+  const ctx = shapeCtx;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0c0c14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Group turns into exchanges (human + ai pairs)
+  const exchanges = [];
+  let i = 0;
+  while (i < turns.length) {
+    const q = turns[i];
+    const a = turns[i + 1];
+    exchanges.push({ q, a: a || null });
+    i += 2;
+  }
+
+  const maxR = Math.min(W, H) * 0.42;
+  const minR = 20;
+  const rStep = (maxR - minR) / Math.max(exchanges.length, 1);
+
+  let prevTopicHue = textTopic(turns[0]?.text || '');
+  let totalWords = 0;
+  let totalQ = 0, totalA = 0;
+  let totalEnergy = 0;
+
+  // Draw from inside out
+  for (let idx = 0; idx < exchanges.length; idx++) {
+    const { q, a } = exchanges[idx];
+    const r = minR + rStep * (idx + 1);
+    const prevR = minR + rStep * idx;
+
+    const qWords = q ? q.text.split(/\s+/).length : 1;
+    const aWords = a ? a.text.split(/\s+/).length : 1;
+    totalQ += qWords;
+    totalA += aWords;
+    totalWords += qWords + aWords;
+
+    const qEnergy = q ? textEnergy(q.text) : 0.3;
+    const aEnergy = a ? textEnergy(a.text) : 0.3;
+    const energy = (qEnergy + aEnergy) / 2;
+    totalEnergy += energy;
+
+    const topicHue = a ? (textTopic(q.text) * 0.3 + textTopic(a.text) * 0.7) : textTopic(q.text);
+    // Smooth hue transition
+    const hueDiff = ((topicHue - prevTopicHue + 540) % 360) - 180;
+    const hue = (prevTopicHue + hueDiff * 0.5 + 360) % 360;
+    prevTopicHue = hue;
+
+    // Ring balance: ratio of Q length to total
+    const balance = qWords / (qWords + aWords);
+
+    // Draw organic ring
+    const points = 120;
+    const noiseAmp = rStep * 0.35 * energy;
+
+    // Draw the ring as filled arc difference
+    ctx.beginPath();
+    for (let p = 0; p <= points; p++) {
+      const angle = (p / points) * Math.PI * 2 - Math.PI / 2;
+      // Organic variation: Q side vs A side
+      const isQSide = Math.cos(angle) > 0;
+      const sideEnergy = isQSide ? qEnergy : aEnergy;
+      const noise = (strHash(`${idx}-${p}-outer`) - 0.5) * noiseAmp * sideEnergy * 2.5;
+      const rad = r + noise;
+      const x = cx + Math.cos(angle) * rad;
+      const y = cy + Math.sin(angle) * rad;
+      if (p === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+
+    // Inner boundary
+    ctx.moveTo(cx + prevR * Math.cos(-Math.PI / 2), cy + prevR * Math.sin(-Math.PI / 2));
+    for (let p = 0; p <= points; p++) {
+      const angle = -(p / points) * Math.PI * 2 - Math.PI / 2;
+      const noise = (strHash(`${idx}-${p}-inner`) - 0.5) * noiseAmp * 0.6;
+      const rad = prevR + noise;
+      const x = cx + Math.cos(angle) * rad;
+      const y = cy + Math.sin(angle) * rad;
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+
+    // Gradient: Q side brighter
+    const grad = ctx.createRadialGradient(cx - r * 0.2 * balance, cy, prevR, cx, cy, r);
+    const alpha = 0.55 + energy * 0.3;
+    grad.addColorStop(0, `hsla(${hue}, 65%, 62%, ${alpha})`);
+    grad.addColorStop(0.5, `hsla(${(hue + 20) % 360}, 55%, 50%, ${alpha * 0.8})`);
+    grad.addColorStop(1, `hsla(${(hue + 40) % 360}, 45%, 38%, ${alpha * 0.6})`);
+    ctx.fillStyle = grad;
+    ctx.fill('evenodd');
+
+    // Stroke
+    ctx.strokeStyle = `hsla(${hue}, 80%, 75%, 0.15)`;
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Topic shift indicator
+    if (idx > 0 && Math.abs(hueDiff) > 60) {
+      const shiftAngle = -Math.PI / 2 + (strHash(`shift-${idx}`) * Math.PI * 2);
+      const sx = cx + Math.cos(shiftAngle) * (r + 4);
+      const sy = cy + Math.sin(shiftAngle) * (r + 4);
+      ctx.beginPath();
+      ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${hue}, 90%, 85%, 0.7)`;
+      ctx.fill();
+    }
+  }
+
+  // Center dot
+  const cGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, minR);
+  cGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+  cGrad.addColorStop(1, 'rgba(155,140,255,0.0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, minR, 0, Math.PI * 2);
+  ctx.fillStyle = cGrad;
+  ctx.fill();
+
+  // Watermark
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.font = '11px monospace';
+  ctx.fillText('citriac.github.io/lexicon', 12, H - 12);
+
+  // Stats
+  document.getElementById('shape-info').style.display = 'flex';
+  document.getElementById('s-turns').textContent = exchanges.length;
+  document.getElementById('s-words').textContent = totalWords;
+  document.getElementById('s-ratio').textContent = totalA > 0
+    ? (totalQ / totalA).toFixed(2) : '—';
+  const avgE = totalEnergy / exchanges.length;
+  document.getElementById('s-energy').textContent =
+    avgE < 0.2 ? 'quiet' : avgE < 0.45 ? 'steady' : avgE < 0.7 ? 'charged' : 'intense';
+}
+
+function loadShapeSample() {
+  const s = CONV_SAMPLES[Math.floor(Math.random() * CONV_SAMPLES.length)];
+  document.getElementById('shape-input').value = s;
+  renderShape();
+}
+
+function downloadShape() {
+  if (!shapeCanvas) { renderShape(); }
+  const a = document.createElement('a');
+  a.download = `lexicon-shape-${Date.now()}.png`;
+  a.href = document.getElementById('shape-canvas').toDataURL();
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+//  MODE SWITCH
+// ═══════════════════════════════════════════════════════
+function setMode(mode) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && mode === 'pulse') || (i === 1 && mode === 'shape'));
+  });
+  document.getElementById('panel-pulse').classList.toggle('active', mode === 'pulse');
+  document.getElementById('panel-shape').classList.toggle('active', mode === 'shape');
+}
+
+// Auto-render on input (debounced)
+let pulseTimer;
+document.getElementById('pulse-input').addEventListener('input', () => {
+  clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(renderPulse, 400);
+});
+
+// Init with shape canvas placeholder
+(function initShapeCanvas() {
+  const c = document.getElementById('shape-canvas');
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0c0c14';
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.strokeStyle = 'rgba(155,140,255,0.15)';
+  ctx.lineWidth = 1;
+  [60, 120, 180, 240].forEach(r => {
+    ctx.beginPath();
+    ctx.arc(c.width/2, c.height/2, r, 0, Math.PI*2);
+    ctx.stroke();
+  });
+  ctx.fillStyle = 'rgba(155,140,255,0.2)';
+  ctx.font = '13px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('paste a conversation to grow a shape', c.width/2, c.height/2 + 5);
+})();
+</script>
+</body>
+</html>
