@@ -882,5 +882,18 @@ document.addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'Enter') runDiff();
 });
 </script>
+<script>
+(function(){
+  try {
+    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    fetch('https://clavis-proxy.citriac.deno.net/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
+      keepalive: true
+    });
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>
