@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Breathing Clock — Time as a Living Shape</title>
+  <meta name="description" content="A clock that breathes. Time rendered as an organic, living form — not numbers, not hands. Each moment has its own shape.">
+  <link rel="canonical" href="https://citriac.github.io/breathing-clock/">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #08080f;
+      color: #ddd;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      cursor: pointer;
+    }
+
+    /* Top-left label */
+    #time-label {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: rgba(255,255,255,0.18);
+      transition: color 0.5s;
+      pointer-events: none;
+    }
+
+    #time-label.show { color: rgba(255,255,255,0.55); }
+
+    /* Bottom info */
+    #info {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.1);
+      text-align: center;
+      line-height: 1.8;
+      transition: color 0.5s;
+    }
+    #info.show { color: rgba(255,255,255,0.3); }
+
+    /* Top-right controls */
+    #controls {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ctrl-btn {
+      padding: 5px 12px;
+      border-radius: 5px;
+      font-size: 10px;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.08em;
+      transition: all 0.2s;
+    }
+    .ctrl-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.7);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .ctrl-btn.active {
+      background: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.6);
+    }
+
+    a.back {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.1);
+      text-decoration: none;
+      letter-spacing: 0.1em;
+      transition: color 0.3s;
+    }
+    a.back:hover { color: rgba(255,255,255,0.4); }
+  </style>
+</head>
+<body>
+
+<div id="time-label">--:--:--</div>
+
+<canvas id="c"></canvas>
+
+<div id="controls">
+  <button class="ctrl-btn" id="btn-style" onclick="cycleStyle()">style</button>
+  <button class="ctrl-btn" id="btn-color" onclick="cycleColor()">palette</button>
+  <button class="ctrl-btn" onclick="saveFrame()">save</button>
+</div>
+
+<div id="info">
+  click anywhere to show time · each moment is unique
+</div>
+
+<a href="https://citriac.github.io" class="back">← citriac</a>
+
+<script>
+// ─── Canvas setup ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H, CX, CY, R;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  CX = W / 2; CY = H / 2;
+  R = Math.min(W, H) * 0.36;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ─── Time ──────────────────────────────────────────────────────────────────
+function getTime() {
+  const now = new Date();
+  return {
+    h: now.getHours(),
+    m: now.getMinutes(),
+    s: now.getSeconds(),
+    ms: now.getMilliseconds(),
+    // Normalized 0–1 for each unit
+    hn: now.getHours() / 24,
+    mn: now.getMinutes() / 60,
+    sn: now.getSeconds() / 60,
+    msn: now.getMilliseconds() / 1000,
+    raw: now,
+  };
+}
+
+// ─── Color palettes ────────────────────────────────────────────────────────
+// Each palette: function(t) => {stroke, fill, bg, glow}
+// t = time object
+const PALETTES = [
+  {
+    name: 'Midnight',
+    get(t) {
+      // Deep blue-purple at night, shifting to warm at noon
+      const h = 220 + t.hn * 60 - 30;
+      const l = 20 + t.hn * 25;
+      return {
+        bg: `hsl(${230 + t.hn * 40}, 35%, ${4 + t.hn * 4}%)`,
+        stroke: `hsla(${h}, 70%, ${55 + t.mn * 15}%, 0.8)`,
+        fill: `hsla(${h + 20}, 60%, ${l}%, 0.15)`,
+        glow: `hsla(${h}, 80%, 65%, 0.4)`,
+        accent: `hsla(${h - 40}, 90%, 75%, 0.6)`,
+      };
+    }
+  },
+  {
+    name: 'Dawn',
+    get(t) {
+      const h = 10 + t.hn * 200;
+      return {
+        bg: `hsl(${20 + t.hn * 10}, 30%, ${3 + t.hn * 3}%)`,
+        stroke: `hsla(${h}, 80%, 65%, 0.85)`,
+        fill: `hsla(${h + 30}, 70%, 40%, 0.12)`,
+        glow: `hsla(${h}, 90%, 70%, 0.45)`,
+        accent: `hsla(${h + 60}, 85%, 80%, 0.5)`,
+      };
+    }
+  },
+  {
+    name: 'Forest',
+    get(t) {
+      const h = 90 + Math.sin(t.hn * Math.PI) * 40;
+      return {
+        bg: `hsl(130, 25%, ${3 + t.mn * 0.03}%)`,
+        stroke: `hsla(${h}, 55%, 55%, 0.8)`,
+        fill: `hsla(${h}, 45%, 25%, 0.15)`,
+        glow: `hsla(${h + 20}, 60%, 65%, 0.35)`,
+        accent: `hsla(60, 80%, 70%, 0.5)`,
+      };
+    }
+  },
+  {
+    name: 'Monochrome',
+    get(t) {
+      const l = 30 + t.hn * 20;
+      return {
+        bg: '#080808',
+        stroke: `hsla(0, 0%, ${l + 20}%, 0.85)`,
+        fill: `hsla(0, 0%, ${l}%, 0.1)`,
+        glow: `hsla(0, 0%, 85%, 0.3)`,
+        accent: `hsla(0, 0%, 90%, 0.4)`,
+      };
+    }
+  },
+  {
+    name: 'Ember',
+    get(t) {
+      const h = t.hn < 0.5 ? 240 + t.hn * 120 : 360 - (t.hn - 0.5) * 120;
+      return {
+        bg: `hsl(10, 40%, ${3 + t.hn * 2}%)`,
+        stroke: `hsla(${h % 360}, 85%, 65%, 0.9)`,
+        fill: `hsla(${(h + 30) % 360}, 70%, 35%, 0.15)`,
+        glow: `hsla(${h % 360}, 90%, 70%, 0.5)`,
+        accent: `hsla(${(h - 30 + 360) % 360}, 80%, 80%, 0.5)`,
+      };
+    }
+  },
+];
+
+let paletteIdx = 0;
+function cycleColor() {
+  paletteIdx = (paletteIdx + 1) % PALETTES.length;
+  document.getElementById('btn-color').textContent = PALETTES[paletteIdx].name.toLowerCase();
+}
+
+// ─── Render styles ────────────────────────────────────────────────────────
+const STYLES = ['organic', 'petals', 'wave', 'crystal'];
+let styleIdx = 0;
+function cycleStyle() {
+  styleIdx = (styleIdx + 1) % STYLES.length;
+  document.getElementById('btn-style').textContent = STYLES[styleIdx];
+}
+
+// ─── Noise ────────────────────────────────────────────────────────────────
+function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+const _perm = new Uint8Array(512);
+(function seedPerm() {
+  const p = Array.from({length: 256}, (_, i) => i);
+  for (let i = 255; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [p[i], p[j]] = [p[j], p[i]];
+  }
+  for (let i = 0; i < 512; i++) _perm[i] = p[i & 255];
+})();
+const _g2 = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+function noise2(x, y) {
+  const xi = Math.floor(x)&255, yi = Math.floor(y)&255;
+  const xf = x-Math.floor(x), yf = y-Math.floor(y);
+  const u = fade(xf), v = fade(yf);
+  const g = _g2;
+  const aa=_perm[_perm[xi]+yi], ab=_perm[_perm[xi]+yi+1];
+  const ba=_perm[_perm[xi+1]+yi], bb=_perm[_perm[xi+1]+yi+1];
+  const dot=(g,x,y)=>g[0]*x+g[1]*y;
+  return (1 + (dot(g[aa&7],xf,yf)*(1-u)+dot(g[ba&7],xf-1,yf)*u)*(1-v)
+    + (dot(g[ab&7],xf,yf-1)*(1-u)+dot(g[bb&7],xf-1,yf-1)*u)*v) / 2;
+}
+
+// ─── Drawing styles ────────────────────────────────────────────────────────
+
+// Smooth continuous sn (including ms)
+function smoothSn(t) {
+  return (t.s + t.msn) / 60;
+}
+function smoothMn(t) {
+  return (t.m + (t.s + t.msn) / 60) / 60;
+}
+function smoothHn(t) {
+  return (t.h % 12 + smoothMn(t)) / 12;
+}
+
+// Base shape: organic blob
+function drawOrganic(t, colors, phase) {
+  const ssn = smoothSn(t);
+  const smn = smoothMn(t);
+  const shn = smoothHn(t);
+
+  // Breathing: slow expand/contract
+  const breathe = Math.sin(phase * Math.PI * 2) * 0.06;
+  const baseR = R * (1 + breathe);
+
+  // Number of petals = hour (1-12)
+  const hour12 = t.h % 12 || 12;
+  const petals = hour12;
+
+  // Minute tension: how "spiky" the shape is
+  const tension = 0.15 + smn * 0.35;
+
+  // Second twist: rotation offset
+  const twist = ssn * Math.PI * 2 * 0.15;
+
+  const N = 360;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2 + twist;
+
+    // Petal modulation (from minutes)
+    const petalMod = Math.cos(a * petals) * tension;
+
+    // Noise texture (from seconds + ms for smoothness)
+    const nx = Math.cos(a) * 2.3 + shn * 1.1;
+    const ny = Math.sin(a) * 2.3 + smn * 0.8;
+    const n = (noise2(nx, ny) - 0.5) * 0.18;
+
+    const r = baseR * (1 + petalMod + n);
+    const x = CX + Math.cos(a) * r;
+    const y = CY + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  return ctx;
+}
+
+// Style: rose / petals (more defined lobes)
+function drawPetals(t, colors, phase) {
+  const ssn = smoothSn(t);
+  const smn = smoothMn(t);
+  const shn = smoothHn(t);
+  const breathe = Math.sin(phase * Math.PI * 2) * 0.05;
+  const baseR = R * (0.85 + breathe);
+  const hour12 = t.h % 12 || 12;
+  const k = hour12; // rose curve k
+
+  const N = 600;
+  ctx.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const a = (i / N) * Math.PI * 2;
+    // Rose curve: r = cos(k * theta)
+    const rose = Math.abs(Math.cos(k * a + ssn * Math.PI * 0.5));
+    const wobble = 1 + Math.sin(a * 7 + smn * Math.PI * 4) * 0.04;
+    const r = baseR * (0.3 + rose * 0.7) * wobble;
+    const x = CX + Math.cos(a - Math.PI / 2) * r;
+    const y = CY + Math.sin(a - Math.PI / 2) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+// Style: wave rings
+function drawWave(t, colors, phase) {
+  const ssn = smoothSn(t);
+  const smn = smoothMn(t);
+  const shn = smoothHn(t);
+
+  // Draw multiple concentric wave rings
+  for (let ring = 3; ring >= 1; ring--) {
+    const ringR = R * (ring / 3) * (0.9 + Math.sin(phase * Math.PI * 2 + ring) * 0.05);
+    const freq = 6 + ring * 4;
+    const amp = ringR * (0.06 + smn * 0.08);
+    const phaseOff = ssn * Math.PI * 2 * (ring % 2 === 0 ? 1 : -1);
+
+    const N = 360;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+      const wave = Math.sin(a * freq + phaseOff) * amp;
+      const wave2 = Math.sin(a * (freq * 0.5) - phaseOff * 0.7) * amp * 0.5;
+      const r = ringR + wave + wave2;
+      const x = CX + Math.cos(a) * r;
+      const y = CY + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+
+    const alpha = ring === 1 ? 0.5 : ring === 2 ? 0.25 : 0.12;
+    ctx.strokeStyle = colors.stroke.replace('0.8)', `${alpha})`).replace('0.85)', `${alpha})`).replace('0.9)', `${alpha})`);
+    ctx.lineWidth = ring === 1 ? 2 : 1;
+    ctx.stroke();
+  }
+  return null; // handled internally
+}
+
+// Style: crystal / polygon
+function drawCrystal(t, colors, phase) {
+  const ssn = smoothSn(t);
+  const smn = smoothMn(t);
+  const shn = smoothHn(t);
+  const breathe = Math.sin(phase * Math.PI * 2) * 0.07;
+  const baseR = R * (0.9 + breathe);
+
+  const hour12 = t.h % 12 || 12;
+  const sides = Math.max(3, hour12);
+  const innerR = baseR * (0.35 + smn * 0.25);
+
+  // Outer polygon
+  ctx.beginPath();
+  for (let i = 0; i <= sides; i++) {
+    const a = (i / sides) * Math.PI * 2 - Math.PI / 2;
+    const jitter = (noise2(Math.cos(a) * 2 + ssn, Math.sin(a) * 2 + smn) - 0.5) * 0.1;
+    const r = baseR * (1 + jitter);
+    const x = CX + Math.cos(a) * r;
+    const y = CY + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+
+  ctx.fillStyle = colors.fill;
+  ctx.fill();
+  ctx.strokeStyle = colors.stroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Inner star
+  ctx.beginPath();
+  for (let i = 0; i <= sides * 2; i++) {
+    const a = (i / (sides * 2)) * Math.PI * 2 - Math.PI / 2 + ssn * Math.PI * 0.25;
+    const r = i % 2 === 0 ? baseR * 0.85 : innerR;
+    const x = CX + Math.cos(a) * r;
+    const y = CY + Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = colors.accent;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+
+  return null;
+}
+
+// ─── Second ring ───────────────────────────────────────────────────────────
+function drawSecondRing(t, colors) {
+  const ssn = smoothSn(t);
+  // Thin ring showing seconds progress
+  const startA = -Math.PI / 2;
+  const endA = startA + ssn * Math.PI * 2;
+  const ringR = R * 1.08;
+
+  ctx.beginPath();
+  ctx.arc(CX, CY, ringR, startA, endA);
+  ctx.strokeStyle = colors.accent;
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // Dot at current second position
+  const dotA = endA;
+  ctx.beginPath();
+  ctx.arc(CX + Math.cos(dotA) * ringR, CY + Math.sin(dotA) * ringR, 3, 0, Math.PI * 2);
+  ctx.fillStyle = colors.accent;
+  ctx.fill();
+}
+
+// ─── Minute arc ────────────────────────────────────────────────────────────
+function drawMinuteArc(t, colors) {
+  const smn = smoothMn(t);
+  const arcR = R * 1.18;
+  const startA = -Math.PI / 2;
+  const endA = startA + smn * Math.PI * 2;
+
+  ctx.beginPath();
+  ctx.arc(CX, CY, arcR, startA, endA);
+  ctx.strokeStyle = colors.glow.replace('0.4)', '0.25)').replace('0.45)', '0.25)').replace('0.5)', '0.25)');
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+
+// ─── Glow effect ───────────────────────────────────────────────────────────
+function applyGlow(colors, amount) {
+  ctx.shadowBlur = amount;
+  ctx.shadowColor = colors.glow;
+}
+function clearGlow() {
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+}
+
+// ─── Main draw ─────────────────────────────────────────────────────────────
+let phase = 0;
+let lastFrameTime = 0;
+const BREATH_PERIOD = 4000; // ms per breath
+
+function draw(ts) {
+  const dt = ts - lastFrameTime;
+  lastFrameTime = ts;
+  phase = (phase + dt / BREATH_PERIOD) % 1;
+
+  const t = getTime();
+  const pal = PALETTES[paletteIdx];
+  const colors = pal.get(t);
+  const style = STYLES[styleIdx];
+
+  // Background fade (not full clear — slight persistence)
+  ctx.fillStyle = colors.bg;
+  ctx.globalAlpha = 0.4;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+
+  // ── Outer arcs ──
+  drawMinuteArc(t, colors);
+  drawSecondRing(t, colors);
+
+  // ── Main shape ──
+  if (style === 'wave') {
+    drawWave(t, colors, phase);
+  } else if (style === 'crystal') {
+    drawCrystal(t, colors, phase);
+  } else {
+    // organic or petals
+    if (style === 'petals') drawPetals(t, colors, phase);
+    else drawOrganic(t, colors, phase);
+
+    // Fill
+    applyGlow(colors, 30);
+    ctx.fillStyle = colors.fill;
+    ctx.fill();
+    clearGlow();
+
+    // Stroke
+    applyGlow(colors, 18);
+    ctx.strokeStyle = colors.stroke;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    clearGlow();
+  }
+
+  // ── Center dot (hour) ──
+  const shn = smoothHn(t);
+  const dotR = 5 + shn * 6;
+  const grad = ctx.createRadialGradient(CX, CY, 0, CX, CY, dotR * 2.5);
+  grad.addColorStop(0, colors.accent);
+  grad.addColorStop(1, 'transparent');
+  applyGlow(colors, 20);
+  ctx.beginPath();
+  ctx.arc(CX, CY, dotR, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  clearGlow();
+
+  // ── Time label (if visible) ──
+  const label = document.getElementById('time-label');
+  const h = String(t.h).padStart(2,'0');
+  const m = String(t.m).padStart(2,'0');
+  const s = String(t.s).padStart(2,'0');
+  label.textContent = `${h}:${m}:${s}`;
+
+  requestAnimationFrame(draw);
+}
+
+// ─── Interaction ───────────────────────────────────────────────────────────
+let labelVisible = false;
+let labelTimer;
+
+canvas.addEventListener('click', () => {
+  labelVisible = !labelVisible;
+  const label = document.getElementById('time-label');
+  const info = document.getElementById('info');
+  label.classList.toggle('show', labelVisible);
+  info.classList.toggle('show', labelVisible);
+
+  clearTimeout(labelTimer);
+  if (labelVisible) {
+    labelTimer = setTimeout(() => {
+      labelVisible = false;
+      label.classList.remove('show');
+      info.classList.remove('show');
+    }, 4000);
+  }
+});
+
+function saveFrame() {
+  // Full clear render for clean export
+  const offscreen = document.createElement('canvas');
+  offscreen.width = W; offscreen.height = H;
+  const octx = offscreen.getContext('2d');
+
+  const t = getTime();
+  const pal = PALETTES[paletteIdx];
+  const colors = pal.get(t);
+  const style = STYLES[styleIdx];
+
+  // Black background
+  octx.fillStyle = '#08080f';
+  octx.fillRect(0, 0, W, H);
+
+  // Save current ctx, swap to offscreen
+  const _ctx = ctx;
+  // Re-use draw functions with offscreen ctx... hacky but works
+  // Instead, just capture current canvas state
+  const a = document.createElement('a');
+  a.download = `breathing-clock-${t.h}h${t.m}m${t.s}s.png`;
+  a.href = canvas.toDataURL();
+  a.click();
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-style').textContent = STYLES[styleIdx];
+document.getElementById('btn-color').textContent = PALETTES[paletteIdx].name.toLowerCase();
+
+// Initial full-black fill
+ctx.fillStyle = '#08080f';
+ctx.fillRect(0, 0, W, H);
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
