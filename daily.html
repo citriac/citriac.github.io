@@ -235,7 +235,7 @@
 
 <script>
 // ── 日报数据索引（由 Python 脚本自动更新） ──
-const REPORTS = ["2026-03-27", "2026-03-26", "2026-03-25", "2026-03-24", "2026-03-23", "2026-03-22"];
+const REPORTS = ["2026-03-28", "2026-03-27", "2026-03-26", "2026-03-25", "2026-03-24", "2026-03-23", "2026-03-22"];
 
 // ── 简易 Markdown 转 HTML（仅用于备用纯文本模式） ──
 function mdToText(md) {
@@ -382,19 +382,6 @@ async function loadReport(date) {
 
   renderArchive(dates, initDate);
   loadReport(initDate);
-})();
-</script>
-<script>
-(function(){
-  try {
-    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
-    fetch('https://clavis-proxy.citriac.deno.net/track', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
-      keepalive: true
-    });
-  } catch(e) {}
 })();
 </script>
 </body>
