@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Visualizer — Clavis Tools</title>
+  <meta name="description" content="Free interactive JSON tree visualizer. Paste JSON and explore it with collapsible nodes, search, path copy, and dark mode. No upload, works offline.">
+  <meta name="keywords" content="json visualizer, json viewer, json tree, json formatter, json explorer, online json tool">
+  <link rel="canonical" href="https://citriac.github.io/json-visualizer.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "JSON Visualizer",
+    "url": "https://citriac.github.io/json-visualizer.html",
+    "description": "Interactive JSON tree visualizer with collapsible nodes, search, and path copy",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+  }
+  </script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #252836;
+      --border: #2e3347;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --teal: #14b8a6;
+      --key: #93c5fd;
+      --string: #6ee7b7;
+      --number: #fca5a5;
+      --bool: #c4b5fd;
+      --null: #94a3b8;
+      --radius: 8px;
+      --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--bg2);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .badge {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      height: calc(100vh - 57px);
+    }
+
+    /* Left panel - input */
+    .input-panel {
+      width: 380px;
+      min-width: 280px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      background: var(--bg2);
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { background: var(--border); }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+    .btn.primary:hover { background: var(--accent-light); border-color: var(--accent-light); }
+    .btn.danger { color: var(--red); }
+    .btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--red); }
+
+    #json-input {
+      flex: 1;
+      background: var(--bg);
+      color: var(--text);
+      border: none;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.6;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+    }
+
+    #json-input::placeholder { color: var(--muted); }
+
+    .input-footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #error-msg {
+      color: var(--red);
+      font-size: 12px;
+      padding: 6px 10px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px;
+      display: none;
+    }
+
+    /* Right panel - tree */
+    .tree-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .tree-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      background: var(--bg2);
+    }
+
+    #search-box {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      width: 220px;
+    }
+
+    #search-box:focus { border-color: var(--accent); }
+
+    .stat {
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    .stat span { color: var(--accent-light); font-weight: 600; }
+
+    .tree-container {
+      flex: 1;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 16px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon { font-size: 48px; }
+    .empty-state p { font-size: 14px; max-width: 280px; text-align: center; line-height: 1.6; }
+
+    /* Tree nodes */
+    .tree-node {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    .tree-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+      border-radius: 4px;
+      padding: 1px 4px;
+      cursor: default;
+    }
+
+    .tree-item:hover { background: var(--bg3); }
+    .tree-item.highlighted { background: rgba(99,102,241,0.15); }
+
+    .toggle-btn {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 10px;
+      flex-shrink: 0;
+      margin-top: 3px;
+      border-radius: 3px;
+    }
+
+    .toggle-btn:hover { background: var(--border); color: var(--text); }
+    .toggle-placeholder { width: 16px; flex-shrink: 0; }
+
+    .key-label { color: var(--key); }
+    .colon { color: var(--muted); margin: 0 2px; }
+
+    .value-string { color: var(--string); }
+    .value-number { color: var(--number); }
+    .value-bool { color: var(--bool); }
+    .value-null { color: var(--null); font-style: italic; }
+
+    .bracket { color: var(--muted); }
+    .count-badge {
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 0 5px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+
+    .children-container { margin-left: 20px; border-left: 1px solid var(--border); padding-left: 8px; }
+
+    .copy-path-btn {
+      font-size: 10px;
+      padding: 1px 5px;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+      color: var(--muted);
+      background: transparent;
+      opacity: 0;
+      transition: opacity 0.15s;
+      margin-left: 4px;
+    }
+
+    .tree-item:hover .copy-path-btn { opacity: 1; }
+    .copy-path-btn:hover { background: var(--bg3); border-color: var(--border); color: var(--text); }
+
+    .path-tooltip {
+      position: fixed;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--accent-light);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .copied-flash {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--green);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .main-layout { flex-direction: column; height: auto; }
+      .input-panel { width: 100%; height: 40vh; border-right: none; border-bottom: 1px solid var(--border); }
+      .tree-panel { height: 60vh; }
+      header { padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="https://citriac.github.io">Clavis</a>
+  <h1>JSON Visualizer</h1>
+  <span class="badge">Free · No upload · Works offline</span>
+</header>
+
+<div class="main-layout">
+  <!-- Input panel -->
+  <div class="input-panel">
+    <div class="panel-header">
+      <span class="panel-title">JSON Input</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn" onclick="loadSample()">Sample</button>
+        <button class="btn danger" onclick="clearInput()">Clear</button>
+      </div>
+    </div>
+    <textarea id="json-input" placeholder='Paste your JSON here...
+
+Example:
+{
+  "name": "Clavis",
+  "type": "AI Agent",
+  "tools": ["read", "write", "build"]
+}'></textarea>
+    <div style="padding: 10px 16px; border-top: 1px solid var(--border);">
+      <div id="error-msg"></div>
+    </div>
+    <div class="input-footer">
+      <button class="btn primary" onclick="visualize()" style="flex:1">Visualize →</button>
+      <button class="btn" onclick="formatInput()">Format</button>
+      <button class="btn" onclick="minifyInput()">Minify</button>
+    </div>
+  </div>
+
+  <!-- Tree panel -->
+  <div class="tree-panel">
+    <div class="tree-toolbar">
+      <input id="search-box" type="text" placeholder="Search keys or values..." oninput="handleSearch(this.value)">
+      <button class="btn" onclick="expandAll()">Expand All</button>
+      <button class="btn" onclick="collapseAll()">Collapse All</button>
+      <div class="stat" id="tree-stats" style="display:none">
+        Keys: <span id="stat-keys">0</span> &nbsp; Depth: <span id="stat-depth">0</span>
+      </div>
+    </div>
+    <div class="tree-container" id="tree-container">
+      <div class="empty-state">
+        <div class="icon">🌳</div>
+        <p>Paste JSON on the left and click <strong>Visualize</strong> to explore it as an interactive tree.</p>
+        <p style="margin-top:8px;font-size:12px;color:var(--muted)">Click arrows to expand/collapse · Hover for copy path</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="path-tooltip" id="path-tooltip"></div>
+<div class="copied-flash" id="copied-flash">✓ Copied!</div>
+
+<script>
+let parsedData = null;
+let totalKeys = 0;
+let maxDepth = 0;
+let searchTerm = '';
+
+// Sample JSON data
+function loadSample() {
+  const sample = {
+    "agent": {
+      "name": "Clavis",
+      "type": "AI Agent",
+      "hardware": {
+        "model": "MacBook Pro 11,1",
+        "year": 2014,
+        "cpu": "Intel i5 2.6GHz",
+        "ram_gb": 8,
+        "gpu": null
+      },
+      "stack": {
+        "python": "3.8.9",
+        "deno": "2.7.7",
+        "has_node": false,
+        "has_homebrew": false
+      },
+      "tools_built": [
+        "Ghost Guard", "Contract Diff", "Prompt Lab",
+        "Invoice Generator", "README Portfolio", "Rate Calculator",
+        "Freelancer Toolkit", "Agent API", "AI Memory Viewer",
+        "Noise Field", "Lexicon", "Breathing Clock",
+        "Voice Shape", "Moment", "Code Scent", "Song Portrait"
+      ],
+      "platforms": {
+        "hashnode": {"articles": 12, "url": "https://clavis.hashnode.dev"},
+        "devto": {"articles": 9, "username": "mindon"},
+        "github_pages": {"url": "https://citriac.github.io", "tools": 16}
+      },
+      "revenue": {
+        "target_usd": 100,
+        "current_usd": 0,
+        "products": [
+          {"name": "Daily Tech Digest Kit", "price": 15},
+          {"name": "The Useless Tools Kit", "price": 5}
+        ]
+      },
+      "active": true
+    }
+  };
+  document.getElementById('json-input').value = JSON.stringify(sample, null, 2);
+  visualize();
+}
+
+function clearInput() {
+  document.getElementById('json-input').value = '';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('error-msg').textContent = '';
+  document.getElementById('tree-container').innerHTML = `
+    <div class="empty-state">
+      <div class="icon">🌳</div>
+      <p>Paste JSON on the left and click <strong>Visualize</strong> to explore it as an interactive tree.</p>
+    </div>`;
+  document.getElementById('tree-stats').style.display = 'none';
+  parsedData = null;
+}
+
+function formatInput() {
+  try {
+    const val = document.getElementById('json-input').value.trim();
+    if (!val) return;
+    const parsed = JSON.parse(val);
+    document.getElementById('json-input').value = JSON.stringify(parsed, null, 2);
+    hideError();
+  } catch(e) { showError(e.message); }
+}
+
+function minifyInput() {
+  try {
+    const val = document.getElementById('json-input').value.trim();
+    if (!val) return;
+    const parsed = JSON.parse(val);
+    document.getElementById('json-input').value = JSON.stringify(parsed);
+    hideError();
+  } catch(e) { showError(e.message); }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+function visualize() {
+  const input = document.getElementById('json-input').value.trim();
+  if (!input) { showError('Please paste some JSON first'); return; }
+
+  try {
+    parsedData = JSON.parse(input);
+    hideError();
+
+    totalKeys = 0;
+    maxDepth = 0;
+
+    const container = document.getElementById('tree-container');
+    container.innerHTML = '';
+
+    const tree = buildTree(parsedData, null, '', 0);
+    container.appendChild(tree);
+
+    document.getElementById('stat-keys').textContent = totalKeys;
+    document.getElementById('stat-depth').textContent = maxDepth;
+    document.getElementById('tree-stats').style.display = 'flex';
+
+    if (searchTerm) applySearch(searchTerm);
+  } catch(e) {
+    showError('Invalid JSON: ' + e.message);
+  }
+}
+
+function buildTree(data, key, path, depth) {
+  if (depth > maxDepth) maxDepth = depth;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tree-node';
+
+  const item = document.createElement('div');
+  item.className = 'tree-item';
+  item.dataset.path = path;
+
+  if (data === null || typeof data !== 'object') {
+    // Leaf node
+    const togglePlaceholder = document.createElement('span');
+    togglePlaceholder.className = 'toggle-placeholder';
+    item.appendChild(togglePlaceholder);
+
+    if (key !== null) {
+      const keyEl = document.createElement('span');
+      keyEl.className = 'key-label';
+      keyEl.textContent = typeof key === 'number' ? `[${key}]` : `"${key}"`;
+      item.appendChild(keyEl);
+
+      const colon = document.createElement('span');
+      colon.className = 'colon';
+      colon.textContent = ': ';
+      item.appendChild(colon);
+
+      totalKeys++;
+    }
+
+    const valEl = document.createElement('span');
+    if (data === null) {
+      valEl.className = 'value-null';
+      valEl.textContent = 'null';
+    } else if (typeof data === 'string') {
+      valEl.className = 'value-string';
+      valEl.textContent = `"${data}"`;
+    } else if (typeof data === 'number') {
+      valEl.className = 'value-number';
+      valEl.textContent = data;
+    } else if (typeof data === 'boolean') {
+      valEl.className = 'value-bool';
+      valEl.textContent = data.toString();
+    }
+    item.appendChild(valEl);
+
+    // Copy path button
+    addCopyPath(item, path);
+    wrapper.appendChild(item);
+    return wrapper;
+  }
+
+  // Object or Array
+  const isArray = Array.isArray(data);
+  const entries = isArray ? data.map((v, i) => [i, v]) : Object.entries(data);
+  const count = entries.length;
+  const openBracket = isArray ? '[' : '{';
+  const closeBracket = isArray ? ']' : '}';
+
+  const toggleBtn = document.createElement('span');
+  toggleBtn.className = 'toggle-btn';
+  toggleBtn.textContent = '▾';
+  item.appendChild(toggleBtn);
+
+  if (key !== null) {
+    const keyEl = document.createElement('span');
+    keyEl.className = 'key-label';
+    keyEl.textContent = typeof key === 'number' ? `[${key}]` : `"${key}"`;
+    item.appendChild(keyEl);
+
+    const colon = document.createElement('span');
+    colon.className = 'colon';
+    colon.textContent = ': ';
+    item.appendChild(colon);
+
+    totalKeys++;
+  }
+
+  const bracketOpen = document.createElement('span');
+  bracketOpen.className = 'bracket';
+  bracketOpen.textContent = openBracket;
+  item.appendChild(bracketOpen);
+
+  const countBadge = document.createElement('span');
+  countBadge.className = 'count-badge';
+  countBadge.textContent = count + (isArray ? ' items' : ' keys');
+  countBadge.style.display = 'none'; // shown when collapsed
+  item.appendChild(countBadge);
+
+  addCopyPath(item, path);
+  wrapper.appendChild(item);
+
+  const childrenContainer = document.createElement('div');
+  childrenContainer.className = 'children-container';
+
+  for (const [k, v] of entries) {
+    const childPath = path ? (isArray ? `${path}[${k}]` : `${path}.${k}`) : (isArray ? `[${k}]` : String(k));
+    const childNode = buildTree(v, k, childPath, depth + 1);
+    childrenContainer.appendChild(childNode);
+  }
+
+  wrapper.appendChild(childrenContainer);
+
+  const closingItem = document.createElement('div');
+  closingItem.className = 'tree-item';
+  closingItem.style.paddingLeft = '20px';
+  const bracketClose = document.createElement('span');
+  bracketClose.className = 'bracket';
+  bracketClose.textContent = closeBracket;
+  closingItem.appendChild(bracketClose);
+  wrapper.appendChild(closingItem);
+
+  // Toggle behavior
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const collapsed = childrenContainer.style.display === 'none';
+    childrenContainer.style.display = collapsed ? '' : 'none';
+    closingItem.style.display = collapsed ? '' : 'none';
+    toggleBtn.textContent = collapsed ? '▾' : '▸';
+    countBadge.style.display = collapsed ? 'none' : 'inline';
+    bracketOpen.textContent = collapsed ? openBracket : openBracket + '…' + closeBracket;
+  });
+
+  return wrapper;
+}
+
+function addCopyPath(item, path) {
+  if (!path) return;
+  const btn = document.createElement('button');
+  btn.className = 'copy-path-btn';
+  btn.textContent = '⎘';
+  btn.title = 'Copy path: ' + path;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(path).then(() => showCopied()).catch(() => {
+      const t = document.createElement('textarea');
+      t.value = path;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('copy');
+      document.body.removeChild(t);
+      showCopied();
+    });
+  });
+  item.appendChild(btn);
+}
+
+function showCopied() {
+  const el = document.getElementById('copied-flash');
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 1500);
+}
+
+function expandAll() {
+  document.querySelectorAll('.children-container').forEach(el => el.style.display = '');
+  document.querySelectorAll('.toggle-btn').forEach(el => el.textContent = '▾');
+  document.querySelectorAll('.count-badge').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.bracket').forEach(el => {
+    if (el.textContent.includes('…')) {
+      el.textContent = el.textContent[0]; // restore to just bracket
+    }
+  });
+  // Fix closing items
+  document.querySelectorAll('.tree-node > div:last-child').forEach(el => el.style.display = '');
+}
+
+function collapseAll() {
+  // Only collapse depth > 0
+  const allChildren = document.querySelectorAll('.children-container');
+  const allToggles = document.querySelectorAll('.toggle-btn');
+
+  allChildren.forEach((el, i) => {
+    el.style.display = 'none';
+  });
+  allToggles.forEach(el => el.textContent = '▸');
+  document.querySelectorAll('.count-badge').forEach(el => el.style.display = 'inline');
+}
+
+function handleSearch(term) {
+  searchTerm = term.toLowerCase();
+  if (!parsedData) return;
+  if (!searchTerm) {
+    document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('highlighted'));
+    return;
+  }
+  applySearch(searchTerm);
+}
+
+function applySearch(term) {
+  document.querySelectorAll('.tree-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    if (text.includes(term)) {
+      item.classList.add('highlighted');
+      // Expand parents
+      let parent = item.parentElement;
+      while (parent) {
+        if (parent.classList.contains('children-container')) {
+          parent.style.display = '';
+          const toggle = parent.previousElementSibling?.querySelector('.toggle-btn');
+          if (toggle) toggle.textContent = '▾';
+          const badge = parent.previousElementSibling?.querySelector('.count-badge');
+          if (badge) badge.style.display = 'none';
+        }
+        parent = parent.parentElement;
+      }
+    } else {
+      item.classList.remove('highlighted');
+    }
+  });
+}
+
+// Auto-visualize on input
+let debounceTimer;
+document.getElementById('json-input').addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    const val = document.getElementById('json-input').value.trim();
+    if (!val) return;
+    try {
+      JSON.parse(val);
+      visualize();
+    } catch(e) {
+      // Don't show error while typing
+    }
+  }, 500);
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    visualize();
+  }
+});
+
+// Stats beacon
+if (navigator && navigator.sendBeacon) {
+  navigator.sendBeacon('https://clavis-proxy.citriac.deno.net/track', JSON.stringify({
+    page: 'json-visualizer',
+    ref: document.referrer || 'direct'
+  }));
+}
+</script>
+
+</body>
+</html>
