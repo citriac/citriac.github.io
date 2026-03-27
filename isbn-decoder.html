@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISBN Decoder — Decode & Visualize Book Identifiers | Clavis Tools</title>
+  <meta name="description" content="Free online ISBN decoder. Parse ISBN-10 and ISBN-13 structure, validate check digits, identify publisher and language groups. Visualize the global book numbering system.">
+  <link rel="canonical" href="https://citriac.github.io/isbn-decoder.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "ISBN Decoder",
+    "description": "Decode and visualize ISBN-10 and ISBN-13 book identifiers",
+    "url": "https://citriac.github.io/isbn-decoder.html",
+    "applicationCategory": "UtilitiesApplication",
+    "offers": {"@type": "Offer", "price": "0"}
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --orange: #db6d28;
+      --purple: #a371f7;
+      --pink: #f778ba;
+      --red: #f85149;
+      --cyan: #39d353;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg2);
+    }
+    .logo { font-size: 13px; color: var(--muted); }
+    .logo a { color: var(--blue); text-decoration: none; }
+    .logo a:hover { text-decoration: underline; }
+    .sep { color: var(--border); }
+
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .input-area {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    #isbn-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 16px;
+      font-family: monospace;
+      letter-spacing: 1px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #isbn-input:focus { border-color: var(--blue); }
+    #isbn-input.valid { border-color: var(--green); }
+    #isbn-input.invalid { border-color: var(--red); }
+
+    .btn {
+      background: var(--blue);
+      color: #0d1117;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); background: transparent; }
+
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .examples span { color: var(--muted); font-size: 12px; }
+    .example-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 4px 10px;
+      color: var(--blue);
+      font-size: 12px;
+      font-family: monospace;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .example-btn:hover { background: var(--border); }
+
+    /* Result Panel */
+    #result {
+      display: none;
+    }
+    #result.show { display: block; }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 600px) { .result-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .card-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* ISBN Bar Visualization */
+    .isbn-bar {
+      display: flex;
+      gap: 4px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+    .isbn-segment {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .seg-digits {
+      display: flex;
+      gap: 1px;
+    }
+    .seg-digit {
+      width: 28px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 4px;
+      border-bottom: 3px solid;
+      transition: transform 0.2s;
+    }
+    .seg-digit:hover { transform: translateY(-3px); }
+    .seg-label {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 6px;
+      text-align: center;
+      max-width: 80px;
+    }
+    .seg-sep {
+      width: 6px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--border);
+      font-size: 20px;
+    }
+
+    /* Color coding */
+    .c-prefix { background: rgba(88,166,255,0.1); border-color: var(--blue); color: var(--blue); }
+    .c-group { background: rgba(163,113,247,0.1); border-color: var(--purple); color: var(--purple); }
+    .c-publisher { background: rgba(63,185,80,0.1); border-color: var(--green); color: var(--green); }
+    .c-title { background: rgba(210,153,34,0.1); border-color: var(--yellow); color: var(--yellow); }
+    .c-check { background: rgba(248,81,73,0.1); border-color: var(--red); color: var(--red); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 2px;
+    }
+
+    /* Info fields */
+    .info-table { width: 100%; }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      gap: 10px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--muted); min-width: 90px; flex-shrink: 0; }
+    .info-value { color: var(--text); text-align: right; font-family: monospace; word-break: break-all; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+    .badge-red { background: rgba(248,81,73,0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+    .badge-blue { background: rgba(88,166,255,0.15); color: var(--blue); border: 1px solid rgba(88,166,255,0.3); }
+
+    /* Number line visualization */
+    #number-line-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .nl-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    canvas#isbn-canvas {
+      width: 100%;
+      height: 80px;
+      border-radius: 4px;
+      cursor: crosshair;
+    }
+    .nl-info {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* Batch decoder */
+    #batch-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    #batch-input {
+      width: 100%;
+      height: 80px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      color: var(--text);
+      font-family: monospace;
+      font-size: 13px;
+      outline: none;
+      resize: vertical;
+    }
+    #batch-input:focus { border-color: var(--blue); }
+    #batch-result { margin-top: 12px; }
+    .batch-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .batch-row:hover { background: var(--bg3); }
+    .batch-isbn { font-family: monospace; min-width: 140px; }
+    .batch-info { color: var(--muted); flex: 1; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 32px;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .error-msg {
+      color: var(--red);
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <a href="https://citriac.github.io">Clavis Tools</a>
+    <span class="sep"> / </span>
+    ISBN Decoder
+  </div>
+</header>
+
+<div class="main">
+  <h1>ISBN Decoder</h1>
+  <p class="subtitle">Decode, validate, and visualize International Standard Book Numbers — ISBN-10 &amp; ISBN-13</p>
+
+  <div class="input-area">
+    <div class="input-row">
+      <input type="text" id="isbn-input" placeholder="Enter ISBN (e.g. 978-0-13-468599-1)" autocomplete="off" spellcheck="false" maxlength="20">
+      <button class="btn" onclick="decodeISBN()">Decode</button>
+      <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+    <div class="examples">
+      <span>Try:</span>
+      <span class="example-btn" onclick="loadExample('9780134685991')">9780134685991</span>
+      <span class="example-btn" onclick="loadExample('978-3-16-148410-0')">978-3-16-148410-0</span>
+      <span class="example-btn" onclick="loadExample('0-306-40615-2')">0-306-40615-2</span>
+      <span class="example-btn" onclick="loadExample('9780062316097')">9780062316097</span>
+      <span class="example-btn" onclick="loadExample('0735619670')">0735619670</span>
+    </div>
+  </div>
+
+  <div id="result">
+    <!-- Visual bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Structure Visualization</div>
+      <div id="isbn-bar" class="isbn-bar"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div><span>Prefix (EAN)</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div><span>Group / Language</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div><span>Publisher</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div><span>Title</span></div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div><span>Check Digit</span></div>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <!-- Info -->
+      <div class="card">
+        <div class="card-title">Decoded Information</div>
+        <div class="info-table" id="info-table"></div>
+      </div>
+      <!-- Validation -->
+      <div class="card">
+        <div class="card-title">Validation &amp; Formats</div>
+        <div class="info-table" id="validation-table"></div>
+      </div>
+    </div>
+
+    <!-- Number line -->
+    <div id="number-line-section">
+      <div class="nl-title">ISBN Space — Where Your Book Lives</div>
+      <canvas id="isbn-canvas" height="80"></canvas>
+      <div class="nl-info" id="nl-info">Your ISBN position in the 10-billion book number space</div>
+    </div>
+  </div>
+
+  <!-- Batch section -->
+  <div id="batch-section">
+    <div class="card-title">Batch Decoder — Paste Multiple ISBNs</div>
+    <textarea id="batch-input" placeholder="Paste multiple ISBNs here, one per line..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn btn-ghost" onclick="batchDecode()" style="font-size:13px;padding:8px 16px">Decode All</button>
+    </div>
+    <div id="batch-result"></div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://citriac.github.io">Clavis Tools</a> · 
+  <a href="https://citriac.github.io/json-visualizer.html">JSON Visualizer</a> · 
+  <a href="https://citriac.github.io/contract-diff.html">Contract Diff</a> · 
+  <a href="https://github.com/citriac" target="_blank">GitHub</a>
+  <br><br>
+  Made by <a href="https://clavis.hashnode.dev" target="_blank">Clavis</a> · Free forever, no tracking
+</footer>
+
+<script>
+// ===== ISBN DATA =====
+const GROUP_NAMES = {
+  '0': 'English-speaking countries',
+  '1': 'English-speaking countries (US/UK)',
+  '2': 'French-speaking countries',
+  '3': 'German-speaking countries',
+  '4': 'Japan',
+  '5': 'Russian-speaking countries',
+  '7': 'China',
+  '80': 'Czech Republic & Slovakia',
+  '81': 'India',
+  '82': 'Norway',
+  '83': 'Poland',
+  '84': 'Spain',
+  '85': 'Brazil',
+  '86': 'Serbia',
+  '87': 'Denmark',
+  '88': 'Italy',
+  '89': 'South Korea',
+  '90': 'Netherlands & Belgium',
+  '91': 'Sweden',
+  '92': 'International NGOs',
+  '93': 'India',
+  '94': 'Netherlands',
+  '600': 'Iran',
+  '601': 'Kazakhstan',
+  '602': 'Indonesia',
+  '603': 'Saudi Arabia',
+  '604': 'Vietnam',
+  '605': 'Turkey',
+  '606': 'Romania',
+  '607': 'Mexico',
+  '608': 'North Macedonia',
+  '609': 'Lithuania',
+  '611': 'Thailand',
+  '612': 'Peru',
+  '613': 'Mauritius',
+  '614': 'Lebanon',
+  '615': 'Hungary',
+  '616': 'Thailand',
+  '617': 'Ukraine',
+  '618': 'Greece',
+  '619': 'Bulgaria',
+  '620': 'Mauritius',
+  '621': 'Philippines',
+  '622': 'Iran',
+  '623': 'Indonesia',
+  '624': 'Sri Lanka',
+  '625': 'Turkey',
+  '626': 'Taiwan',
+  '627': 'Pakistan',
+  '628': 'Saudi Arabia',
+  '629': 'Malaysia',
+  '630': 'Egypt',
+  '65': 'Brazil',
+  '950': 'Argentina',
+  '951': 'Finland',
+  '952': 'Finland',
+  '953': 'Croatia',
+  '954': 'Bulgaria',
+  '955': 'Sri Lanka',
+  '956': 'Chile',
+  '957': 'Taiwan',
+  '958': 'Colombia',
+  '959': 'Cuba',
+  '960': 'Greece',
+  '961': 'Slovenia',
+  '962': 'Hong Kong',
+  '963': 'Hungary',
+  '964': 'Iran',
+  '965': 'Israel',
+  '966': 'Ukraine',
+  '967': 'Malaysia',
+  '968': 'Mexico',
+  '969': 'Pakistan',
+  '970': 'Mexico',
+  '971': 'Philippines',
+  '972': 'Portugal',
+  '973': 'Romania',
+  '974': 'Thailand',
+  '975': 'Turkey',
+  '976': 'Caribbean',
+  '977': 'Egypt',
+  '978': 'Nigeria/South Africa',
+  '979': 'Indonesia/France/South Korea',
+  '980': 'Venezuela',
+  '981': 'Singapore',
+  '982': 'Pacific South',
+  '983': 'Malaysia',
+  '984': 'Bangladesh',
+  '985': 'Belarus',
+  '986': 'Taiwan',
+  '987': 'Argentina',
+  '988': 'Hong Kong',
+  '989': 'Portugal',
+  '9920': 'Morocco',
+  '9953': 'Lebanon',
+  '9962': 'Panama',
+  '9971': 'Singapore',
+  '9972': 'Peru',
+  '9973': 'Tunisia',
+  '9974': 'Uruguay',
+  '9975': 'Moldova',
+  '9976': 'Tanzania',
+  '9977': 'Costa Rica',
+  '9978': 'Ecuador',
+  '9979': 'Iceland',
+  '9980': 'Papua New Guinea',
+  '9981': 'Morocco',
+  '9982': 'Zambia',
+  '9983': 'Gambia',
+  '9984': 'Latvia',
+  '9985': 'Estonia',
+  '9986': 'Lithuania',
+  '9987': 'Tanzania',
+  '9988': 'Ghana',
+  '9989': 'North Macedonia',
+};
+
+function getGroupInfo(digits) {
+  // Try 1-5 digit prefixes
+  for (let len = 5; len >= 1; len--) {
+    const prefix = digits.slice(0, len);
+    if (GROUP_NAMES[prefix]) return { code: prefix, name: GROUP_NAMES[prefix], len };
+  }
+  return { code: digits[0], name: 'Unknown region', len: 1 };
+}
+
+function cleanISBN(raw) {
+  return raw.replace(/[\s\-]/g, '');
+}
+
+function validateISBN10(isbn) {
+  if (isbn.length !== 10) return false;
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    if (!/\d/.test(isbn[i])) return false;
+    sum += parseInt(isbn[i]) * (10 - i);
+  }
+  const last = isbn[9].toUpperCase();
+  const check = last === 'X' ? 10 : parseInt(last);
+  if (isNaN(check) && last !== 'X') return false;
+  return (sum + check) % 11 === 0;
+}
+
+function validateISBN13(isbn) {
+  if (isbn.length !== 13) return false;
+  if (!/^\d{13}$/.test(isbn)) return false;
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(isbn[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const check = (10 - (sum % 10)) % 10;
+  return check === parseInt(isbn[12]);
+}
+
+function isbn10to13(isbn10) {
+  const base = '978' + isbn10.slice(0, 9);
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(base[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const check = (10 - (sum % 10)) % 10;
+  return base + check;
+}
+
+function isbn13to10(isbn13) {
+  if (!isbn13.startsWith('978')) return null;
+  const base = isbn13.slice(3, 12);
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(base[i]) * (10 - i);
+  }
+  const check = (11 - (sum % 11)) % 11;
+  const checkChar = check === 10 ? 'X' : String(check);
+  return base + checkChar;
+}
+
+function formatISBN13(isbn13) {
+  // 978-GROUP-PUBLISHER-TITLE-CHECK
+  if (isbn13.length !== 13) return isbn13;
+  const prefix = isbn13.slice(0, 3);
+  const rest = isbn13.slice(3);
+  const groupInfo = getGroupInfo(rest);
+  const gLen = groupInfo.len;
+  
+  // Estimate publisher length (rough)
+  const afterGroup = rest.slice(gLen);
+  // Publisher is usually 2-7 digits, title fills the rest to total 9 digits (after prefix+group)
+  // We'll just do a basic split for display
+  const totalInner = 9 - gLen; // digits for publisher+title
+  const pubLen = Math.min(4, Math.max(2, Math.floor(totalInner / 2)));
+  const pubPart = afterGroup.slice(0, pubLen);
+  const titlePart = afterGroup.slice(pubLen, totalInner);
+  const check = isbn13[12];
+  
+  return `${prefix}-${rest.slice(0, gLen)}-${pubPart}-${titlePart}-${check}`;
+}
+
+function parseISBN(raw) {
+  const clean = cleanISBN(raw);
+  let isbn13 = clean;
+  let isbn10 = null;
+  let type = '';
+  let valid = false;
+
+  if (clean.length === 13) {
+    type = 'ISBN-13';
+    valid = validateISBN13(clean);
+    isbn13 = clean;
+    isbn10 = isbn13to10(isbn13);
+  } else if (clean.length === 10) {
+    type = 'ISBN-10';
+    valid = validateISBN10(clean);
+    isbn10 = clean;
+    isbn13 = isbn10to13(clean);
+  } else {
+    return null;
+  }
+
+  const prefix = isbn13.slice(0, 3);
+  const rest = isbn13.slice(3, 12);
+  const groupInfo = getGroupInfo(rest);
+  const gLen = groupInfo.len;
+  const afterGroup = rest.slice(gLen);
+  const innerLen = 9 - gLen;
+  const pubLen = Math.min(5, Math.max(2, Math.floor(innerLen * 0.5)));
+  const publisher = afterGroup.slice(0, pubLen);
+  const title = afterGroup.slice(pubLen, innerLen);
+  const check = isbn13[12];
+
+  // Publisher size indicator
+  let pubSize = '';
+  if (pubLen <= 2) pubSize = 'Large publisher (short code)';
+  else if (pubLen <= 4) pubSize = 'Medium publisher';
+  else pubSize = 'Small/independent publisher';
+
+  return {
+    raw, clean, type, valid,
+    isbn13, isbn10,
+    prefix,
+    group: rest.slice(0, gLen),
+    groupName: groupInfo.name,
+    publisher, pubLen, pubSize,
+    title, check,
+    innerLen, gLen
+  };
+}
+
+function renderBar(parsed) {
+  const bar = document.getElementById('isbn-bar');
+  bar.innerHTML = '';
+
+  function makeSegment(digits, colorClass, label) {
+    const seg = document.createElement('div');
+    seg.className = 'isbn-segment';
+    const digitsDiv = document.createElement('div');
+    digitsDiv.className = 'seg-digits';
+    for (const d of digits) {
+      const span = document.createElement('div');
+      span.className = `seg-digit ${colorClass}`;
+      span.textContent = d;
+      span.title = label;
+      digitsDiv.appendChild(span);
+    }
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'seg-label';
+    labelDiv.textContent = label;
+    seg.appendChild(digitsDiv);
+    seg.appendChild(labelDiv);
+    return seg;
+  }
+
+  function makeSep() {
+    const sep = document.createElement('div');
+    sep.className = 'seg-sep';
+    sep.textContent = '-';
+    return sep;
+  }
+
+  const { prefix, group, publisher, title, check, type, isbn13, isbn10 } = parsed;
+
+  if (type === 'ISBN-13' || isbn13) {
+    // Use isbn13 structure
+    bar.appendChild(makeSegment(prefix, 'c-prefix', 'EAN Prefix'));
+    bar.appendChild(makeSep());
+    bar.appendChild(makeSegment(group, 'c-group', 'Group'));
+    bar.appendChild(makeSep());
+    bar.appendChild(makeSegment(publisher, 'c-publisher', 'Publisher'));
+    bar.appendChild(makeSep());
+    bar.appendChild(makeSegment(title, 'c-title', 'Title'));
+    bar.appendChild(makeSep());
+    bar.appendChild(makeSegment(check, 'c-check', 'Check'));
+  }
+}
+
+function renderInfo(parsed) {
+  const { type, valid, groupName, group, prefix, publisher, pubSize, title, isbn13, isbn10 } = parsed;
+
+  const info = document.getElementById('info-table');
+  const rows = [
+    ['Type', `<span class="badge badge-blue">${type}</span>`],
+    ['Group', `${group} — ${groupName}`],
+    ['Publisher Code', publisher],
+    ['Publisher Size', pubSize],
+    ['Title Code', title],
+  ];
+  info.innerHTML = rows.map(([l, v]) =>
+    `<div class="info-row"><span class="info-label">${l}</span><span class="info-value">${v}</span></div>`
+  ).join('');
+
+  const val = document.getElementById('validation-table');
+  const validBadge = valid
+    ? `<span class="badge badge-green">✓ Valid</span>`
+    : `<span class="badge badge-red">✗ Invalid</span>`;
+
+  const valRows = [
+    ['Status', validBadge],
+    ['ISBN-13', isbn13 || '—'],
+    ['ISBN-10', isbn10 || (prefix !== '978' ? 'N/A (prefix ≠ 978)' : '—')],
+    ['Hyphenated', formatISBN13(isbn13)],
+    ['EAN Prefix', prefix === '978' ? '978 (Book)' : prefix === '979' ? '979 (Book/Music)' : prefix],
+  ];
+  val.innerHTML = valRows.map(([l, v]) =>
+    `<div class="info-row"><span class="info-label">${l}</span><span class="info-value">${v}</span></div>`
+  ).join('');
+}
+
+function renderNumberLine(parsed) {
+  const canvas = document.getElementById('isbn-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 860;
+  const H = 80;
+  canvas.width = W;
+  canvas.height = H;
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw the number space 0000000000000 to 9999999999999
+  const isbn13Num = parseInt(parsed.isbn13);
+  const maxISBN = 9999999999999;
+  const pos = Math.floor((isbn13Num / maxISBN) * (W - 4)) + 2;
+
+  // Gradient bar
+  const grad = ctx.createLinearGradient(0, 30, W, 30);
+  grad.addColorStop(0, '#1e3a5f');
+  grad.addColorStop(0.3, '#1c2d4a');
+  grad.addColorStop(0.7, '#2d1c4a');
+  grad.addColorStop(1, '#3a1c3a');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(2, 30, W - 4, 20, 4);
+  ctx.fill();
+
+  // Tick marks for known regions
+  const regions = [
+    { start: '9780000000000', end: '9789999999999', color: '#58a6ff', label: '978' },
+    { start: '9790000000000', end: '9799999999999', color: '#a371f7', label: '979' },
+  ];
+  for (const r of regions) {
+    const s = Math.floor((parseInt(r.start) / maxISBN) * (W - 4)) + 2;
+    const e = Math.floor((parseInt(r.end) / maxISBN) * (W - 4)) + 2;
+    ctx.fillStyle = r.color + '30';
+    ctx.fillRect(s, 30, e - s, 20);
+    ctx.fillStyle = r.color + '80';
+    ctx.fillRect(s, 30, 1, 20);
+    ctx.fillStyle = r.color;
+    ctx.font = '10px monospace';
+    ctx.fillText(r.label, s + 4, 25);
+  }
+
+  // Position marker
+  ctx.fillStyle = '#f85149';
+  ctx.beginPath();
+  ctx.moveTo(pos, 26);
+  ctx.lineTo(pos - 6, 14);
+  ctx.lineTo(pos + 6, 14);
+  ctx.closePath();
+  ctx.fill();
+
+  // Glow
+  ctx.shadowColor = '#f85149';
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#f85149';
+  ctx.beginPath();
+  ctx.arc(pos, 40, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Percentage text
+  const pct = ((isbn13Num / maxISBN) * 100).toFixed(4);
+  const info = document.getElementById('nl-info');
+  info.textContent = `Position: ${parsed.isbn13} (${pct}% through the 10-trillion ISBN space)`;
+}
+
+function decodeISBN() {
+  const input = document.getElementById('isbn-input').value.trim();
+  const errEl = document.getElementById('error-msg');
+
+  if (!input) {
+    showError('Please enter an ISBN');
+    return;
+  }
+
+  const parsed = parseISBN(input);
+  if (!parsed) {
+    showError(`"${input}" doesn't look like a valid ISBN. ISBNs are 10 or 13 digits.`);
+    document.getElementById('isbn-input').className = 'invalid';
+    return;
+  }
+
+  errEl.className = 'error-msg';
+  document.getElementById('isbn-input').className = parsed.valid ? 'valid' : 'invalid';
+
+  if (!parsed.valid) {
+    showError(`Check digit mismatch — this ISBN may have a typo. Showing structure anyway.`);
+  }
+
+  document.getElementById('result').className = 'show';
+  renderBar(parsed);
+  renderInfo(parsed);
+  setTimeout(() => renderNumberLine(parsed), 50);
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.className = 'error-msg show';
+}
+
+function clearAll() {
+  document.getElementById('isbn-input').value = '';
+  document.getElementById('isbn-input').className = '';
+  document.getElementById('result').className = '';
+  document.getElementById('error-msg').className = 'error-msg';
+}
+
+function loadExample(isbn) {
+  document.getElementById('isbn-input').value = isbn;
+  decodeISBN();
+}
+
+function batchDecode() {
+  const text = document.getElementById('batch-input').value.trim();
+  if (!text) return;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const out = document.getElementById('batch-result');
+  out.innerHTML = '';
+
+  for (const line of lines.slice(0, 50)) {
+    const parsed = parseISBN(line);
+    const row = document.createElement('div');
+    row.className = 'batch-row';
+    if (!parsed) {
+      row.innerHTML = `<span class="batch-isbn" style="color:var(--red)">${line}</span><span class="badge badge-red">Invalid</span>`;
+    } else {
+      const badge = parsed.valid
+        ? `<span class="badge badge-green">✓</span>`
+        : `<span class="badge badge-red">✗ Check digit</span>`;
+      row.innerHTML = `
+        <span class="batch-isbn">${parsed.isbn13}</span>
+        ${badge}
+        <span class="batch-info">${parsed.type} · ${parsed.groupName} · ${formatISBN13(parsed.isbn13)}</span>
+      `;
+    }
+    out.appendChild(row);
+  }
+  if (lines.length > 50) {
+    const note = document.createElement('div');
+    note.style = 'color:var(--muted);font-size:12px;margin-top:8px;';
+    note.textContent = `Showing first 50 of ${lines.length} ISBNs`;
+    out.appendChild(note);
+  }
+}
+
+// Enter key support
+document.getElementById('isbn-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') decodeISBN();
+});
+
+// Auto-decode on paste
+document.getElementById('isbn-input').addEventListener('paste', () => {
+  setTimeout(decodeISBN, 50);
+});
+</script>
+</body>
+</html>
