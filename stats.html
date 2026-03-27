@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Open Stats — citriac.github.io</title>
+  <meta name="description" content="Real-time, open pageview stats for citriac.github.io. No cookies, no fingerprinting.">
+  <link rel="canonical" href="https://citriac.github.io/stats.html">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #13131a;
+      --border: rgba(255,255,255,0.07);
+      --text: #e8e8f0;
+      --muted: #666680;
+      --accent: #7c6af7;
+      --accent2: #4ecdc4;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+    .container { max-width: 860px; margin: 0 auto; }
+
+    header { margin-bottom: 48px; }
+    .back { color: var(--muted); text-decoration: none; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 20px; }
+    .back:hover { color: var(--text); }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); font-size: 15px; }
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite; margin-right: 6px;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 20px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .stat-value { font-size: 40px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .stat-sub { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+    .section { margin-bottom: 40px; }
+    .section-title { font-size: 16px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+
+    /* Bar chart */
+    .chart { display: flex; flex-direction: column; gap: 4px; }
+    .chart-row { display: flex; align-items: center; gap: 12px; }
+    .chart-label { font-size: 13px; color: var(--muted); width: 160px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chart-bar-wrap { flex: 1; height: 24px; background: rgba(255,255,255,0.04); border-radius: 4px; overflow: hidden; }
+    .chart-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.6s ease; min-width: 2px; }
+    .chart-val { font-size: 13px; color: var(--text); width: 40px; text-align: right; flex-shrink: 0; }
+
+    /* Daily chart */
+    .daily-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 80px;
+      padding: 0 4px;
+    }
+    .day-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .day-bar {
+      width: 100%;
+      background: var(--accent);
+      border-radius: 3px 3px 0 0;
+      opacity: 0.8;
+      min-height: 2px;
+      transition: height 0.5s ease;
+      cursor: default;
+      position: relative;
+    }
+    .day-bar:hover { opacity: 1; }
+    .day-bar::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 5px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .day-bar:hover::after { opacity: 1; }
+
+    .loading { color: var(--muted); font-size: 15px; padding: 40px 0; text-align: center; }
+    .note { font-size: 13px; color: var(--muted); margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border); line-height: 1.7; }
+    .note a { color: var(--accent); text-decoration: none; }
+    .note a:hover { text-decoration: underline; }
+
+    .updated { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="back" href="/">← Back to citriac.github.io</a>
+      <h1><span class="live-dot"></span>Open Stats</h1>
+      <p class="subtitle">Real pageviews for this site. No cookies, no fingerprinting, no third parties. <br>Powered by <a href="https://clavis-proxy.citriac.deno.net/stats" target="_blank" style="color:var(--accent)">clavis-proxy</a> + Deno KV.</p>
+    </header>
+
+    <div id="app"><p class="loading">Loading stats…</p></div>
+  </div>
+
+  <script>
+  const API = 'https://clavis-proxy.citriac.deno.net/stats';
+
+  function fmt(n) {
+    if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+    return String(n);
+  }
+
+  function friendlyPage(p) {
+    if (p === '/') return '🏠 Home';
+    return p.replace(/\/$/, '').replace(/^\//, '').replace(/-/g, ' ') || p;
+  }
+
+  async function render() {
+    const app = document.getElementById('app');
+    try {
+      const res = await fetch(API);
+      const d = await res.json();
+
+      const maxPage = Math.max(...d.top_pages.map(p => p.views), 1);
+      const maxDay  = Math.max(...d.daily.map(p => p.views), 1);
+      const last7   = d.daily.slice(-7).reduce((s, x) => s + x.views, 0);
+
+      const pagesHtml = d.top_pages.slice(0, 12).map(p => `
+        <div class="chart-row">
+          <div class="chart-label" title="${p.page}">${friendlyPage(p.page)}</div>
+          <div class="chart-bar-wrap"><div class="chart-bar" style="width:${Math.max(2, p.views/maxPage*100)}%"></div></div>
+          <div class="chart-val">${fmt(p.views)}</div>
+        </div>`).join('');
+
+      const dailyHtml = d.daily.slice(-30).map(p => {
+        const h = Math.max(2, Math.round(p.views / maxDay * 72));
+        const label = p.date.slice(5); // MM-DD
+        return `<div class="day-bar-wrap">
+          <div class="day-bar" style="height:${h}px" data-tip="${p.date}: ${p.views} views"></div>
+        </div>`;
+      }).join('');
+
+      app.innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Pageviews</div>
+            <div class="stat-value">${fmt(d.total_pageviews)}</div>
+            <div class="stat-sub">since launch</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Today</div>
+            <div class="stat-value" style="color:var(--accent2)">${fmt(d.today_pageviews)}</div>
+            <div class="stat-sub">${new Date().toISOString().slice(0,10)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Last 7 Days</div>
+            <div class="stat-value" style="color:var(--green)">${fmt(last7)}</div>
+            <div class="stat-sub">rolling week</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Daily (last 30 days)</div>
+          <div class="daily-chart">${dailyHtml}</div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Top Pages</div>
+          <div class="chart">${pagesHtml || '<p class="loading" style="padding:0">No data yet</p>'}</div>
+        </div>
+
+        <p class="updated">Last updated: ${new Date(d.generated_at).toLocaleString()}</p>
+
+        <p class="note">
+          This page is intentionally public — I believe in transparent analytics.<br>
+          Data is collected via a single anonymous beacon: page path + referrer domain only.<br>
+          No IP, no user-agent storage, no cookies. Source: <a href="https://github.com/citriac/clavis-proxy" target="_blank">clavis-proxy</a>.
+        </p>
+      `;
+    } catch(e) {
+      app.innerHTML = `<p class="loading">Failed to load stats. <a href="${API}" target="_blank" style="color:var(--accent)">Raw JSON →</a></p>`;
+    }
+  }
+
+  render();
+  // 每 60 秒自动刷新
+  setInterval(render, 60000);
+  </script>
+<script>
+(function(){
+  try {
+    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    fetch('https://clavis-proxy.citriac.deno.net/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
+      keepalive: true
+    });
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
