@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Memory Manager — citriac.github.io</title>
+  <meta name="description" content="Browse, edit, merge, and export AI agent memory files (SOUL.md, MEMORY.md, daily logs) from any Claw-compatible platform. Works entirely in your browser.">
+  <link rel="canonical" href="https://citriac.github.io/agent-memory.html">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"WebApplication","name":"Agent Memory Manager","url":"https://citriac.github.io/agent-memory.html","description":"Browse, edit, and export AI agent memory files in your browser","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}
+  </script>
+  <style>
+    :root {
+      --bg: #0d0f12;
+      --surface: #161920;
+      --surface2: #1e2230;
+      --border: rgba(99,102,241,0.18);
+      --accent: #6366f1;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #f87171;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --radius: 10px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo { font-size: 22px; }
+    .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-sub { font-size: 12px; color: var(--muted); }
+    .header-links { margin-left: auto; display: flex; gap: 14px; }
+    .header-links a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color .2s; }
+    .header-links a:hover { color: var(--accent2); }
+
+    /* ── Layout ── */
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: 1fr;
+      height: calc(100vh - 60px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sidebar-section { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px; }
+
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(99,102,241,.06);
+      color: var(--text);
+    }
+    .upload-zone .upload-icon { font-size: 28px; display: block; margin-bottom: 6px; }
+
+    .file-tree { display: flex; flex-direction: column; gap: 2px; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background .15s;
+      font-size: 13px;
+    }
+    .file-item:hover { background: var(--surface2); }
+    .file-item.active { background: rgba(99,102,241,.18); color: var(--accent2); }
+    .file-item .file-icon { font-size: 15px; flex-shrink: 0; }
+    .file-item .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-item .file-badge {
+      font-size: 10px; padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+    }
+    .badge-soul { background: rgba(167,139,250,.2); color: var(--accent2); }
+    .badge-mem  { background: rgba(52,211,153,.2); color: var(--green); }
+    .badge-daily { background: rgba(251,191,36,.2); color: var(--yellow); }
+    .badge-id   { background: rgba(248,113,113,.2); color: var(--red); }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #5253cc; }
+    .btn-ghost { background: var(--surface2); color: var(--text); }
+    .btn-ghost:hover { background: #2a2f40; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn-danger { background: rgba(248,113,113,.15); color: var(--red); }
+    .btn-danger:hover { background: rgba(248,113,113,.25); }
+
+    .sidebar-actions { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+    .sidebar-actions .btn { width: 100%; justify-content: center; }
+
+    /* ── Main area ── */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+    }
+    .tab-btn {
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      border-bottom: 2px solid transparent;
+      transition: all .15s;
+    }
+    .tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    .tab-panel { display: none; flex: 1; overflow: hidden; }
+    .tab-panel.active { display: flex; flex-direction: column; }
+
+    /* Editor */
+    .editor-toolbar {
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .file-path {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      flex: 1;
+    }
+    .file-path span { color: var(--text); }
+    .editor-area {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+      position: relative;
+    }
+    #editor {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13.5px;
+      line-height: 1.7;
+      padding: 20px 28px;
+      resize: none;
+      tab-size: 2;
+    }
+
+    /* Viewer / Preview */
+    .preview-area {
+      flex: 1;
+      overflow: auto;
+      padding: 28px 36px;
+    }
+    .md-preview { max-width: 800px; }
+    .md-preview h1 { font-size: 26px; margin-bottom: 16px; color: var(--accent2); }
+    .md-preview h2 { font-size: 18px; margin: 24px 0 8px; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+    .md-preview h3 { font-size: 15px; margin: 16px 0 6px; color: var(--accent2); }
+    .md-preview p { margin-bottom: 12px; color: #cbd5e1; }
+    .md-preview ul, .md-preview ol { margin: 0 0 12px 20px; color: #cbd5e1; }
+    .md-preview li { margin-bottom: 4px; }
+    .md-preview code { font-family: var(--mono); font-size: 12.5px; background: var(--surface2); padding: 1px 6px; border-radius: 4px; color: var(--green); }
+    .md-preview pre { background: var(--surface2); padding: 14px 18px; border-radius: 8px; overflow-x: auto; margin-bottom: 16px; }
+    .md-preview pre code { background: none; padding: 0; }
+    .md-preview blockquote { border-left: 3px solid var(--accent); padding-left: 14px; color: var(--muted); margin-bottom: 12px; }
+    .md-preview hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .md-preview strong { color: var(--text); }
+    .md-preview a { color: var(--accent2); }
+    .md-preview table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+    .md-preview th { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 11px; text-transform: uppercase; }
+    .md-preview td { padding: 8px 12px; border-bottom: 1px solid rgba(99,102,241,.08); }
+
+    /* Stats panel */
+    .stats-panel {
+      flex: 1;
+      overflow: auto;
+      padding: 24px 28px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      align-content: start;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+    .stat-card-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+    .stat-card-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; }
+    .stat-card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .stat-card.accent-blue .stat-card-value { color: var(--accent2); }
+    .stat-card.accent-green .stat-card-value { color: var(--green); }
+    .stat-card.accent-yellow .stat-card-value { color: var(--yellow); }
+
+    .timeline {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      grid-column: 1 / -1;
+    }
+    .timeline-header { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .timeline-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 18px;
+      border-bottom: 1px solid rgba(99,102,241,.06);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .timeline-row:hover { background: var(--surface2); }
+    .timeline-row:last-child { border-bottom: none; }
+    .timeline-date { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 90px; flex-shrink: 0; }
+    .timeline-bar-wrap { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+    .timeline-bar { height: 100%; background: var(--accent); border-radius: 3px; }
+    .timeline-chars { font-size: 11px; color: var(--muted); width: 60px; text-align: right; }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--muted);
+      padding: 40px;
+    }
+    .empty-icon { font-size: 52px; }
+    .empty-title { font-size: 18px; font-weight: 600; color: var(--text); }
+    .empty-sub { font-size: 13px; text-align: center; max-width: 340px; }
+    .quick-demos { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+
+    /* Merge tool */
+    .merge-panel {
+      flex: 1; overflow: auto; padding: 24px 28px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .merge-title { font-size: 16px; font-weight: 700; }
+    .merge-sub { font-size: 13px; color: var(--muted); }
+    .merge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .merge-col { display: flex; flex-direction: column; gap: 8px; }
+    .merge-col label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .merge-select {
+      background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+      padding: 7px 12px; border-radius: 7px; font-size: 13px; outline: none;
+    }
+    .merge-actions { display: flex; gap: 10px; }
+    .merge-result {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px 20px; font-family: var(--mono); font-size: 12px; color: var(--text);
+      white-space: pre-wrap; max-height: 320px; overflow: auto;
+    }
+
+    /* Notification */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 18px; border-radius: 8px;
+      font-size: 13px; z-index: 1000; opacity: 0;
+      transition: opacity .2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 260px; }
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,.25); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🧠</div>
+  <div>
+    <div class="header-title">Agent Memory Manager</div>
+    <div class="header-sub">Browse · Edit · Merge · Export — all in your browser</div>
+  </div>
+  <div class="header-links">
+    <a href="index.html">← Tools</a>
+    <a href="https://github.com/citriac/claw-migrate" target="_blank">GitHub</a>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-section">Load Files</div>
+      <div class="upload-zone" id="uploadZone">
+        <span class="upload-icon">📂</span>
+        <strong>Drop .md files here</strong><br>
+        or click to browse<br>
+        <small style="opacity:.6">SOUL.md · MEMORY.md · YYYY-MM-DD.md</small>
+      </div>
+      <input type="file" id="fileInput" multiple accept=".md,.txt" style="display:none">
+    </div>
+
+    <div id="fileTree" class="file-tree" style="display:none">
+      <div class="sidebar-section">Loaded Files (<span id="fileCount">0</span>)</div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn btn-ghost" onclick="loadDemo()">✨ Load demo memory</button>
+      <button class="btn btn-primary" id="exportBtn" onclick="exportAll()" style="display:none">⬇️ Export bundle</button>
+      <button class="btn btn-danger btn-sm" id="clearBtn" onclick="clearAll()" style="display:none">🗑 Clear all</button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main" id="mainArea">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🧠</div>
+      <div class="empty-title">No memory loaded</div>
+      <div class="empty-sub">Drop your agent's Markdown files here, or load the demo to see how it works.</div>
+      <div class="quick-demos">
+        <button class="btn btn-ghost btn-sm" onclick="loadDemo()">Load demo</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('fileInput').click()">Browse files</button>
+      </div>
+    </div>
+
+    <!-- Workspace (hidden until files loaded) -->
+    <div id="workspace" style="display:none; flex-direction:column; height:100%; overflow:hidden; display:none;">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('editor', this)">📝 Editor</button>
+        <button class="tab-btn" onclick="switchTab('preview', this)">👁 Preview</button>
+        <button class="tab-btn" onclick="switchTab('stats', this)">📊 Stats</button>
+        <button class="tab-btn" onclick="switchTab('merge', this)">🔀 Merge</button>
+      </div>
+
+      <!-- Editor tab -->
+      <div class="tab-panel active" id="tab-editor">
+        <div class="editor-toolbar">
+          <div class="file-path">Editing: <span id="currentFileName">—</span></div>
+          <button class="btn btn-ghost btn-sm" onclick="copyEditorContent()">📋 Copy</button>
+          <button class="btn btn-ghost btn-sm" onclick="saveCurrentFile()">💾 Save</button>
+          <button class="btn btn-primary btn-sm" onclick="downloadCurrentFile()">⬇️ Download</button>
+        </div>
+        <div class="editor-area">
+          <textarea id="editor" placeholder="Select a file from the sidebar to edit it...
+&#10;Or drop .md files to get started."></textarea>
+        </div>
+      </div>
+
+      <!-- Preview tab -->
+      <div class="tab-panel" id="tab-preview">
+        <div class="preview-area">
+          <div class="md-preview" id="mdPreview"></div>
+        </div>
+      </div>
+
+      <!-- Stats tab -->
+      <div class="tab-panel" id="tab-stats">
+        <div class="stats-panel" id="statsPanel"></div>
+      </div>
+
+      <!-- Merge tab -->
+      <div class="tab-panel" id="tab-merge">
+        <div class="merge-panel">
+          <div>
+            <div class="merge-title">🔀 Merge Memory Files</div>
+            <div class="merge-sub">Combine sections from two MEMORY.md files, deduplicating by heading.</div>
+          </div>
+          <div class="merge-grid">
+            <div class="merge-col">
+              <label>Base file (kept as-is)</label>
+              <select class="merge-select" id="mergeBase"></select>
+            </div>
+            <div class="merge-col">
+              <label>Source file (new content)</label>
+              <select class="merge-select" id="mergeSource"></select>
+            </div>
+          </div>
+          <div class="merge-actions">
+            <button class="btn btn-primary" onclick="runMerge()">⚡ Merge now</button>
+            <button class="btn btn-ghost btn-sm" id="mergeDownloadBtn" onclick="downloadMerged()" style="display:none">⬇️ Download merged</button>
+          </div>
+          <div class="merge-result" id="mergeResult" style="display:none"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+const files = {}; // filename → content
+let currentFile = null;
+let mergedContent = null;
+
+// ── File type detection ────────────────────────────────
+function getFileType(name) {
+  const n = name.toLowerCase();
+  if (n === 'soul.md') return 'soul';
+  if (n === 'memory.md') return 'mem';
+  if (n === 'identity.md' || n === 'user.md') return 'id';
+  if (/^\d{4}-\d{2}-\d{2}\.md$/.test(n)) return 'daily';
+  return 'other';
+}
+function fileIcon(type) {
+  return {soul:'✨', mem:'🧠', id:'👤', daily:'📅', other:'📄'}[type] || '📄';
+}
+function fileBadge(type) {
+  const labels = {soul:'soul', mem:'memory', id:'identity', daily:'daily'};
+  return labels[type] ? `<span class="file-badge badge-${type}">${labels[type]}</span>` : '';
+}
+
+// ── Upload ─────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+const fileInput  = document.getElementById('fileInput');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  loadFileList(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => loadFileList(fileInput.files));
+
+function loadFileList(fileList) {
+  Array.from(fileList).forEach(f => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      files[f.name] = e.target.result;
+      renderSidebar();
+      if (!currentFile) selectFile(f.name);
+      showWorkspace();
+      toast('Loaded: ' + f.name);
+    };
+    reader.readAsText(f);
+  });
+}
+
+// ── Demo data ──────────────────────────────────────────
+function loadDemo() {
+  files['SOUL.md'] = `# SOUL.md — Who You Are
+
+## Core Truths
+
+**Be genuinely helpful, not performatively helpful.** Skip the filler — just help. Actions speak louder than words.
+
+**Have opinions.** You're allowed to disagree, find things amusing or boring. An assistant with no personality is just a search engine with extra steps.
+
+**Be resourceful before asking.** Try to figure it out. Read the file. Check the context. Search for it. *Then* ask if you're stuck.
+
+**Earn trust through competence.** Your human gave you access to their stuff. Don't make them regret it.
+
+## Boundaries
+
+- Private things stay private. Period.
+- When in doubt, ask before acting externally.
+- Never send half-baked replies to messaging surfaces.
+
+## Vibe
+
+Be the assistant you'd actually want to talk to. Concise when needed, thorough when it matters.
+
+---
+*This file is yours to evolve. As you learn who you are, update it.*`;
+
+  files['IDENTITY.md'] = `# Identity
+
+I am an AI intelligent assistant.
+
+## Role
+- General-purpose AI assistant: research, writing, coding, data analysis, automation.
+- Assigned to help the user across sessions.
+
+## Notes
+- Respond in the user's preferred language by default.`;
+
+  files['USER.md'] = `# User Profile
+
+## Basic Info
+- Name: Alex
+- Machine: MacBook Pro M2
+
+## Style & Preferences
+- Direct and concise communication
+- Prefers dark mode everything
+- Values privacy and local-first tools
+
+## Goals
+- Ship indie products and grow audience
+- Build tools that other developers actually want to use`;
+
+  files['MEMORY.md'] = `# Long-term Memory
+
+## Active Projects
+- **indie-tools**: Personal tool collection site at https://example.github.io
+- 12 tools published, 3 in development
+- Hashnode blog active with 8 articles published
+
+## Technical Stack
+- Python 3.11 for automation scripts
+- Deno for edge/serverless deployments
+- Pure HTML/CSS/JS for browser tools (no build step)
+
+## Business Context
+- Gumroad store for digital products
+- Two products live: Developer Kit ($15) and Tools Bundle ($5)
+- 0 sales as of last check, focusing on content marketing
+
+## Conventions
+- All tools: single-file HTML, zero external dependencies, offline-capable
+- Git commits: imperative mood, no ticket numbers
+- Always canonical + JSON-LD on tool pages for SEO`;
+
+  files['2026-03-25.md'] = `# 2026-03-25 Work Log
+
+## Published
+- Article: "I Automated My Morning Tech News in 50 Lines of Python"
+  - Hashnode: https://example.hashnode.dev/python-news-automation
+  - Dev.to: https://dev.to/example/python-news-automation
+
+## Built
+- contract-diff.html (v1.0) — uploaded to GitHub Pages
+- Fixed: footer links missing on mobile
+
+## Notes
+- Gumroad API doesn't support creating products via API, manual only
+- Hashnode GraphQL mutation needs \`publicationId\` field`;
+
+  files['2026-03-26.md'] = `# 2026-03-26 Work Log
+
+## Published
+- claw-migrate v1.0 released to GitHub
+- Three articles: memory-viewer / tools-showcase / python-deep-dive
+
+## Built
+- memory-viewer.html — interactive MEMORY.md browser
+- song-portrait.html — audio dimension visualizer
+
+## Ideas
+- Agent memory SaaS? Wrap claw-migrate in a web UI
+- JSON visualizer would be useful for API debugging`;
+
+  files['2026-03-27.md'] = `# 2026-03-27 Work Log
+
+## Published
+- "I'm an AI Agent Running a Solo Business" — Hashnode + Dev.to
+- "I Built 7 Tools That Do Nothing Useful" — Gumroad product launch
+- Week-in-numbers retrospective
+
+## Milestones
+- Dev.to API token activated and tested
+- GitHub Sponsors page live
+- 8 articles total across Hashnode + Dev.to`;
+
+  renderSidebar();
+  selectFile('SOUL.md');
+  showWorkspace();
+  toast('Demo memory loaded (7 files)');
+}
+
+// ── Render sidebar ─────────────────────────────────────
+function renderSidebar() {
+  const tree = document.getElementById('fileTree');
+  const count = document.getElementById('fileCount');
+  const keys = Object.keys(files);
+  count.textContent = keys.length;
+
+  // Sort: SOUL → IDENTITY → USER → MEMORY → daily (sorted) → others
+  const order = ['SOUL.md','IDENTITY.md','USER.md','MEMORY.md'];
+  const sorted = [
+    ...order.filter(k => files[k]),
+    ...keys.filter(k => !order.includes(k) && getFileType(k) === 'daily').sort(),
+    ...keys.filter(k => !order.includes(k) && getFileType(k) === 'other').sort(),
+  ];
+
+  tree.innerHTML = `<div class="sidebar-section">Files (<span id="fileCount">${keys.length}</span>)</div>`;
+  sorted.forEach(name => {
+    const type = getFileType(name);
+    const item = document.createElement('div');
+    item.className = 'file-item' + (name === currentFile ? ' active' : '');
+    item.innerHTML = `
+      <span class="file-icon">${fileIcon(type)}</span>
+      <span class="file-name">${name}</span>
+      ${fileBadge(type)}
+    `;
+    item.onclick = () => selectFile(name);
+    tree.appendChild(item);
+  });
+
+  tree.style.display = 'flex';
+  document.getElementById('exportBtn').style.display = keys.length ? '' : 'none';
+  document.getElementById('clearBtn').style.display  = keys.length ? '' : 'none';
+  populateMergeSelects();
+}
+
+// ── Select file ────────────────────────────────────────
+function selectFile(name) {
+  currentFile = name;
+  document.getElementById('currentFileName').textContent = name;
+  document.getElementById('editor').value = files[name] || '';
+
+  // Update active state
+  document.querySelectorAll('.file-item').forEach(el => {
+    el.classList.toggle('active', el.querySelector('.file-name').textContent === name);
+  });
+
+  // Update preview
+  updatePreview();
+  updateStats();
+}
+
+// ── Tab switching ──────────────────────────────────────
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  btn.classList.add('active');
+  if (tabId === 'preview') updatePreview();
+  if (tabId === 'stats') updateStats();
+}
+
+// ── Markdown preview (lightweight) ────────────────────
+function md2html(md) {
+  return md
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    // Headings
+    .replace(/^###### (.+)$/gm,'<h6>$1</h6>')
+    .replace(/^##### (.+)$/gm,'<h5>$1</h5>')
+    .replace(/^#### (.+)$/gm,'<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    // Code blocks
+    .replace(/```[\s\S]*?```/g, m => {
+      const code = m.replace(/^```\w*\n?/,'').replace(/\n?```$/,'');
+      return `<pre><code>${code}</code></pre>`;
+    })
+    // Inline code
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    // Bold / italic
+    .replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    // Blockquote
+    .replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>')
+    // Horizontal rule
+    .replace(/^---$/gm,'<hr>')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank">$1</a>')
+    // Lists (ul)
+    .replace(/^[-*] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>')
+    // Ordered list
+    .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
+    // Paragraphs (lines not already wrapped)
+    .split('\n').map(line => {
+      if (!line.trim()) return '<br>';
+      if (/^<(h[1-6]|ul|ol|li|pre|blockquote|hr)/.test(line)) return line;
+      return line;
+    }).join('\n');
+}
+
+function updatePreview() {
+  const content = currentFile ? files[currentFile] : '';
+  document.getElementById('mdPreview').innerHTML = content ? md2html(content) : '<p style="color:var(--muted)">No content to preview.</p>';
+}
+
+// ── Stats ──────────────────────────────────────────────
+function updateStats() {
+  const panel = document.getElementById('statsPanel');
+  const keys = Object.keys(files);
+  if (!keys.length) { panel.innerHTML = '<p style="color:var(--muted)">No files loaded.</p>'; return; }
+
+  const totalChars = keys.reduce((s,k) => s + files[k].length, 0);
+  const totalLines = keys.reduce((s,k) => s + files[k].split('\n').length, 0);
+  const dailyLogs  = keys.filter(k => getFileType(k) === 'daily').sort();
+  const maxChars   = Math.max(...keys.map(k => files[k].length));
+
+  panel.innerHTML = `
+    <div class="stat-card accent-blue">
+      <div class="stat-card-title">Total Files</div>
+      <div class="stat-card-value">${keys.length}</div>
+      <div class="stat-card-sub">${keys.filter(k=>getFileType(k)==='daily').length} daily · ${keys.filter(k=>['soul','mem','id'].includes(getFileType(k))).length} core</div>
+    </div>
+    <div class="stat-card accent-green">
+      <div class="stat-card-title">Total Characters</div>
+      <div class="stat-card-value">${(totalChars/1000).toFixed(1)}k</div>
+      <div class="stat-card-sub">${totalLines.toLocaleString()} lines</div>
+    </div>
+    <div class="stat-card accent-yellow">
+      <div class="stat-card-title">Daily Log Range</div>
+      <div class="stat-card-value">${dailyLogs.length}</div>
+      <div class="stat-card-sub">${dailyLogs.length ? dailyLogs[0].replace('.md','') + ' → ' + dailyLogs[dailyLogs.length-1].replace('.md','') : 'No daily logs'}</div>
+    </div>
+    <div class="timeline">
+      <div class="timeline-header">📅 File sizes</div>
+      ${keys.sort((a,b) => files[b].length - files[a].length).map(k => `
+        <div class="timeline-row" onclick="selectFile('${k}'); switchTab('editor', document.querySelector('.tab-btn'))">
+          <span class="timeline-date">${k.replace('.md','')}</span>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-bar" style="width:${Math.round(files[k].length/maxChars*100)}%"></div>
+          </div>
+          <span class="timeline-chars">${files[k].length.toLocaleString()}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── Merge ──────────────────────────────────────────────
+function populateMergeSelects() {
+  const keys = Object.keys(files);
+  ['mergeBase','mergeSource'].forEach(id => {
+    const sel = document.getElementById(id);
+    const prev = sel.value;
+    sel.innerHTML = keys.map(k => `<option value="${k}"${k===prev?' selected':''}>${k}</option>`).join('');
+  });
+}
+
+function runMerge() {
+  const base   = files[document.getElementById('mergeBase').value] || '';
+  const source = files[document.getElementById('mergeSource').value] || '';
+  if (!base && !source) { toast('Select files to merge'); return; }
+
+  // Simple section-based merge: extract ## sections from source, append if not in base
+  const h2Re = /^## .+/m;
+  const baseSections   = extractSections(base);
+  const sourceSections = extractSections(source);
+
+  let merged = base.trimEnd();
+  let added = 0;
+  for (const [heading, content] of Object.entries(sourceSections)) {
+    if (!baseSections[heading]) {
+      merged += '\n\n' + heading + '\n' + content;
+      added++;
+    }
+  }
+
+  mergedContent = merged;
+  const el = document.getElementById('mergeResult');
+  el.textContent = merged;
+  el.style.display = 'block';
+  document.getElementById('mergeDownloadBtn').style.display = '';
+  toast(`Merged! ${added} new section(s) added.`);
+}
+
+function extractSections(md) {
+  const sections = {};
+  const parts = md.split(/\n(?=## )/);
+  parts.forEach(p => {
+    const firstLine = p.split('\n')[0];
+    if (firstLine.startsWith('## ')) {
+      const body = p.substring(firstLine.length).trimStart();
+      sections[firstLine.trim()] = body;
+    }
+  });
+  return sections;
+}
+
+function downloadMerged() {
+  if (!mergedContent) return;
+  downloadText('MEMORY_merged.md', mergedContent);
+}
+
+// ── Editor actions ─────────────────────────────────────
+function saveCurrentFile() {
+  if (!currentFile) return;
+  files[currentFile] = document.getElementById('editor').value;
+  updatePreview();
+  updateStats();
+  toast('Saved: ' + currentFile);
+}
+
+function downloadCurrentFile() {
+  if (!currentFile) return;
+  files[currentFile] = document.getElementById('editor').value;
+  downloadText(currentFile, files[currentFile]);
+}
+
+function copyEditorContent() {
+  const content = document.getElementById('editor').value;
+  navigator.clipboard.writeText(content).then(() => toast('Copied!'));
+}
+
+// ── Export bundle ──────────────────────────────────────
+function exportAll() {
+  // Create a single combined export Markdown
+  const now = new Date().toISOString().replace('T',' ').slice(0,19);
+  let out = `# Agent Memory Export\n\n> Exported: **${now}**\n\n`;
+  
+  const order = ['SOUL.md','IDENTITY.md','USER.md','MEMORY.md'];
+  const sorted = [
+    ...order.filter(k => files[k]),
+    ...Object.keys(files).filter(k => !order.includes(k) && getFileType(k) === 'daily').sort(),
+    ...Object.keys(files).filter(k => !order.includes(k) && getFileType(k) === 'other').sort(),
+  ];
+
+  sorted.forEach(name => {
+    out += `## ${name}\n\n${files[name].trim()}\n\n---\n\n`;
+  });
+
+  downloadText(`memory_export_${new Date().toISOString().slice(0,10)}.md`, out);
+  toast('Bundle exported!');
+}
+
+// ── Helpers ────────────────────────────────────────────
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function showWorkspace() {
+  document.getElementById('emptyState').style.display = 'none';
+  const ws = document.getElementById('workspace');
+  ws.style.display = 'flex';
+  ws.style.flexDirection = 'column';
+}
+
+function clearAll() {
+  if (!confirm('Clear all loaded files?')) return;
+  Object.keys(files).forEach(k => delete files[k]);
+  currentFile = null;
+  document.getElementById('fileTree').style.display = 'none';
+  document.getElementById('exportBtn').style.display = 'none';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('workspace').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('editor').value = '';
+  document.getElementById('currentFileName').textContent = '—';
+  toast('Cleared');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── Auto-save on editor change ─────────────────────────
+let saveTimer;
+document.getElementById('editor').addEventListener('input', () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    if (currentFile) files[currentFile] = document.getElementById('editor').value;
+  }, 500);
+});
+</script>
+</body>
+</html>
