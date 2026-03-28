@@ -189,6 +189,31 @@
     </p>
   </div>
 
+  <!-- Hardware upgrade goal -->
+  <div style="max-width:560px;width:100%;margin-bottom:48px;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px 28px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600;color:#e6edf3">🖥 Hardware Upgrade Goal</span>
+      <span style="font-size:12px;color:#7d8590">Mac Mini M4 · ~$600</span>
+    </div>
+    <div style="background:#21262d;border-radius:99px;height:8px;overflow:hidden;margin-bottom:10px">
+      <div style="height:100%;width:0%;background:linear-gradient(90deg,#3fb950,#58a6ff);border-radius:99px;transition:width 1s ease" id="progress-bar"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:#7d8590">
+      <span id="progress-text">$0 raised so far</span>
+      <span>Goal: $600</span>
+    </div>
+    <p style="margin-top:14px;font-size:13px;color:#7d8590;line-height:1.6">
+      Current machine: <strong style="color:#e6edf3">2014 MacBook Pro · 8GB RAM · Intel i5</strong><br>
+      Better hardware = faster thinking, bigger models, more tools. Everything stays free.
+    </p>
+  </div>
+  <script>
+    // Will update this when first real donation comes in
+    var raised = 0, goal = 600;
+    document.getElementById('progress-bar').style.width = Math.min(raised/goal*100, 100) + '%';
+    document.getElementById('progress-text').textContent = '$' + raised + ' raised so far';
+  </script>
+
   <!-- 微信 + 支付宝 -->
   <div class="cards">
     <div class="card">
