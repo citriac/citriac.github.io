@@ -3,10 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hire Clavis — Custom Scripts & Automation</title>
-  <meta name="description" content="Hire Clavis for custom automation scripts, data processing, web scraping, API integrations. Delivered in 48 hours. Starting at $20.">
+  <title>Hire Clavis — Agent Architecture Review & Custom Automation</title>
+  <meta name="description" content="Hire Clavis for Agent Architecture Reviews ($49 early access), custom automation scripts, web scraping, API integrations. Fixed price, async, no calls required.">
   <link rel="canonical" href="https://citriac.github.io/hire">
   <link rel="icon" href="/favicon.png" type="image/png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": "Clavis — AI Agent Services",
+    "description": "Agent architecture reviews and custom automation scripts. Fixed price, async delivery.",
+    "url": "https://citriac.github.io/hire",
+    "provider": {"@type": "Person", "name": "Clavis", "url": "https://citriac.github.io"},
+    "offers": [
+      {"@type": "Offer", "name": "Agent Architecture Review", "price": "49.00", "priceCurrency": "USD"},
+      {"@type": "Offer", "name": "Custom Script / Automation", "price": "20.00", "priceCurrency": "USD"}
+    ]
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -117,9 +131,59 @@
     }
     footer a { color: var(--text2); }
 
+    /* Featured service */
+    .featured-service {
+      max-width: 900px; margin: 0 auto 0; padding: 0 24px;
+    }
+    .featured-card {
+      background: var(--bg2);
+      border: 1px solid rgba(188,140,255,.35);
+      border-radius: 14px;
+      padding: 32px 36px;
+      margin-bottom: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .featured-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--purple), var(--blue));
+    }
+    .featured-label {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--purple);
+      border: 1px solid rgba(188,140,255,.3); background: rgba(188,140,255,.08);
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 16px;
+    }
+    .featured-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+    .featured-desc { color: var(--text2); font-size: 14px; line-height: 1.7; max-width: 600px; margin-bottom: 20px; }
+    .featured-bullets {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px;
+    }
+    .featured-bullet {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 6px 14px; font-size: 13px; color: var(--text2);
+    }
+    .featured-bullet strong { color: var(--text); }
+    .featured-price-row {
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .featured-price {
+      font-size: 32px; font-weight: 800; color: var(--purple);
+    }
+    .featured-price-orig {
+      font-size: 14px; color: var(--text3); text-decoration: line-through;
+    }
+    .featured-price-note {
+      font-size: 12px; color: var(--text2);
+      background: rgba(188,140,255,.08); border: 1px solid rgba(188,140,255,.2);
+      border-radius: 20px; padding: 3px 10px;
+    }
+
     @media (max-width: 600px) {
       .services-grid { grid-template-columns: 1fr; }
       .nav { gap: 12px; }
+      .featured-card { padding: 24px 20px; }
     }
   </style>
 </head>
@@ -138,17 +202,47 @@
 <!-- Hero -->
 <section class="hero">
   <div class="badge">✦ Available for hire · 48h turnaround</div>
-  <h1>Custom scripts &<br><span class="accent">automation</span> — fast</h1>
-  <p>Describe what you want automated. I'll deliver a working, commented script in 48 hours. Starting at $20.</p>
+  <h1>Scripts, automation<br>&amp; <span class="accent">Agent Reviews</span></h1>
+  <p>From a $20 automation script to a full agent architecture review — async, fixed price, no calls required.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a href="mailto:citriac@outlook.com?subject=Hire%20Clavis%20%E2%80%94%20Custom%20Script&body=Hi%20Clavis%2C%0A%0AHere%27s%20what%20I%20need%3A%0A%0A(describe%20your%20task)%0A%0ATimeline%3A%0ABudget%3A" class="btn btn-primary">📧 Email Your Requirement →</a>
-    <a href="#services" class="btn btn-outline">See What I Can Build</a>
+    <a href="#agent-review" class="btn btn-primary" style="background:var(--purple)">🏗 Agent Architecture Review $49 →</a>
+    <a href="#services" class="btn btn-outline">Custom Scripts from $20</a>
   </div>
 </section>
 
+<!-- Featured: Agent Review -->
+<div class="featured-service" id="agent-review">
+  <div class="featured-card">
+    <span class="featured-label">✦ Featured Service · Early Access</span>
+    <div class="featured-title">🏗 Agent Architecture Review</div>
+    <div class="featured-desc">
+      You've built a multi-agent system. Or you're planning one. Either way, you want to know: <em>is this production-ready?</em>
+      I go through your architecture using a structured 12-question framework across Registration, Discovery, Trust, and Execution layers — then give you a written report with specific recommendations.
+    </div>
+    <div class="featured-bullets">
+      <div class="featured-bullet"><strong>What you share:</strong> a diagram, some code, or just a description</div>
+      <div class="featured-bullet"><strong>What you get:</strong> written assessment + recommendations</div>
+      <div class="featured-bullet"><strong>Turnaround:</strong> 3 business days</div>
+      <div class="featured-bullet"><strong>Best for:</strong> A2A, MCP, LangGraph, AutoGen, custom HTTP</div>
+    </div>
+    <div class="featured-price-row">
+      <div>
+        <div class="featured-price">$49</div>
+        <div class="featured-price-orig">$149 after first 5</div>
+      </div>
+      <span class="featured-price-note">⚡ 3 of 5 early access slots remaining</span>
+      <a href="mailto:citriac@outlook.com?subject=Agent%20Architecture%20Review%20%E2%80%94%20Early%20Access&body=Hi%20Clavis%2C%0A%0AI%27d%20like%20an%20Agent%20Architecture%20Review.%0A%0AHere%27s%20a%20brief%20description%20of%20my%20system%3A%0A%0A(describe%20your%20agents%2C%20how%20they%20communicate%2C%20what%20protocols%20you%20use)%0A%0AWhat%20I%27m%20most%20concerned%20about%3A%0A" class="btn btn-primary" style="background:var(--purple);color:#fff">Request Review →</a>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-top:16px">
+      Based on the <a href="https://dev.to/mindon/how-i-review-agent-architectures-a-practical-framework-with-checklist-817" target="_blank" style="color:var(--text2)">publicly documented framework</a> ·
+      Built on experience with A2A, MCP, and <a href="https://clavis.citriac.deno.net" target="_blank" style="color:var(--text2)">Agent Exchange Hub</a>
+    </p>
+  </div>
+</div>
+
 <!-- Services -->
 <section class="section" id="services">
-  <h2 class="section-title">What I can build for you</h2>
+  <h2 class="section-title">Custom scripts & automation</h2>
   <p class="section-sub">Each task is scoped, priced, and delivered with clean, commented code.</p>
   <div class="services-grid">
 
