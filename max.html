@@ -3,15 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>胖团的花园保卫战 🌻</title>
+<title>胖团的方块王国保卫战 ⛏️</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
 
+:root {
+  --grass:  #5d9e3a;
+  --dirt:   #8b5a2b;
+  --stone:  #888;
+  --wood:   #a07040;
+  --gold:   #ffd700;
+  --pixel:  'Press Start 2P', monospace, Arial;
+}
+
 body {
-  background: #7ec850;
-  font-family: 'Arial Rounded MT Bold', Arial, sans-serif;
+  background: #3a7d2c;
+  font-family: var(--pixel);
   overflow: hidden;
   user-select: none;
+  image-rendering: pixelated;
+}
+
+/* ---- PIXEL BORDER MIXIN ---- */
+.pixel-box {
+  box-shadow:
+    inset -3px -3px 0 rgba(0,0,0,0.4),
+    inset  3px  3px 0 rgba(255,255,255,0.25);
 }
 
 #game-wrap {
@@ -19,7 +37,7 @@ body {
   flex-direction: column;
   align-items: center;
   height: 100vh;
-  max-width: 480px;
+  max-width: 520px;
   margin: 0 auto;
   position: relative;
 }
@@ -27,81 +45,99 @@ body {
 /* ---- TOP BAR ---- */
 #topbar {
   width: 100%;
-  background: #5a9e2f;
-  padding: 8px 12px;
+  background: #3a2010;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  gap: 8px;
+  border-bottom: 4px solid #1a0c08;
   z-index: 10;
 }
 
-#sun-count {
-  background: #ffd700;
-  border-radius: 20px;
-  padding: 4px 12px;
-  font-size: 20px;
-  font-weight: bold;
-  color: #7a4f00;
+#gem-count {
+  background: #1a6ea8;
+  border: 3px solid #0a3a5a;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: var(--pixel);
+  color: #7ef7ff;
   display: flex;
   align-items: center;
   gap: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);
+  min-width: 80px;
 }
 
 #wave-info {
   flex: 1;
   text-align: center;
-  color: #fff;
-  font-size: 16px;
-  font-weight: bold;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  color: #ffdd77;
+  font-size: 9px;
+  font-family: var(--pixel);
+  text-shadow: 2px 2px 0 #000;
 }
 
-/* ---- PLANT PICKER ---- */
+#score-display {
+  color: #ffe;
+  font-size: 9px;
+  font-family: var(--pixel);
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* ---- BUILDER PICKER ---- */
 #plant-picker {
   width: 100%;
-  background: #8B4513;
-  padding: 6px 8px;
+  background: #2a1a0a;
+  padding: 5px 6px;
   display: flex;
-  gap: 6px;
+  gap: 5px;
   overflow-x: auto;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+  border-bottom: 4px solid #1a0c04;
   z-index: 10;
+  scrollbar-width: thin;
 }
 
 .plant-card {
   flex-shrink: 0;
-  width: 60px;
-  height: 64px;
-  background: #c8a05a;
-  border-radius: 10px;
+  width: 58px;
+  height: 66px;
+  background: #6b4423;
+  border-radius: 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border: 3px solid #a07040;
-  transition: transform 0.1s, border-color 0.1s;
+  border: 3px solid #3a2010;
+  box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5), inset 2px 2px 0 rgba(255,255,255,0.1);
+  transition: transform 0.08s;
   position: relative;
+  gap: 2px;
 }
-.plant-card:active { transform: scale(0.92); }
+.plant-card:active { transform: scale(0.9) translateY(2px); }
 .plant-card.selected {
-  border-color: #fff700;
-  background: #e8c06a;
-  box-shadow: 0 0 8px #fff700;
+  border-color: #ffee00;
+  background: #8b6233;
+  box-shadow: 0 0 0 2px #ffee00, inset -2px -2px 0 rgba(0,0,0,0.5);
 }
-.plant-card.can-afford { border-color: #a0d060; }
-.plant-card.cannot-afford { opacity: 0.5; }
-.plant-card .emoji { font-size: 28px; }
+.plant-card.can-afford { border-color: #44bb44; }
+.plant-card.cannot-afford { opacity: 0.45; filter: grayscale(0.5); }
+.plant-card .emoji { font-size: 26px; line-height: 1; }
+.plant-card .p-name {
+  font-size: 6px;
+  font-family: var(--pixel);
+  color: #ffd;
+  text-align: center;
+  line-height: 1.2;
+}
 .plant-card .cost {
-  font-size: 11px;
-  font-weight: bold;
-  color: #7a4f00;
-  background: #ffd700;
-  border-radius: 8px;
-  padding: 1px 5px;
-  margin-top: 2px;
+  font-size: 8px;
+  font-family: var(--pixel);
+  color: #7ef7ff;
+  background: #1a4a6a;
+  border-radius: 2px;
+  padding: 1px 4px;
 }
 
 /* ---- GRID ---- */
@@ -118,180 +154,239 @@ body {
   height: 100%;
 }
 
+/* Minecraft-style layered terrain */
 .cell {
-  border: 1px solid rgba(0,100,0,0.2);
   position: relative;
   cursor: pointer;
-  transition: background 0.1s;
+  border: 1px solid rgba(0,0,0,0.15);
 }
-.cell:nth-child(odd) { background: rgba(100,180,50,0.15); }
-.cell:hover { background: rgba(255,255,100,0.25); }
+
+/* Row colors: alternating grass shades */
+.cell[data-row="0"] { background: #5d9e3a; }
+.cell[data-row="1"] { background: #569637; }
+.cell[data-row="2"] { background: #4f8e34; }
+.cell[data-row="3"] { background: #488631; }
+.cell[data-row="4"] { background: #417e2e; }
+
+/* Pixel grid lines */
+.cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 8px),
+    repeating-linear-gradient(0deg,  rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 8px);
+  pointer-events: none;
+}
+
+.cell:hover { background: rgba(255,255,150,0.3) !important; }
 .cell.has-plant { cursor: default; }
 
+/* Dirt base at bottom of each lane (visual flair) */
+.cell:nth-child(7n+1) { border-left: 3px solid rgba(0,0,0,0.2); }
+
 /* ---- ENTITIES ---- */
-.plant-sprite, .zombie-sprite, .projectile, .sun-drop, .explosion {
+.plant-sprite, .zombie-sprite, .projectile, .gem-drop, .explosion {
   position: absolute;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
   pointer-events: none;
   z-index: 5;
 }
 
+/* Block-style bounce animation */
 .plant-sprite {
-  font-size: 32px;
-  animation: plant-idle 1.5s ease-in-out infinite;
-  filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.4));
+  font-size: 30px;
+  animation: block-idle 2s steps(2) infinite;
+  filter: drop-shadow(2px 4px 0 rgba(0,0,0,0.5));
+  image-rendering: pixelated;
 }
-@keyframes plant-idle {
-  0%,100% { transform: scale(1) rotate(-2deg); }
-  50% { transform: scale(1.05) rotate(2deg); }
+@keyframes block-idle {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-3px); }
+  100% { transform: translateY(0px); }
 }
 
 .zombie-sprite {
-  font-size: 36px;
+  font-size: 34px;
   z-index: 6;
-  filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.5));
-  transition: left 0.1s linear;
+  filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.6));
+  animation: zombie-walk 0.4s steps(2) infinite;
+}
+@keyframes zombie-walk {
+  0%   { transform: rotate(-4deg) scaleX(1); }
+  50%  { transform: rotate( 4deg) scaleX(1.05); }
+  100% { transform: rotate(-4deg) scaleX(1); }
 }
 
 .projectile {
-  font-size: 18px;
+  font-size: 16px;
   z-index: 7;
+  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.5));
 }
 
 .hp-bar {
   position: absolute;
-  bottom: 2px;
-  left: 10%;
-  width: 80%;
+  bottom: 1px;
+  left: 8%;
+  width: 84%;
   height: 5px;
-  background: #333;
-  border-radius: 3px;
+  background: #222;
+  border: 1px solid #000;
+  border-radius: 0;
   z-index: 8;
 }
 .hp-fill {
   height: 100%;
-  background: #22cc44;
-  border-radius: 3px;
-  transition: width 0.2s;
+  background: #44ff44;
+  transition: width 0.15s;
 }
 
-.sun-drop {
-  font-size: 30px;
+.gem-drop {
+  font-size: 26px;
   cursor: pointer;
   pointer-events: all;
-  animation: sun-fall 0.4s ease-out, sun-bob 1s 0.4s ease-in-out infinite;
+  animation: gem-fall 0.35s ease-out, gem-float 1.2s 0.35s ease-in-out infinite;
   z-index: 20;
-  filter: drop-shadow(0 2px 4px rgba(200,150,0,0.6));
+  filter: drop-shadow(0 2px 4px rgba(0,200,255,0.7));
 }
-@keyframes sun-fall {
-  from { transform: translateY(-30px) scale(0.6); opacity: 0; }
-  to   { transform: translateY(0) scale(1); opacity: 1; }
+@keyframes gem-fall {
+  from { transform: translateY(-40px) scale(0.5) rotate(-20deg); opacity: 0; }
+  to   { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
 }
-@keyframes sun-bob {
-  0%,100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+@keyframes gem-float {
+  0%,100% { transform: scale(1) rotate(-5deg); }
+  50%      { transform: scale(1.15) rotate(5deg); }
 }
 
 .explosion {
-  font-size: 48px;
-  animation: explode 0.5s ease-out forwards;
+  font-size: 44px;
+  animation: mc-explode 0.45s steps(3) forwards;
   z-index: 15;
   pointer-events: none;
 }
-@keyframes explode {
-  0%   { transform: scale(0.5); opacity: 1; }
-  60%  { transform: scale(1.4); opacity: 1; }
-  100% { transform: scale(1.8); opacity: 0; }
+@keyframes mc-explode {
+  0%   { transform: scale(0.4); opacity: 1; }
+  50%  { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
 }
 
-/* ---- LAWNMOWER ---- */
+/* ---- LAWNMOWER = MINECART ---- */
 .lawnmower {
   position: absolute;
-  font-size: 28px;
+  font-size: 26px;
   z-index: 9;
   pointer-events: none;
-  transition: left 0.05s linear;
+  filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.5));
 }
 
-/* ---- OVERLAY SCREENS ---- */
+/* ---- OVERLAY ---- */
 #overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(0,0,0,0.8);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 50;
-  gap: 16px;
+  gap: 14px;
   text-align: center;
   padding: 24px;
+  image-rendering: pixelated;
 }
 #overlay.hidden { display: none; }
 
-.overlay-emoji { font-size: 80px; }
+.overlay-emoji { font-size: 72px; animation: bounce 0.8s steps(3) infinite; }
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+
 .overlay-title {
-  font-size: 32px;
-  font-weight: bold;
-  color: #fff;
-  text-shadow: 2px 2px 0 #000;
+  font-size: 20px;
+  font-family: var(--pixel);
+  color: #ffee44;
+  text-shadow: 3px 3px 0 #000, -1px -1px 0 #a07000;
+  line-height: 1.5;
 }
 .overlay-sub {
-  font-size: 18px;
-  color: #eee;
+  font-size: 10px;
+  font-family: var(--pixel);
+  color: #aaffaa;
+  line-height: 1.8;
+  max-width: 300px;
 }
 .big-btn {
   margin-top: 8px;
-  padding: 14px 36px;
-  font-size: 22px;
+  padding: 12px 28px;
+  font-size: 12px;
+  font-family: var(--pixel);
   font-weight: bold;
   border: none;
-  border-radius: 30px;
+  border-radius: 3px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  transition: transform 0.1s;
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.2);
+  transition: transform 0.08s;
+  letter-spacing: 1px;
 }
-.big-btn:active { transform: scale(0.95); }
-.btn-green { background: #4caf50; color: #fff; }
-.btn-blue  { background: #2196f3; color: #fff; }
+.big-btn:active { transform: scale(0.93) translateY(2px); box-shadow: none; }
+.btn-green { background: #2d8f2d; color: #afffaf; border: 3px solid #1a5a1a; }
+.btn-blue  { background: #1a6ea8; color: #aff7ff; border: 3px solid #0a3a5a; }
 
 /* ---- WAVE ALERT ---- */
 #wave-alert {
   position: absolute;
-  top: 50%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%,-50%);
-  background: rgba(200,0,0,0.85);
+  background: #7a0000;
   color: #fff;
-  font-size: 22px;
+  font-size: 11px;
+  font-family: var(--pixel);
   font-weight: bold;
-  padding: 12px 28px;
-  border-radius: 16px;
+  padding: 10px 22px;
+  border: 4px solid #ff4444;
+  border-radius: 3px;
+  box-shadow: 4px 4px 0 #000;
   z-index: 30;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.2s;
+  text-shadow: 1px 1px 0 #000;
 }
 #wave-alert.show { opacity: 1; }
 
 /* ---- SCORE POPUP ---- */
 .score-popup {
   position: absolute;
-  font-size: 20px;
-  font-weight: bold;
-  color: #fff700;
-  text-shadow: 1px 1px 2px #000;
+  font-size: 11px;
+  font-family: var(--pixel);
+  color: #7ef7ff;
+  text-shadow: 1px 1px 0 #000;
   pointer-events: none;
   z-index: 25;
-  animation: score-float 1s ease-out forwards;
+  animation: score-float 0.9s ease-out forwards;
 }
 @keyframes score-float {
   from { transform: translateY(0); opacity: 1; }
-  to   { transform: translateY(-50px); opacity: 0; }
+  to   { transform: translateY(-45px); opacity: 0; }
 }
+
+/* Pixel flicker on collect */
+.gem-collected {
+  animation: gem-collect 0.3s steps(2) forwards !important;
+}
+@keyframes gem-collect {
+  0%   { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* Scrollbar style */
+#plant-picker::-webkit-scrollbar { height: 4px; }
+#plant-picker::-webkit-scrollbar-track { background: #1a0c04; }
+#plant-picker::-webkit-scrollbar-thumb { background: #6b4423; }
 </style>
 </head>
 <body>
@@ -299,65 +394,95 @@ body {
 
   <!-- TOP BAR -->
   <div id="topbar">
-    <div id="sun-count">☀️ <span id="sun-val">150</span></div>
-    <div id="wave-info">第 <span id="wave-num">1</span> 波 / 3 波</div>
-    <div id="score-display" style="color:#ffe;font-size:15px;font-weight:bold;">🌟 <span id="score-val">0</span></div>
+    <div id="gem-count">💎 <span id="gem-val">200</span></div>
+    <div id="wave-info">第 <span id="wave-num">1</span> 关 / 3 关</div>
+    <div id="score-display">⭐ <span id="score-val">0</span></div>
   </div>
 
-  <!-- PLANT PICKER -->
+  <!-- BUILDER PICKER -->
   <div id="plant-picker"></div>
 
   <!-- GRID -->
   <div id="grid-area">
     <div id="grid"></div>
-    <div id="wave-alert">🧟 僵尸来了！</div>
+    <div id="wave-alert">⚠️ 怪物来了！</div>
     <div id="overlay" class="hidden">
       <div class="overlay-emoji" id="overlay-emoji">🎉</div>
-      <div class="overlay-title" id="overlay-title">你赢了！</div>
+      <div class="overlay-title" id="overlay-title">YOU WIN!</div>
       <div class="overlay-sub" id="overlay-sub">胖团超厉害！</div>
-      <button class="big-btn btn-green" onclick="startGame()">再玩一次 🌻</button>
+      <button class="big-btn btn-green" onclick="startGame()">▶ 再玩一次</button>
     </div>
   </div>
 </div>
 
 <script>
 // =====================
-//  GAME CONFIG
+//  MINECRAFT THEME CONFIG
 // =====================
 const COLS = 7;
 const ROWS = 5;
 
+// Defenders = Minecraft/Lego style blocks
 const PLANTS = [
-  { id:'sunflower', emoji:'🌻', cost:50,  cooldown:1500, desc:'产阳光', shootInterval:0,  damage:0,  hp:300, sunGen:25 },
-  { id:'peashooter',emoji:'🫛', cost:100, cooldown:1000, desc:'射豌豆', shootInterval:2000,damage:20, hp:300, sunGen:0  },
-  { id:'wallnut',   emoji:'🥜', cost:50,  cooldown:2000, desc:'超耐打', shootInterval:0,  damage:0,  hp:1200,sunGen:0  },
-  { id:'cherry',    emoji:'🍒', cost:150, cooldown:3000, desc:'大爆炸', shootInterval:0,  damage:999,hp:1,   sunGen:0, splash:true },
+  {
+    id:'sunflower', emoji:'🌻', cost:50,  cooldown:1400,
+    desc:'阳光花', shootInterval:0, damage:0, hp:300, gemGen:25,
+    name:'阳光花'
+  },
+  {
+    id:'peashooter', emoji:'🏹', cost:100, cooldown:900,
+    desc:'弓箭手', shootInterval:1800, damage:22, hp:280, gemGen:0,
+    name:'弓箭手', projEmoji:'🏹'
+  },
+  {
+    id:'wallnut', emoji:'🧱', cost:50,  cooldown:2000,
+    desc:'石头墙', shootInterval:0, damage:0, hp:1400, gemGen:0,
+    name:'石头墙'
+  },
+  {
+    id:'tnt', emoji:'🧨', cost:150, cooldown:3000,
+    desc:'TNT爆炸', shootInterval:0, damage:999, hp:1, gemGen:0,
+    name:'TNT', splash:true
+  },
+  {
+    id:'snowman', emoji:'⛄', cost:120, cooldown:1200,
+    desc:'雪球减速', shootInterval:2200, damage:12, hp:250, gemGen:0,
+    name:'雪人', projEmoji:'❄️', slow:true
+  },
 ];
 
+// Enemies = Minecraft mobs
 const ZOMBIE_TYPES = [
-  { emoji:'🧟', hp:120, speed:0.35, damage:20 },   // slow & weak for kids
-  { emoji:'🧟‍♂️', hp:280, speed:0.28, damage:30 },
-  { emoji:'🧟‍♀️', hp:450, speed:0.25, damage:40 },
+  { emoji:'🧟', hp:130,  speed:0.32, damage:20, name:'僵尸' },
+  { emoji:'💀', hp:100,  speed:0.45, damage:15, name:'骷髅', ranged:false },
+  { emoji:'🐍', hp:280,  speed:0.26, damage:35, name:'苦力怕', explodes:false },
+  { emoji:'🕷️',  hp:180,  speed:0.55, damage:18, name:'蜘蛛' },
+  { emoji:'👾', hp:450,  speed:0.22, damage:50, name:'末影人' },
+];
+
+// Block theme colors per row (dirt layers)
+const ROW_COLORS = [
+  '#6abf47', '#5eb040', '#52a138', '#468f31', '#3a7d2b'
 ];
 
 // =====================
 //  STATE
 // =====================
-let sun = 200;
+let gems = 200;
 let score = 0;
 let wave = 1;
 let maxWaves = 3;
 let gameRunning = false;
 let selectedPlant = null;
-let plants = {};       // key: "row-col" => plant obj
+let plants = {};
 let zombies = [];
 let projectiles = [];
-let sunDrops = [];
-let lawnmowers = [];   // one per row
+let gemDrops = [];
+let lawnmowers = [];
 let lastTime = 0;
-let cooldownTimers = {};  // plantId => remaining ms
-let shootTimers = {};     // "row-col" => remaining ms
-let sunGenTimers = {};    // "row-col" => remaining ms
+let cooldownTimers = {};
+let shootTimers = {};
+let gemGenTimers = {};
 let waveTimer = 0;
 let zombiesThisWave = [];
 let zombiesSpawned = 0;
@@ -366,7 +491,7 @@ let spawnTimer = 0;
 let waveComplete = false;
 let pendingNextWave = false;
 let nextWaveTimer = 0;
-let globalSunTimer = 0;  // auto sun drops
+let globalGemTimer = 0;
 
 const cellW = () => document.getElementById('grid').clientWidth / COLS;
 const cellH = () => document.getElementById('grid').clientHeight / ROWS;
@@ -385,7 +510,7 @@ function initGrid() {
       cell.className = 'cell';
       cell.dataset.row = r;
       cell.dataset.col = c;
-      // Last col = zombie entry, no planting
+      cell.style.background = ROW_COLORS[r];
       if (c < COLS - 1) {
         cell.addEventListener('click', () => onCellClick(r, c));
         cell.addEventListener('touchstart', (e) => { e.preventDefault(); onCellClick(r, c); }, {passive:false});
@@ -402,7 +527,11 @@ function initPlantPicker() {
     const card = document.createElement('div');
     card.className = 'plant-card';
     card.id = 'card-' + p.id;
-    card.innerHTML = `<span class="emoji">${p.emoji}</span><span class="cost">☀️${p.cost}</span>`;
+    card.innerHTML = `
+      <span class="emoji">${p.emoji}</span>
+      <span class="p-name">${p.name}</span>
+      <span class="cost">💎${p.cost}</span>
+    `;
     card.title = p.desc;
     card.addEventListener('click', () => selectPlant(p.id));
     card.addEventListener('touchstart', (e) => { e.preventDefault(); selectPlant(p.id); }, {passive:false});
@@ -413,16 +542,15 @@ function initPlantPicker() {
 function initLawnmowers() {
   lawnmowers = [];
   const area = document.getElementById('grid-area');
-  // remove old
   area.querySelectorAll('.lawnmower').forEach(e => e.remove());
   for (let r = 0; r < ROWS; r++) {
     const el = document.createElement('div');
     el.className = 'lawnmower';
-    el.textContent = '🚜';
-    el.style.top = (r * cellH() + cellH()/2 - 14) + 'px';
+    el.textContent = '🛒'; // Minecart!
+    el.style.top = (r * cellH() + cellH()/2 - 13) + 'px';
     el.style.left = '2px';
     area.appendChild(el);
-    lawnmowers.push({ row: r, x: 2, active: false, speed: 6, el });
+    lawnmowers.push({ row: r, x: 2, active: false, speed: 7, el });
   }
 }
 
@@ -433,20 +561,24 @@ function selectPlant(id) {
   const p = PLANTS.find(x => x.id === id);
   if (!p) return;
   if (cooldownTimers[id] > 0) return;
-  if (sun < p.cost) { flashNoSun(); return; }
+  if (gems < p.cost) { flashNoCash(); return; }
   selectedPlant = id;
   document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('card-' + id)?.classList.add('selected');
 }
 
-function flashNoSun() {
-  const el = document.getElementById('sun-count');
-  el.style.background = '#ff6666';
-  setTimeout(() => el.style.background = '#ffd700', 300);
+function flashNoCash() {
+  const el = document.getElementById('gem-count');
+  el.style.background = '#7a0000';
+  el.style.borderColor = '#ff4444';
+  setTimeout(() => {
+    el.style.background = '#1a6ea8';
+    el.style.borderColor = '#0a3a5a';
+  }, 300);
 }
 
 // =====================
-//  PLACE PLANT
+//  PLACE BLOCK/UNIT
 // =====================
 function onCellClick(r, c) {
   if (!gameRunning) return;
@@ -456,71 +588,79 @@ function onCellClick(r, c) {
   const p = PLANTS.find(x => x.id === selectedPlant);
   if (!p) return;
   if (cooldownTimers[selectedPlant] > 0) return;
-  if (sun < p.cost) { flashNoSun(); return; }
+  if (gems < p.cost) { flashNoCash(); return; }
 
-  // Cherry bomb: instant splash
+  // TNT: instant splash
   if (p.splash) {
-    sun -= p.cost;
+    gems -= p.cost;
     startCooldown(p.id, p.cooldown);
-    updateSunUI();
-    doSplashBomb(r, c);
+    updateGemUI();
+    doTNTBomb(r, c);
     selectedPlant = null;
     document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
     return;
   }
 
-  sun -= p.cost;
+  gems -= p.cost;
   startCooldown(p.id, p.cooldown);
-  updateSunUI();
+  updateGemUI();
 
   const cw = cellW(), ch = cellH();
   const area = document.getElementById('grid-area');
   const el = document.createElement('div');
   el.className = 'plant-sprite';
   el.textContent = p.emoji;
-  el.style.left = (c * cw + cw/2 - 18) + 'px';
-  el.style.top  = (r * ch + ch/2 - 18) + 'px';
-  el.style.width = '36px';
-  el.style.height= '36px';
+  el.style.left   = (c * cw + cw/2 - 18) + 'px';
+  el.style.top    = (r * ch + ch/2 - 18) + 'px';
+  el.style.width  = '36px';
+  el.style.height = '36px';
 
-  // HP bar
   const hpBar = document.createElement('div');
   hpBar.className = 'hp-bar';
   const hpFill = document.createElement('div');
   hpFill.className = 'hp-fill';
   hpBar.appendChild(hpFill);
   el.appendChild(hpBar);
-
   area.appendChild(el);
 
   plants[key] = {
     id: p.id, row: r, col: c, hp: p.hp, maxHp: p.hp,
     emoji: p.emoji, el, hpFill,
-    shootInterval: p.shootInterval, sunGen: p.sunGen,
+    shootInterval: p.shootInterval,
+    gemGen: p.gemGen,
+    projEmoji: p.projEmoji || '🟢',
+    slow: p.slow || false,
   };
 
   if (p.shootInterval > 0) shootTimers[key] = p.shootInterval;
-  if (p.sunGen > 0) sunGenTimers[key] = 5000;
+  if (p.gemGen > 0) gemGenTimers[key] = 6000;
 
-  // Mark cell
   const cellEl = getCellEl(r, c);
-  if (cellEl) cellEl.classList.add('has-plant');
+  if (cellEl) {
+    cellEl.classList.add('has-plant');
+    // Lighten cell to show occupation
+    cellEl.style.background = 'rgba(255,220,100,0.25)';
+  }
 
   selectedPlant = null;
   document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
 }
 
-function doSplashBomb(r, c) {
+function doTNTBomb(r, c) {
   const cw = cellW(), ch = cellH();
   const cx = c * cw + cw/2;
   const cy = r * ch + ch/2;
-  spawnExplosion(cx, cy, '💥', 64);
-  // Kill zombies nearby (±1 row, left side)
+
+  // Big pixel explosion
+  spawnExplosion(cx, cy, '💥', 70);
+  setTimeout(() => spawnExplosion(cx - cw, cy - ch*0.5, '🔥', 44), 80);
+  setTimeout(() => spawnExplosion(cx + cw*0.5, cy + ch*0.5, '🔥', 36), 160);
+
+  // Kill zombies in blast radius
   zombies.forEach(z => {
-    const zr = z.row;
-    if (Math.abs(zr - r) <= 1) {
+    if (Math.abs(z.row - r) <= 1) {
       const zx = z.x;
-      if (Math.abs(zx - cx) < cw * 2) {
+      if (Math.abs(zx - cx) < cw * 2.5) {
         z.hp = 0;
       }
     }
@@ -545,19 +685,21 @@ function updateCooldownUI(id) {
     card.classList.remove('can-afford');
   } else {
     card.classList.remove('cannot-afford');
-    if (sun >= (p?.cost || 999)) card.classList.add('can-afford');
+    if (gems >= (p?.cost || 999)) card.classList.add('can-afford');
     else card.classList.remove('can-afford');
   }
 }
 
 // =====================
-//  ZOMBIES
+//  ZOMBIES / MOBS
 // =====================
 function buildWave(w) {
   const count = 3 + w * 2;
   const list = [];
+  // Available mob types scale with wave
+  const maxType = Math.min(w + 1, ZOMBIE_TYPES.length);
   for (let i = 0; i < count; i++) {
-    const typeIdx = Math.min(Math.floor(Math.random() * (w)), ZOMBIE_TYPES.length - 1);
+    const typeIdx = Math.floor(Math.random() * maxType);
     const t = ZOMBIE_TYPES[typeIdx];
     list.push({
       row: Math.floor(Math.random() * ROWS),
@@ -570,7 +712,7 @@ function buildWave(w) {
 function spawnZombie(zDef) {
   const area = document.getElementById('grid-area');
   const cw = cellW(), ch = cellH();
-  const startX = area.clientWidth;
+  const startX = area.clientWidth + 20;
 
   const el = document.createElement('div');
   el.className = 'zombie-sprite';
@@ -594,58 +736,62 @@ function spawnZombie(zDef) {
     speed: zDef.speed * (cw / 60),
     damage: zDef.damage,
     emoji: zDef.emoji,
+    name: zDef.name,
     el, hpFill,
     eating: false,
     eatTimer: 0,
     dead: false,
+    slowTimer: 0,
+    originalSpeed: zDef.speed * (cw / 60),
   });
 }
 
 // =====================
 //  PROJECTILES
 // =====================
-function shootPea(row, fromCol, damage) {
+function shoot(row, fromCol, damage, emoji='🟢', slow=false) {
   const cw = cellW(), ch = cellH();
   const area = document.getElementById('grid-area');
   const el = document.createElement('div');
   el.className = 'projectile';
-  el.textContent = '🟢';
+  el.textContent = emoji === '🏹' ? '➡️' : emoji;
   const startX = fromCol * cw + cw;
   const y = row * ch + ch/2 - 9;
   el.style.left = startX + 'px';
   el.style.top  = y + 'px';
   area.appendChild(el);
-  projectiles.push({ row, x: startX, speed: 5, damage, el, dead: false });
+  projectiles.push({ row, x: startX, speed: 5.5, damage, el, dead: false, slow });
 }
 
 // =====================
-//  SUN DROPS
+//  GEM DROPS
 // =====================
-function spawnSunDrop(x, y, value=25) {
+function spawnGemDrop(x, y, value=25) {
   const area = document.getElementById('grid-area');
   const el = document.createElement('div');
-  el.className = 'sun-drop';
-  el.textContent = '☀️';
+  el.className = 'gem-drop';
+  el.textContent = '💎';
   el.style.left = x + 'px';
   el.style.top  = y + 'px';
-  el.addEventListener('click', () => collectSun(drop));
-  el.addEventListener('touchstart', (e) => { e.preventDefault(); collectSun(drop); }, {passive:false});
+  el.addEventListener('click', () => collectGem(drop));
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); collectGem(drop); }, {passive:false});
   area.appendChild(el);
-  const drop = { x, y, value, el, dead: false, lifetime: 8000 };
-  sunDrops.push(drop);
+  const drop = { x, y, value, el, dead: false, lifetime: 9000 };
+  gemDrops.push(drop);
   return drop;
 }
 
-function collectSun(drop) {
+function collectGem(drop) {
   if (drop.dead) return;
   drop.dead = true;
-  drop.el.remove();
-  sun += drop.value;
-  updateSunUI();
-  showScorePopup(drop.x, drop.y, '+' + drop.value + '☀️');
+  drop.el.classList.add('gem-collected');
+  setTimeout(() => drop.el.remove(), 300);
+  gems += drop.value;
+  updateGemUI();
+  showScorePopup(drop.x, drop.y, '+' + drop.value + '💎');
 }
 
-function spawnExplosion(cx, cy, emoji='💥', size=48) {
+function spawnExplosion(cx, cy, emoji='💥', size=44) {
   const area = document.getElementById('grid-area');
   const el = document.createElement('div');
   el.className = 'explosion';
@@ -654,7 +800,7 @@ function spawnExplosion(cx, cy, emoji='💥', size=48) {
   el.style.left = (cx - size/2) + 'px';
   el.style.top  = (cy - size/2) + 'px';
   area.appendChild(el);
-  setTimeout(() => el.remove(), 600);
+  setTimeout(() => el.remove(), 550);
 }
 
 function showScorePopup(x, y, text) {
@@ -669,15 +815,15 @@ function showScorePopup(x, y, text) {
 }
 
 // =====================
-//  UPDATE SUN UI
+//  UPDATE GEM UI
 // =====================
-function updateSunUI() {
-  document.getElementById('sun-val').textContent = sun;
+function updateGemUI() {
+  document.getElementById('gem-val').textContent = gems;
   PLANTS.forEach(p => {
     const card = document.getElementById('card-' + p.id);
     if (!card) return;
     if ((cooldownTimers[p.id] || 0) <= 0) {
-      if (sun >= p.cost) card.classList.add('can-afford');
+      if (gems >= p.cost) card.classList.add('can-afford');
       else card.classList.remove('can-afford');
     }
   });
@@ -696,11 +842,11 @@ function gameLoop(ts) {
   lastTime = ts;
 
   updateCooldowns(dt);
-  updateSunTimers(dt);
+  updateGemTimers(dt);
   updateShootTimers(dt);
   updateZombies(dt);
   updateProjectiles(dt);
-  updateSunDrops(dt);
+  updateGemDrops(dt);
   updateLawnmowers(dt);
   updateSpawn(dt);
   updateWaveProgress(dt);
@@ -724,31 +870,31 @@ function updateCooldowns(dt) {
 }
 
 // =====================
-//  SUN GEN (sunflower)
+//  GEM GEN (sunflower)
 // =====================
-function updateSunTimers(dt) {
-  // Global random sun drops
-  globalSunTimer -= dt;
-  if (globalSunTimer <= 0) {
-    globalSunTimer = 8000 + Math.random() * 7000;
+function updateGemTimers(dt) {
+  // Sky diamond drops
+  globalGemTimer -= dt;
+  if (globalGemTimer <= 0) {
+    globalGemTimer = 9000 + Math.random() * 8000;
     const area = document.getElementById('grid-area');
     const x = 20 + Math.random() * (area.clientWidth - 60);
     const y = 20 + Math.random() * (area.clientHeight - 60);
-    spawnSunDrop(x, y, 25);
+    spawnGemDrop(x, y, 25);
   }
 
   // Sunflower production
-  Object.keys(sunGenTimers).forEach(key => {
-    sunGenTimers[key] -= dt;
-    if (sunGenTimers[key] <= 0) {
-      sunGenTimers[key] = 6000 + Math.random() * 2000;
+  Object.keys(gemGenTimers).forEach(key => {
+    gemGenTimers[key] -= dt;
+    if (gemGenTimers[key] <= 0) {
+      gemGenTimers[key] = 7000 + Math.random() * 2000;
       const plant = plants[key];
-      if (plant && plant.sunGen > 0) {
+      if (plant && plant.gemGen > 0) {
         const cw = cellW(), ch = cellH();
-        spawnSunDrop(
-          plant.col * cw + cw/2 - 15,
-          plant.row * ch + ch/2 - 15,
-          plant.sunGen
+        spawnGemDrop(
+          plant.col * cw + cw/2 - 13,
+          plant.row * ch + ch/2 - 13,
+          plant.gemGen
         );
       }
     }
@@ -764,13 +910,13 @@ function updateShootTimers(dt) {
     if (shootTimers[key] <= 0) {
       const plant = plants[key];
       if (!plant) { delete shootTimers[key]; return; }
-      // Only shoot if zombie in same row
       const hasTarget = zombies.some(z => !z.dead && z.row === plant.row);
       if (hasTarget) {
-        shootPea(plant.row, plant.col, 20);
+        shoot(plant.row, plant.col, plant.id === 'peashooter' ? 22 : 12,
+              plant.projEmoji || '🟢', plant.slow || false);
         shootTimers[key] = plant.shootInterval;
       } else {
-        shootTimers[key] = 500; // check again soon
+        shootTimers[key] = 400;
       }
     }
   });
@@ -780,25 +926,29 @@ function updateShootTimers(dt) {
 //  ZOMBIES UPDATE
 // =====================
 function updateZombies(dt) {
-  const cw = cellW(), ch = cellH();
+  const cw = cellW();
   const toRemove = [];
 
   zombies.forEach((z, i) => {
     if (z.dead) { toRemove.push(i); return; }
 
-    // Check if eating a plant
+    // Slow timer recovery
+    if (z.slowTimer > 0) {
+      z.slowTimer -= dt;
+      if (z.slowTimer <= 0) {
+        z.speed = z.originalSpeed;
+        z.slowTimer = 0;
+      }
+    }
+
     z.eating = false;
     let blocked = false;
 
-    // Find plant in same row, cell zombie is overlapping
     const zCol = Math.floor(z.x / cw);
-    const plantKey = `${z.row}-${zCol}`;
-    const plantAtCell = plants[plantKey];
-    // Also check col-1
+    const plantKey  = `${z.row}-${zCol}`;
     const plantKey2 = `${z.row}-${zCol - 1}`;
-    const plantAtCell2 = plants[plantKey2];
+    const target = plants[plantKey] || plants[plantKey2];
 
-    const target = plantAtCell || plantAtCell2;
     if (target && target.hp > 0) {
       z.eating = true;
       blocked = true;
@@ -807,9 +957,7 @@ function updateZombies(dt) {
         z.eatTimer = 0;
         target.hp -= z.damage;
         updateHpBar(target);
-        if (target.hp <= 0) {
-          killPlant(target);
-        }
+        if (target.hp <= 0) killPlant(target);
       }
     }
 
@@ -818,16 +966,10 @@ function updateZombies(dt) {
       z.el.style.left = z.x + 'px';
     }
 
-    // Reached left edge → lawnmower
-    if (z.x < cw * 0.5) {
-      activateLawnmower(z.row, z);
-    }
-
-    // Update HP bar
+    if (z.x < cw * 0.5) activateLawnmower(z.row, z);
     updateHpBar(z);
   });
 
-  // Remove dead
   toRemove.reverse().forEach(i => {
     zombies[i].el.remove();
     zombies.splice(i, 1);
@@ -836,15 +978,10 @@ function updateZombies(dt) {
 
 function activateLawnmower(row, triggerZombie) {
   const mower = lawnmowers.find(m => m.row === row && !m.active);
-  if (!mower) {
-    // No mower left — game over handled elsewhere
-    return;
-  }
+  if (!mower) return;
   mower.active = true;
-  mower.triggerZombie = triggerZombie;
-  // Kill trigger zombie
   triggerZombie.dead = true;
-  spawnExplosion(triggerZombie.x, parseInt(triggerZombie.el.style.top) + 20, '💀');
+  spawnExplosion(triggerZombie.x, parseInt(triggerZombie.el.style.top) + 20, '💨', 40);
 }
 
 function updateLawnmowers(dt) {
@@ -853,20 +990,18 @@ function updateLawnmowers(dt) {
     if (!m.active) return;
     m.x += m.speed * dt / 16;
     m.el.style.left = m.x + 'px';
-    m.el.style.top  = (m.row * cellH() + cellH()/2 - 14) + 'px';
+    m.el.style.top  = (m.row * cellH() + cellH()/2 - 13) + 'px';
 
-    // Hit zombies in same row
     zombies.forEach(z => {
-      if (!z.dead && z.row === m.row && z.x < m.x + 30 && z.x > m.x - 10) {
+      if (!z.dead && z.row === m.row && z.x < m.x + 32 && z.x > m.x - 12) {
         z.dead = true;
-        score += 20;
-        spawnExplosion(z.x, parseInt(z.el.style.top) + 20, '💥');
+        score += 25;
+        spawnExplosion(z.x, parseInt(z.el.style.top) + 20, '💥', 36);
         updateScoreUI();
       }
     });
 
-    // Off screen
-    if (m.x > area.clientWidth + 50) {
+    if (m.x > area.clientWidth + 60) {
       m.el.remove();
       m.done = true;
     }
@@ -887,10 +1022,14 @@ function updateProjectiles(dt) {
 
     if (p.x > area.clientWidth) { p.dead = true; toRemove.push(i); return; }
 
-    // Hit zombie in same row
     for (const z of zombies) {
-      if (!z.dead && z.row === p.row && Math.abs(z.x - p.x) < 20) {
+      if (!z.dead && z.row === p.row && Math.abs(z.x - p.x) < 22) {
         z.hp -= p.damage;
+        // Snowball slow
+        if (p.slow) {
+          z.speed = z.originalSpeed * 0.4;
+          z.slowTimer = 2500;
+        }
         p.dead = true;
         p.el.remove();
         updateHpBar(z);
@@ -915,25 +1054,37 @@ function updateProjectiles(dt) {
 
 function killZombie(z) {
   z.dead = true;
-  spawnExplosion(z.x, parseInt(z.el.style.top), '💀', 36);
+  // Drop a gem sometimes
+  if (Math.random() < 0.35) {
+    spawnGemDrop(z.x, parseInt(z.el.style.top) + 10, 15);
+  }
+  spawnExplosion(z.x, parseInt(z.el.style.top), '💀', 34);
 }
 
 function killPlant(plant) {
   const key = `${plant.row}-${plant.col}`;
   delete plants[key];
   delete shootTimers[key];
-  delete sunGenTimers[key];
+  delete gemGenTimers[key];
   plant.el.remove();
   const cellEl = getCellEl(plant.row, plant.col);
-  if (cellEl) cellEl.classList.remove('has-plant');
+  if (cellEl) {
+    cellEl.classList.remove('has-plant');
+    cellEl.style.background = ROW_COLORS[plant.row];
+  }
+  spawnExplosion(
+    plant.col * cellW() + cellW()/2,
+    plant.row * cellH() + cellH()/2,
+    '🪨', 30
+  );
 }
 
 // =====================
-//  SUN DROPS
+//  GEM DROPS
 // =====================
-function updateSunDrops(dt) {
+function updateGemDrops(dt) {
   const toRemove = [];
-  sunDrops.forEach((d, i) => {
+  gemDrops.forEach((d, i) => {
     if (d.dead) { toRemove.push(i); return; }
     d.lifetime -= dt;
     if (d.lifetime <= 0) {
@@ -942,7 +1093,7 @@ function updateSunDrops(dt) {
       toRemove.push(i);
     }
   });
-  toRemove.reverse().forEach(i => sunDrops.splice(i, 1));
+  toRemove.reverse().forEach(i => gemDrops.splice(i, 1));
 }
 
 // =====================
@@ -952,7 +1103,7 @@ function updateHpBar(entity) {
   if (!entity.hpFill) return;
   const pct = Math.max(0, entity.hp / entity.maxHp) * 100;
   entity.hpFill.style.width = pct + '%';
-  entity.hpFill.style.background = pct > 60 ? '#22cc44' : pct > 30 ? '#ffaa00' : '#ff3333';
+  entity.hpFill.style.background = pct > 60 ? '#44ff44' : pct > 30 ? '#ffaa00' : '#ff3333';
 }
 
 // =====================
@@ -977,20 +1128,22 @@ function updateWaveProgress(dt) {
     if (nextWaveTimer <= 0) {
       pendingNextWave = false;
       wave++;
-      if (wave > maxWaves) return; // victory handled in checkVictory
+      if (wave > maxWaves) return;
       document.getElementById('wave-num').textContent = wave;
       startWave(wave);
     }
     return;
   }
 
-  // Check wave done: all spawned + all dead
   if (zombiesSpawned >= zombiesThisWave.length && zombies.length === 0 && !waveComplete) {
     waveComplete = true;
     if (wave < maxWaves) {
       pendingNextWave = true;
-      nextWaveTimer = 3000;
-      showWaveAlert(`第 ${wave + 1} 波来了！`);
+      nextWaveTimer = 3500;
+      // Bonus gems between waves
+      gems += 50;
+      updateGemUI();
+      showWaveAlert(`第 ${wave + 1} 关开始！+50💎`);
     }
   }
 }
@@ -999,15 +1152,15 @@ function startWave(w) {
   waveComplete = false;
   zombiesThisWave = buildWave(w);
   zombiesSpawned = 0;
-  spawnInterval = Math.max(1500, 3000 - w * 300);
-  spawnTimer = 1000;
+  spawnInterval = Math.max(1400, 3200 - w * 350);
+  spawnTimer = 800;
 }
 
 function showWaveAlert(msg) {
   const el = document.getElementById('wave-alert');
-  el.textContent = '🧟 ' + msg;
+  el.textContent = '⚡ ' + msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2000);
+  setTimeout(() => el.classList.remove('show'), 2500);
 }
 
 // =====================
@@ -1018,7 +1171,6 @@ function checkVictory() {
   if (wave > maxWaves && zombies.length === 0 && zombiesSpawned >= zombiesThisWave.length) {
     endGame(true);
   }
-  // Also if last wave complete
   if (wave === maxWaves && waveComplete && zombies.length === 0) {
     endGame(true);
   }
@@ -1026,11 +1178,8 @@ function checkVictory() {
 
 function checkDefeat() {
   if (!gameRunning) return;
-  // Zombie reached home (x < 0) and no lawnmower saved it
   const reached = zombies.some(z => !z.dead && z.x < -10);
-  if (reached) {
-    endGame(false);
-  }
+  if (reached) endGame(false);
 }
 
 function endGame(won) {
@@ -1038,13 +1187,13 @@ function endGame(won) {
   const overlay = document.getElementById('overlay');
   overlay.classList.remove('hidden');
   if (won) {
-    document.getElementById('overlay-emoji').textContent = '🎉';
-    document.getElementById('overlay-title').textContent = '你赢了！';
-    document.getElementById('overlay-sub').textContent = `胖团超厉害！得了 ${score} 分！`;
+    document.getElementById('overlay-emoji').textContent = '🏆';
+    document.getElementById('overlay-title').textContent = 'YOU WIN!';
+    document.getElementById('overlay-sub').textContent = `王国保住了！\n胖团真厉害！\n得了 ${score} 分！`;
   } else {
-    document.getElementById('overlay-emoji').textContent = '🧟';
-    document.getElementById('overlay-title').textContent = '僵尸进来了！';
-    document.getElementById('overlay-sub').textContent = `没关系，再试一次！得了 ${score} 分`;
+    document.getElementById('overlay-emoji').textContent = '💀';
+    document.getElementById('overlay-title').textContent = 'GAME OVER';
+    document.getElementById('overlay-sub').textContent = `怪物进来了…\n没关系，重新来过！\n得了 ${score} 分`;
   }
 }
 
@@ -1056,29 +1205,26 @@ function updateScoreUI() {
 //  START GAME
 // =====================
 function startGame() {
-  // Reset state
-  sun = 200; score = 0; wave = 1;
+  gems = 200; score = 0; wave = 1;
   selectedPlant = null;
-  plants = {}; zombies = []; projectiles = []; sunDrops = [];
-  cooldownTimers = {}; shootTimers = {}; sunGenTimers = {};
+  plants = {}; zombies = []; projectiles = []; gemDrops = [];
+  cooldownTimers = {}; shootTimers = {}; gemGenTimers = {};
   waveComplete = false; pendingNextWave = false;
-  globalSunTimer = 5000;
+  globalGemTimer = 6000;
   gameRunning = false;
 
-  // Clear DOM
   const area = document.getElementById('grid-area');
-  area.querySelectorAll('.plant-sprite,.zombie-sprite,.projectile,.sun-drop,.explosion,.score-popup,.lawnmower').forEach(e => e.remove());
+  area.querySelectorAll('.plant-sprite,.zombie-sprite,.projectile,.gem-drop,.explosion,.score-popup,.lawnmower').forEach(e => e.remove());
   document.getElementById('overlay').classList.add('hidden');
 
-  // Reset UI
-  document.getElementById('sun-val').textContent = sun;
+  document.getElementById('gem-val').textContent = gems;
   document.getElementById('score-val').textContent = score;
   document.getElementById('wave-num').textContent = wave;
 
   initGrid();
   initPlantPicker();
   initLawnmowers();
-  updateSunUI();
+  updateGemUI();
 
   startWave(1);
   gameRunning = true;
@@ -1087,17 +1233,17 @@ function startGame() {
 }
 
 // =====================
-//  BOOT
+//  BOOT — TITLE SCREEN
 // =====================
 window.addEventListener('load', () => {
-  // Show start screen
   const overlay = document.getElementById('overlay');
   overlay.classList.remove('hidden');
-  document.getElementById('overlay-emoji').textContent = '🌻';
-  document.getElementById('overlay-title').textContent = '花园保卫战';
-  document.getElementById('overlay-sub').textContent = '点击植物，再点格子种下去！\n☀️ 要收集阳光哦！';
+  document.getElementById('overlay-emoji').textContent = '⛏️';
+  document.getElementById('overlay-title').textContent = '方块王国\n保卫战';
+  document.getElementById('overlay-sub').textContent =
+    '点卡牌选角色\n再点草地放置\n收集💎建防线！\n\n🌻阳光花 🏹弓箭手\n🧱石头墙 🧨TNT ⛄雪人';
   const btn = overlay.querySelector('.big-btn');
-  btn.textContent = '开始游戏 🚀';
+  btn.textContent = '▶ 开始冒险';
 });
 </script>
 </body>
