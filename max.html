@@ -6,30 +6,18 @@
 <title>胖团的方块王国保卫战 ⛏️</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; }
+* { margin:0; padding:0; box-sizing:border-box; touch-action:manipulation; }
 
 :root {
-  --grass:  #5d9e3a;
-  --dirt:   #8b5a2b;
-  --stone:  #888;
-  --wood:   #a07040;
-  --gold:   #ffd700;
-  --pixel:  'Press Start 2P', monospace, Arial;
+  --pixel: 'Press Start 2P', monospace, Arial;
 }
 
 body {
-  background: #3a7d2c;
   font-family: var(--pixel);
   overflow: hidden;
   user-select: none;
   image-rendering: pixelated;
-}
-
-/* ---- PIXEL BORDER MIXIN ---- */
-.pixel-box {
-  box-shadow:
-    inset -3px -3px 0 rgba(0,0,0,0.4),
-    inset  3px  3px 0 rgba(255,255,255,0.25);
+  background: #1a1a2e;
 }
 
 #game-wrap {
@@ -37,234 +25,163 @@ body {
   flex-direction: column;
   align-items: center;
   height: 100vh;
-  max-width: 520px;
+  max-width: 540px;
   margin: 0 auto;
   position: relative;
 }
 
-/* ---- TOP BAR ---- */
+/* ===== TOP BAR ===== */
 #topbar {
   width: 100%;
-  background: #3a2010;
-  padding: 6px 10px;
+  padding: 5px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 4px solid #1a0c08;
+  border-bottom: 4px solid rgba(0,0,0,0.5);
   z-index: 10;
+  flex-shrink: 0;
 }
 
 #gem-count {
   background: #1a6ea8;
   border: 3px solid #0a3a5a;
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-family: var(--pixel);
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 11px;
   color: #7ef7ff;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: flex; align-items: center; gap: 3px;
   box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);
-  min-width: 80px;
+  min-width: 75px;
 }
-
 #wave-info {
-  flex: 1;
-  text-align: center;
-  color: #ffdd77;
-  font-size: 9px;
-  font-family: var(--pixel);
+  flex: 1; text-align: center;
+  color: #ffdd77; font-size: 8px;
   text-shadow: 2px 2px 0 #000;
 }
+#score-display { color: #ffe; font-size: 8px; text-shadow: 1px 1px 0 #000; }
 
-#score-display {
-  color: #ffe;
-  font-size: 9px;
-  font-family: var(--pixel);
-  text-shadow: 1px 1px 0 #000;
-}
-
-/* ---- BUILDER PICKER ---- */
+/* ===== BUILDER PICKER ===== */
 #plant-picker {
   width: 100%;
-  background: #2a1a0a;
-  padding: 5px 6px;
-  display: flex;
-  gap: 5px;
+  padding: 4px 5px;
+  display: flex; gap: 4px;
   overflow-x: auto;
-  border-bottom: 4px solid #1a0c04;
-  z-index: 10;
+  border-bottom: 4px solid rgba(0,0,0,0.5);
+  z-index: 10; flex-shrink: 0;
   scrollbar-width: thin;
 }
+#plant-picker::-webkit-scrollbar { height: 3px; }
+#plant-picker::-webkit-scrollbar-thumb { background: #6b4423; }
 
 .plant-card {
   flex-shrink: 0;
-  width: 58px;
-  height: 66px;
-  background: #6b4423;
+  width: 58px; height: 66px;
   border-radius: 3px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
   cursor: pointer;
-  border: 3px solid #3a2010;
+  border: 3px solid #000;
   box-shadow: inset -2px -2px 0 rgba(0,0,0,0.5), inset 2px 2px 0 rgba(255,255,255,0.1);
   transition: transform 0.08s;
-  position: relative;
   gap: 2px;
 }
 .plant-card:active { transform: scale(0.9) translateY(2px); }
-.plant-card.selected {
-  border-color: #ffee00;
-  background: #8b6233;
-  box-shadow: 0 0 0 2px #ffee00, inset -2px -2px 0 rgba(0,0,0,0.5);
-}
+.plant-card.selected { border-color: #ffee00; box-shadow: 0 0 0 2px #ffee00; }
 .plant-card.can-afford { border-color: #44bb44; }
-.plant-card.cannot-afford { opacity: 0.45; filter: grayscale(0.5); }
+.plant-card.cannot-afford { opacity: 0.4; filter: grayscale(0.6); }
 .plant-card .emoji { font-size: 26px; line-height: 1; }
-.plant-card .p-name {
-  font-size: 6px;
-  font-family: var(--pixel);
-  color: #ffd;
-  text-align: center;
-  line-height: 1.2;
-}
-.plant-card .cost {
-  font-size: 8px;
-  font-family: var(--pixel);
-  color: #7ef7ff;
-  background: #1a4a6a;
-  border-radius: 2px;
-  padding: 1px 4px;
-}
+.plant-card .p-name { font-size: 6px; color: #ffd; text-align: center; }
+.plant-card .cost { font-size: 8px; color: #7ef7ff; background: #1a4a6a; border-radius: 2px; padding: 1px 3px; }
 
-/* ---- GRID ---- */
+/* ===== GRID ===== */
 #grid-area {
-  flex: 1;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
+  flex: 1; width: 100%;
+  position: relative; overflow: hidden;
 }
+#grid { display: grid; width: 100%; height: 100%; }
 
-#grid {
-  display: grid;
-  width: 100%;
-  height: 100%;
-}
-
-/* Minecraft-style layered terrain */
 .cell {
-  position: relative;
-  cursor: pointer;
-  border: 1px solid rgba(0,0,0,0.15);
+  position: relative; cursor: pointer;
+  border: 1px solid rgba(0,0,0,0.12);
+  transition: filter 0.1s;
 }
-
-/* Row colors: alternating grass shades */
-.cell[data-row="0"] { background: #5d9e3a; }
-.cell[data-row="1"] { background: #569637; }
-.cell[data-row="2"] { background: #4f8e34; }
-.cell[data-row="3"] { background: #488631; }
-.cell[data-row="4"] { background: #417e2e; }
-
-/* Pixel grid lines */
 .cell::after {
   content: '';
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 8px),
-    repeating-linear-gradient(0deg,  rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 8px);
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 10px),
+    repeating-linear-gradient(0deg,  rgba(0,0,0,0.04) 0, rgba(0,0,0,0.04) 1px, transparent 1px, transparent 10px);
   pointer-events: none;
 }
-
-.cell:hover { background: rgba(255,255,150,0.3) !important; }
+.cell:hover { filter: brightness(1.35); }
 .cell.has-plant { cursor: default; }
 
-/* Dirt base at bottom of each lane (visual flair) */
-.cell:nth-child(7n+1) { border-left: 3px solid rgba(0,0,0,0.2); }
-
-/* ---- ENTITIES ---- */
+/* ===== ENTITIES ===== */
 .plant-sprite, .zombie-sprite, .projectile, .gem-drop, .explosion {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 5;
+  position: absolute; display: flex;
+  align-items: center; justify-content: center;
+  pointer-events: none; z-index: 5;
 }
-
-/* Block-style bounce animation */
 .plant-sprite {
   font-size: 30px;
-  animation: block-idle 2s steps(2) infinite;
+  animation: block-idle 1.8s steps(2) infinite;
   filter: drop-shadow(2px 4px 0 rgba(0,0,0,0.5));
-  image-rendering: pixelated;
 }
 @keyframes block-idle {
-  0%   { transform: translateY(0px); }
-  50%  { transform: translateY(-3px); }
-  100% { transform: translateY(0px); }
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
 }
-
 .zombie-sprite {
-  font-size: 34px;
-  z-index: 6;
+  font-size: 34px; z-index: 6;
   filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.6));
-  animation: zombie-walk 0.4s steps(2) infinite;
+  animation: zombie-walk 0.45s steps(2) infinite;
 }
 @keyframes zombie-walk {
-  0%   { transform: rotate(-4deg) scaleX(1); }
-  50%  { transform: rotate( 4deg) scaleX(1.05); }
-  100% { transform: rotate(-4deg) scaleX(1); }
+  0%   { transform: rotate(-4deg); }
+  50%  { transform: rotate(4deg) scaleX(1.05); }
+  100% { transform: rotate(-4deg); }
 }
-
-.projectile {
-  font-size: 16px;
-  z-index: 7;
-  filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.5));
+/* Creeper danger flash */
+.zombie-sprite.creeper-primed {
+  animation: creeper-flash 0.2s steps(1) infinite;
 }
+@keyframes creeper-flash {
+  0%   { filter: drop-shadow(0 0 6px #fff) brightness(2); }
+  50%  { filter: drop-shadow(0 0 0px #fff) brightness(1); }
+  100% { filter: drop-shadow(0 0 6px #fff) brightness(2); }
+}
+.projectile { font-size: 15px; z-index: 7; }
 
 .hp-bar {
-  position: absolute;
-  bottom: 1px;
-  left: 8%;
-  width: 84%;
-  height: 5px;
-  background: #222;
-  border: 1px solid #000;
-  border-radius: 0;
-  z-index: 8;
+  position: absolute; bottom: 1px; left: 8%; width: 84%; height: 5px;
+  background: #222; border: 1px solid #000; z-index: 8;
 }
-.hp-fill {
-  height: 100%;
-  background: #44ff44;
-  transition: width 0.15s;
-}
+.hp-fill { height: 100%; background: #44ff44; transition: width 0.15s; }
 
 .gem-drop {
-  font-size: 26px;
-  cursor: pointer;
-  pointer-events: all;
+  font-size: 25px; cursor: pointer; pointer-events: all;
   animation: gem-fall 0.35s ease-out, gem-float 1.2s 0.35s ease-in-out infinite;
   z-index: 20;
   filter: drop-shadow(0 2px 4px rgba(0,200,255,0.7));
 }
 @keyframes gem-fall {
-  from { transform: translateY(-40px) scale(0.5) rotate(-20deg); opacity: 0; }
+  from { transform: translateY(-40px) scale(0.4) rotate(-20deg); opacity: 0; }
   to   { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
 }
 @keyframes gem-float {
   0%,100% { transform: scale(1) rotate(-5deg); }
-  50%      { transform: scale(1.15) rotate(5deg); }
+  50%     { transform: scale(1.15) rotate(5deg); }
+}
+.gem-collected { animation: gem-collect 0.3s steps(2) forwards !important; }
+@keyframes gem-collect {
+  0%   { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(0); opacity: 0; }
 }
 
 .explosion {
   font-size: 44px;
   animation: mc-explode 0.45s steps(3) forwards;
-  z-index: 15;
-  pointer-events: none;
+  z-index: 15; pointer-events: none;
 }
 @keyframes mc-explode {
   0%   { transform: scale(0.4); opacity: 1; }
@@ -272,233 +189,293 @@ body {
   100% { transform: scale(2.0); opacity: 0; }
 }
 
-/* ---- LAWNMOWER = MINECART ---- */
+/* Minecart */
 .lawnmower {
-  position: absolute;
-  font-size: 26px;
-  z-index: 9;
+  position: absolute; font-size: 25px; z-index: 9;
   pointer-events: none;
   filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.5));
 }
 
-/* ---- OVERLAY ---- */
+/* ===== OVERLAYS ===== */
 #overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  gap: 14px;
-  text-align: center;
-  padding: 24px;
-  image-rendering: pixelated;
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 50; gap: 12px;
+  text-align: center; padding: 20px;
 }
 #overlay.hidden { display: none; }
 
-.overlay-emoji { font-size: 72px; animation: bounce 0.8s steps(3) infinite; }
-@keyframes bounce {
-  0%,100% { transform: translateY(0); }
-  50%      { transform: translateY(-10px); }
-}
+.overlay-emoji { font-size: 68px; animation: bounce 0.8s steps(3) infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 
 .overlay-title {
-  font-size: 20px;
-  font-family: var(--pixel);
-  color: #ffee44;
+  font-size: 18px; color: #ffee44;
   text-shadow: 3px 3px 0 #000, -1px -1px 0 #a07000;
-  line-height: 1.5;
+  line-height: 1.6; white-space: pre-line;
 }
 .overlay-sub {
-  font-size: 10px;
-  font-family: var(--pixel);
-  color: #aaffaa;
-  line-height: 1.8;
-  max-width: 300px;
+  font-size: 9px; color: #aaffaa;
+  line-height: 2; max-width: 310px; white-space: pre-line;
 }
 .big-btn {
-  margin-top: 8px;
-  padding: 12px 28px;
-  font-size: 12px;
-  font-family: var(--pixel);
-  font-weight: bold;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
+  margin-top: 6px; padding: 11px 24px;
+  font-size: 11px; font-family: var(--pixel);
+  border: none; border-radius: 3px; cursor: pointer;
   box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4), inset 3px 3px 0 rgba(255,255,255,0.2);
   transition: transform 0.08s;
-  letter-spacing: 1px;
 }
-.big-btn:active { transform: scale(0.93) translateY(2px); box-shadow: none; }
+.big-btn:active { transform: scale(0.92) translateY(2px); box-shadow: none; }
 .btn-green { background: #2d8f2d; color: #afffaf; border: 3px solid #1a5a1a; }
 .btn-blue  { background: #1a6ea8; color: #aff7ff; border: 3px solid #0a3a5a; }
+.btn-red   { background: #8f2020; color: #ffaaaa; border: 3px solid #5a0a0a; }
 
-/* ---- WAVE ALERT ---- */
+/* ===== MAP SELECT SCREEN ===== */
+#map-select {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 60; gap: 16px; padding: 24px;
+}
+#map-select.hidden { display: none; }
+#map-select h2 {
+  font-size: 14px; color: #ffee44;
+  text-shadow: 2px 2px 0 #000; margin-bottom: 4px;
+}
+.map-cards { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.map-card {
+  width: 140px; padding: 14px 10px;
+  border-radius: 4px; cursor: pointer;
+  border: 4px solid #333;
+  box-shadow: inset -3px -3px 0 rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: transform 0.1s, border-color 0.1s;
+}
+.map-card:hover { transform: translateY(-3px); border-color: #ffee44; }
+.map-card:active { transform: scale(0.93); }
+.map-card .map-emoji { font-size: 48px; }
+.map-card .map-name { font-size: 10px; color: #ffe; text-shadow: 1px 1px 0 #000; }
+.map-card .map-desc { font-size: 7px; color: #aaa; text-align: center; line-height: 1.6; }
+.map-card .map-diff { font-size: 8px; margin-top: 2px; }
+
+/* Wave alert */
 #wave-alert {
-  position: absolute;
-  top: 40%;
-  left: 50%;
+  position: absolute; top: 38%; left: 50%;
   transform: translate(-50%,-50%);
-  background: #7a0000;
-  color: #fff;
-  font-size: 11px;
-  font-family: var(--pixel);
-  font-weight: bold;
-  padding: 10px 22px;
-  border: 4px solid #ff4444;
-  border-radius: 3px;
-  box-shadow: 4px 4px 0 #000;
-  z-index: 30;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.2s;
-  text-shadow: 1px 1px 0 #000;
+  color: #fff; font-size: 10px; font-family: var(--pixel);
+  padding: 9px 20px; border: 4px solid #ff4444;
+  border-radius: 3px; box-shadow: 4px 4px 0 #000;
+  z-index: 30; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s;
+  text-shadow: 1px 1px 0 #000; background: #7a0000;
 }
 #wave-alert.show { opacity: 1; }
 
-/* ---- SCORE POPUP ---- */
+/* Score popup */
 .score-popup {
-  position: absolute;
-  font-size: 11px;
-  font-family: var(--pixel);
-  color: #7ef7ff;
-  text-shadow: 1px 1px 0 #000;
-  pointer-events: none;
-  z-index: 25;
+  position: absolute; font-size: 10px; color: #7ef7ff;
+  text-shadow: 1px 1px 0 #000; pointer-events: none; z-index: 25;
   animation: score-float 0.9s ease-out forwards;
 }
-@keyframes score-float {
-  from { transform: translateY(0); opacity: 1; }
-  to   { transform: translateY(-45px); opacity: 0; }
-}
-
-/* Pixel flicker on collect */
-.gem-collected {
-  animation: gem-collect 0.3s steps(2) forwards !important;
-}
-@keyframes gem-collect {
-  0%   { transform: scale(1.5); opacity: 1; }
-  100% { transform: scale(0); opacity: 0; }
-}
-
-/* Scrollbar style */
-#plant-picker::-webkit-scrollbar { height: 4px; }
-#plant-picker::-webkit-scrollbar-track { background: #1a0c04; }
-#plant-picker::-webkit-scrollbar-thumb { background: #6b4423; }
+@keyframes score-float { from{transform:translateY(0);opacity:1} to{transform:translateY(-45px);opacity:0} }
 </style>
 </head>
 <body>
 <div id="game-wrap">
-
-  <!-- TOP BAR -->
   <div id="topbar">
     <div id="gem-count">💎 <span id="gem-val">200</span></div>
-    <div id="wave-info">第 <span id="wave-num">1</span> 关 / 3 关</div>
+    <div id="wave-info">第 <span id="wave-num">1</span> 关 / <span id="wave-total">3</span> 关</div>
     <div id="score-display">⭐ <span id="score-val">0</span></div>
   </div>
-
-  <!-- BUILDER PICKER -->
   <div id="plant-picker"></div>
-
-  <!-- GRID -->
   <div id="grid-area">
     <div id="grid"></div>
-    <div id="wave-alert">⚠️ 怪物来了！</div>
+    <div id="wave-alert">⚡ 怪物来了！</div>
     <div id="overlay" class="hidden">
       <div class="overlay-emoji" id="overlay-emoji">🎉</div>
       <div class="overlay-title" id="overlay-title">YOU WIN!</div>
       <div class="overlay-sub" id="overlay-sub">胖团超厉害！</div>
-      <button class="big-btn btn-green" onclick="startGame()">▶ 再玩一次</button>
+      <button class="big-btn btn-green" id="play-again-btn" onclick="showMapSelect()">▶ 选关卡</button>
+      <button class="big-btn btn-blue" style="font-size:9px" onclick="restartSameMap()">↺ 再玩这关</button>
+    </div>
+  </div>
+
+  <!-- MAP SELECT -->
+  <div id="map-select">
+    <h2>⛏️ 选择关卡</h2>
+    <div class="map-cards">
+      <div class="map-card" style="background:#2d5a1a;" onclick="startGame(0)">
+        <div class="map-emoji">🌿</div>
+        <div class="map-name">草原王国</div>
+        <div class="map-desc">阳光明媚\n怪物较少</div>
+        <div class="map-diff">⭐ 简单</div>
+      </div>
+      <div class="map-card" style="background:#3a3a3a;" onclick="startGame(1)">
+        <div class="map-emoji">⛏️</div>
+        <div class="map-name">地下城</div>
+        <div class="map-desc">黑暗危险\n骷髅出没</div>
+        <div class="map-diff">⭐⭐ 中等</div>
+      </div>
+      <div class="map-card" style="background:#1a0a2e;" onclick="startGame(2)">
+        <div class="map-emoji">🌑</div>
+        <div class="map-name">末地战场</div>
+        <div class="map-desc">末影人巡逻\n极度危险</div>
+        <div class="map-diff">⭐⭐⭐ 困难</div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-// =====================
-//  MINECRAFT THEME CONFIG
-// =====================
-const COLS = 7;
-const ROWS = 5;
+// =====================================================================
+//  AUDIO ENGINE (Web Audio API — no external files needed)
+// =====================================================================
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function playTone(freq, type='square', duration=0.08, vol=0.15, decay=0.06) {
+  const ctx = getAudio(); if (!ctx) return;
+  try {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type; osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration + decay);
+  } catch(e) {}
+}
+const SFX = {
+  place:  () => { playTone(440,'square',0.06,0.12); setTimeout(()=>playTone(660,'square',0.06,0.1),60); },
+  shoot:  () => playTone(880,'sawtooth',0.05,0.08),
+  hit:    () => playTone(220,'square',0.07,0.1),
+  gemCollect: () => { playTone(880,'sine',0.05,0.2); setTimeout(()=>playTone(1320,'sine',0.05,0.2),60); },
+  explode:() => { playTone(80,'sawtooth',0.15,0.3); setTimeout(()=>playTone(60,'sawtooth',0.1,0.2),80); },
+  wave:   () => { [330,440,550,660].forEach((f,i)=>setTimeout(()=>playTone(f,'square',0.08,0.15),i*80)); },
+  win:    () => { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f,'sine',0.15,0.25),i*120)); },
+  lose:   () => { [440,330,220,110].forEach((f,i)=>setTimeout(()=>playTone(f,'sawtooth',0.12,0.2),i*120)); },
+  creeperPrime: () => playTone(300,'square',0.1,0.2),
+};
 
-// Defenders = Minecraft/Lego style blocks
+// =====================================================================
+//  MAP CONFIGS
+// =====================================================================
+const MAPS = [
+  {
+    id: 'grass',
+    name: '草原王国',
+    bgBody: '#3a7d2c',
+    topbarBg: '#3a2010',
+    pickerBg: '#2a1a0a',
+    rowColors: ['#6abf47','#5eb040','#52a138','#468f31','#3a7d2b'],
+    waves: 3,
+    zombieSet: [0,1,2],       // indices into ZOMBIE_TYPES
+    spawnBase: 3200,
+    gemBonus: 50,
+    startGems: 200,
+  },
+  {
+    id: 'dungeon',
+    name: '地下城',
+    bgBody: '#1a1a1a',
+    topbarBg: '#111',
+    pickerBg: '#0a0a0a',
+    rowColors: ['#3a3a3a','#333','#2e2e2e','#282828','#222'],
+    waves: 4,
+    zombieSet: [0,1,2,3],
+    spawnBase: 2800,
+    gemBonus: 60,
+    startGems: 180,
+  },
+  {
+    id: 'end',
+    name: '末地战场',
+    bgBody: '#0a0015',
+    topbarBg: '#0a000f',
+    pickerBg: '#05000a',
+    rowColors: ['#1a0a2e','#160826','#12061e','#0e0416','#0a0010'],
+    waves: 5,
+    zombieSet: [0,1,2,3,4],
+    spawnBase: 2400,
+    gemBonus: 80,
+    startGems: 160,
+  },
+];
+
+// =====================================================================
+//  UNITS & MOBS
+// =====================================================================
 const PLANTS = [
-  {
-    id:'sunflower', emoji:'🌻', cost:50,  cooldown:1400,
-    desc:'阳光花', shootInterval:0, damage:0, hp:300, gemGen:25,
-    name:'阳光花'
-  },
-  {
-    id:'peashooter', emoji:'🏹', cost:100, cooldown:900,
-    desc:'弓箭手', shootInterval:1800, damage:22, hp:280, gemGen:0,
-    name:'弓箭手', projEmoji:'🏹'
-  },
-  {
-    id:'wallnut', emoji:'🧱', cost:50,  cooldown:2000,
-    desc:'石头墙', shootInterval:0, damage:0, hp:1400, gemGen:0,
-    name:'石头墙'
-  },
-  {
-    id:'tnt', emoji:'🧨', cost:150, cooldown:3000,
-    desc:'TNT爆炸', shootInterval:0, damage:999, hp:1, gemGen:0,
-    name:'TNT', splash:true
-  },
-  {
-    id:'snowman', emoji:'⛄', cost:120, cooldown:1200,
-    desc:'雪球减速', shootInterval:2200, damage:12, hp:250, gemGen:0,
-    name:'雪人', projEmoji:'❄️', slow:true
-  },
+  { id:'sunflower', emoji:'🌻', cost:50,  cooldown:1400, name:'阳光花', shootInterval:0,   damage:0,  hp:300,  gemGen:25 },
+  { id:'archer',    emoji:'🏹', cost:100, cooldown:900,  name:'弓箭手', shootInterval:1800, damage:22, hp:280,  gemGen:0,  projEmoji:'➡️' },
+  { id:'wall',      emoji:'🧱', cost:50,  cooldown:2000, name:'石头墙', shootInterval:0,   damage:0,  hp:1500, gemGen:0  },
+  { id:'tnt',       emoji:'🧨', cost:150, cooldown:3000, name:'TNT',    shootInterval:0,   damage:999,hp:1,    gemGen:0,  splash:true },
+  { id:'snowman',   emoji:'⛄', cost:120, cooldown:1200, name:'雪人',   shootInterval:2200, damage:12, hp:250,  gemGen:0,  projEmoji:'❄️', slow:true },
+  { id:'cannon',    emoji:'💣', cost:175, cooldown:2500, name:'炮台',   shootInterval:3000, damage:55, hp:320,  gemGen:0,  projEmoji:'🔴', splash:true, splashRange:1 },
 ];
 
-// Enemies = Minecraft mobs
 const ZOMBIE_TYPES = [
-  { emoji:'🧟', hp:130,  speed:0.32, damage:20, name:'僵尸' },
-  { emoji:'💀', hp:100,  speed:0.45, damage:15, name:'骷髅', ranged:false },
-  { emoji:'🐍', hp:280,  speed:0.26, damage:35, name:'苦力怕', explodes:false },
-  { emoji:'🕷️',  hp:180,  speed:0.55, damage:18, name:'蜘蛛' },
-  { emoji:'👾', hp:450,  speed:0.22, damage:50, name:'末影人' },
+  { id:'zombie',    emoji:'🧟', hp:130, speed:0.32, damage:20, name:'僵尸',   reward:10 },
+  { id:'skeleton',  emoji:'💀', hp:100, speed:0.42, damage:15, name:'骷髅',   reward:10 },
+  { id:'creeper',   emoji:'🐍', hp:160, speed:0.28, damage:80, name:'苦力怕', reward:15, special:'creeper' },
+  { id:'spider',    emoji:'🕷️',  hp:180, speed:0.50, damage:18, name:'蜘蛛',  reward:12, special:'jumper' },
+  { id:'enderman',  emoji:'👾', hp:450, speed:0.22, damage:50, name:'末影人', reward:25 },
 ];
 
-// Block theme colors per row (dirt layers)
-const ROW_COLORS = [
-  '#6abf47', '#5eb040', '#52a138', '#468f31', '#3a7d2b'
-];
-
-// =====================
+// =====================================================================
 //  STATE
-// =====================
-let gems = 200;
-let score = 0;
-let wave = 1;
-let maxWaves = 3;
-let gameRunning = false;
-let selectedPlant = null;
-let plants = {};
-let zombies = [];
-let projectiles = [];
-let gemDrops = [];
-let lawnmowers = [];
+// =====================================================================
+const COLS = 7, ROWS = 5;
+let currentMap = null;
+let gems = 200, score = 0, wave = 1, maxWaves = 3;
+let gameRunning = false, selectedPlant = null;
+let plants = {}, zombies = [], projectiles = [], gemDrops = [], lawnmowers = [];
 let lastTime = 0;
-let cooldownTimers = {};
-let shootTimers = {};
-let gemGenTimers = {};
-let waveTimer = 0;
-let zombiesThisWave = [];
-let zombiesSpawned = 0;
-let spawnInterval = 0;
-let spawnTimer = 0;
-let waveComplete = false;
-let pendingNextWave = false;
-let nextWaveTimer = 0;
+let cooldownTimers = {}, shootTimers = {}, gemGenTimers = {};
+let zombiesThisWave = [], zombiesSpawned = 0;
+let spawnInterval = 0, spawnTimer = 0;
+let waveComplete = false, pendingNextWave = false, nextWaveTimer = 0;
 let globalGemTimer = 0;
 
 const cellW = () => document.getElementById('grid').clientWidth / COLS;
 const cellH = () => document.getElementById('grid').clientHeight / ROWS;
 
-// =====================
+// =====================================================================
+//  MAP SELECT
+// =====================================================================
+function showMapSelect() {
+  document.getElementById('map-select').classList.remove('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+function hideMapSelect() {
+  document.getElementById('map-select').classList.add('hidden');
+}
+
+function restartSameMap() {
+  if (currentMap !== null) startGame(currentMap);
+  else showMapSelect();
+}
+
+// =====================================================================
 //  INIT
-// =====================
+// =====================================================================
+function applyMapTheme(mapIdx) {
+  const m = MAPS[mapIdx];
+  document.body.style.background = m.bgBody;
+  document.getElementById('topbar').style.background = m.topbarBg;
+  document.getElementById('topbar').style.borderBottomColor = 'rgba(0,0,0,0.5)';
+  document.getElementById('plant-picker').style.background = m.pickerBg;
+  // Store row colors for grid
+  window._rowColors = m.rowColors;
+}
+
 function initGrid() {
   const grid = document.getElementById('grid');
   grid.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
@@ -508,12 +485,11 @@ function initGrid() {
     for (let c = 0; c < COLS; c++) {
       const cell = document.createElement('div');
       cell.className = 'cell';
-      cell.dataset.row = r;
-      cell.dataset.col = c;
-      cell.style.background = ROW_COLORS[r];
+      cell.dataset.row = r; cell.dataset.col = c;
+      cell.style.background = (window._rowColors || MAPS[0].rowColors)[r];
       if (c < COLS - 1) {
         cell.addEventListener('click', () => onCellClick(r, c));
-        cell.addEventListener('touchstart', (e) => { e.preventDefault(); onCellClick(r, c); }, {passive:false});
+        cell.addEventListener('touchstart', e => { e.preventDefault(); onCellClick(r, c); }, {passive:false});
       }
       grid.appendChild(cell);
     }
@@ -527,14 +503,12 @@ function initPlantPicker() {
     const card = document.createElement('div');
     card.className = 'plant-card';
     card.id = 'card-' + p.id;
-    card.innerHTML = `
-      <span class="emoji">${p.emoji}</span>
-      <span class="p-name">${p.name}</span>
-      <span class="cost">💎${p.cost}</span>
-    `;
-    card.title = p.desc;
+    // Slight bg tint per type
+    const bg = {sunflower:'#4a3a00',archer:'#1a3a1a',wall:'#3a3a3a',tnt:'#3a1a00',snowman:'#1a2a4a',cannon:'#2a1a3a'}[p.id] || '#4a3010';
+    card.style.background = bg;
+    card.innerHTML = `<span class="emoji">${p.emoji}</span><span class="p-name">${p.name}</span><span class="cost">💎${p.cost}</span>`;
     card.addEventListener('click', () => selectPlant(p.id));
-    card.addEventListener('touchstart', (e) => { e.preventDefault(); selectPlant(p.id); }, {passive:false});
+    card.addEventListener('touchstart', e => { e.preventDefault(); selectPlant(p.id); }, {passive:false});
     picker.appendChild(card);
   });
 }
@@ -545,365 +519,258 @@ function initLawnmowers() {
   area.querySelectorAll('.lawnmower').forEach(e => e.remove());
   for (let r = 0; r < ROWS; r++) {
     const el = document.createElement('div');
-    el.className = 'lawnmower';
-    el.textContent = '🛒'; // Minecart!
+    el.className = 'lawnmower'; el.textContent = '🛒';
     el.style.top = (r * cellH() + cellH()/2 - 13) + 'px';
     el.style.left = '2px';
     area.appendChild(el);
-    lawnmowers.push({ row: r, x: 2, active: false, speed: 7, el });
+    lawnmowers.push({ row:r, x:2, active:false, speed:7, el });
   }
 }
 
-// =====================
+// =====================================================================
 //  PLANT SELECTION
-// =====================
+// =====================================================================
 function selectPlant(id) {
   const p = PLANTS.find(x => x.id === id);
-  if (!p) return;
-  if (cooldownTimers[id] > 0) return;
+  if (!p || (cooldownTimers[id]||0) > 0) return;
   if (gems < p.cost) { flashNoCash(); return; }
   selectedPlant = id;
   document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
   document.getElementById('card-' + id)?.classList.add('selected');
+  getAudio(); // unlock audio on first touch
 }
-
 function flashNoCash() {
   const el = document.getElementById('gem-count');
-  el.style.background = '#7a0000';
-  el.style.borderColor = '#ff4444';
-  setTimeout(() => {
-    el.style.background = '#1a6ea8';
-    el.style.borderColor = '#0a3a5a';
-  }, 300);
+  el.style.background = '#7a0000'; el.style.borderColor = '#ff4444';
+  setTimeout(() => { el.style.background = '#1a6ea8'; el.style.borderColor = '#0a3a5a'; }, 300);
 }
 
-// =====================
-//  PLACE BLOCK/UNIT
-// =====================
+// =====================================================================
+//  PLACE UNIT
+// =====================================================================
 function onCellClick(r, c) {
   if (!gameRunning) return;
   const key = `${r}-${c}`;
-  if (plants[key]) return;
-  if (!selectedPlant) return;
+  if (plants[key] || !selectedPlant) return;
   const p = PLANTS.find(x => x.id === selectedPlant);
-  if (!p) return;
-  if (cooldownTimers[selectedPlant] > 0) return;
-  if (gems < p.cost) { flashNoCash(); return; }
+  if (!p || (cooldownTimers[selectedPlant]||0) > 0 || gems < p.cost) { flashNoCash(); return; }
 
-  // TNT: instant splash
-  if (p.splash) {
-    gems -= p.cost;
-    startCooldown(p.id, p.cooldown);
-    updateGemUI();
-    doTNTBomb(r, c);
-    selectedPlant = null;
-    document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
-    return;
+  if (p.splash && !p.splashRange) {
+    // TNT: instant area bomb
+    gems -= p.cost; startCooldown(p.id, p.cooldown); updateGemUI();
+    doTNT(r, c);
+    clearSelection(); return;
   }
 
-  gems -= p.cost;
-  startCooldown(p.id, p.cooldown);
-  updateGemUI();
+  gems -= p.cost; startCooldown(p.id, p.cooldown); updateGemUI();
+  SFX.place();
 
   const cw = cellW(), ch = cellH();
   const area = document.getElementById('grid-area');
   const el = document.createElement('div');
-  el.className = 'plant-sprite';
-  el.textContent = p.emoji;
-  el.style.left   = (c * cw + cw/2 - 18) + 'px';
-  el.style.top    = (r * ch + ch/2 - 18) + 'px';
-  el.style.width  = '36px';
-  el.style.height = '36px';
-
-  const hpBar = document.createElement('div');
-  hpBar.className = 'hp-bar';
-  const hpFill = document.createElement('div');
-  hpFill.className = 'hp-fill';
-  hpBar.appendChild(hpFill);
-  el.appendChild(hpBar);
+  el.className = 'plant-sprite'; el.textContent = p.emoji;
+  el.style.left = (c*cw + cw/2 - 18)+'px';
+  el.style.top  = (r*ch + ch/2 - 18)+'px';
+  el.style.width = el.style.height = '36px';
+  const hpBar = document.createElement('div'); hpBar.className = 'hp-bar';
+  const hpFill = document.createElement('div'); hpFill.className = 'hp-fill';
+  hpBar.appendChild(hpFill); el.appendChild(hpBar);
   area.appendChild(el);
 
   plants[key] = {
-    id: p.id, row: r, col: c, hp: p.hp, maxHp: p.hp,
-    emoji: p.emoji, el, hpFill,
-    shootInterval: p.shootInterval,
-    gemGen: p.gemGen,
-    projEmoji: p.projEmoji || '🟢',
-    slow: p.slow || false,
+    id:p.id, row:r, col:c, hp:p.hp, maxHp:p.hp,
+    emoji:p.emoji, el, hpFill,
+    shootInterval:p.shootInterval, gemGen:p.gemGen||0,
+    projEmoji:p.projEmoji||'🟢', slow:p.slow||false,
+    splashRange:p.splashRange||0,
   };
-
   if (p.shootInterval > 0) shootTimers[key] = p.shootInterval;
-  if (p.gemGen > 0) gemGenTimers[key] = 6000;
+  if ((p.gemGen||0) > 0) gemGenTimers[key] = 6000;
 
   const cellEl = getCellEl(r, c);
-  if (cellEl) {
-    cellEl.classList.add('has-plant');
-    // Lighten cell to show occupation
-    cellEl.style.background = 'rgba(255,220,100,0.25)';
-  }
+  if (cellEl) { cellEl.classList.add('has-plant'); cellEl.style.filter = 'brightness(1.4)'; }
+  clearSelection();
+}
 
+function clearSelection() {
   selectedPlant = null;
   document.querySelectorAll('.plant-card').forEach(c => c.classList.remove('selected'));
 }
 
-function doTNTBomb(r, c) {
+function doTNT(r, c) {
   const cw = cellW(), ch = cellH();
-  const cx = c * cw + cw/2;
-  const cy = r * ch + ch/2;
-
-  // Big pixel explosion
+  const cx = c*cw + cw/2, cy = r*ch + ch/2;
+  SFX.explode();
   spawnExplosion(cx, cy, '💥', 70);
-  setTimeout(() => spawnExplosion(cx - cw, cy - ch*0.5, '🔥', 44), 80);
-  setTimeout(() => spawnExplosion(cx + cw*0.5, cy + ch*0.5, '🔥', 36), 160);
-
-  // Kill zombies in blast radius
-  zombies.forEach(z => {
-    if (Math.abs(z.row - r) <= 1) {
-      const zx = z.x;
-      if (Math.abs(zx - cx) < cw * 2.5) {
-        z.hp = 0;
-      }
-    }
-  });
+  setTimeout(()=>spawnExplosion(cx-cw, cy-ch*0.5, '🔥', 44), 80);
+  setTimeout(()=>spawnExplosion(cx+cw*0.5, cy+ch*0.5, '🔥', 36), 160);
+  zombies.forEach(z => { if (Math.abs(z.row-r)<=1 && Math.abs(z.x-cx)<cw*2.5) z.hp=0; });
 }
 
-// =====================
+// =====================================================================
 //  COOLDOWN
-// =====================
+// =====================================================================
 function startCooldown(id, ms) {
-  cooldownTimers[id] = ms;
-  updateCooldownUI(id);
+  cooldownTimers[id] = ms; updateCooldownUI(id);
 }
-
 function updateCooldownUI(id) {
-  const card = document.getElementById('card-' + id);
-  if (!card) return;
-  const p = PLANTS.find(x => x.id === id);
-  const remaining = cooldownTimers[id] || 0;
-  if (remaining > 0) {
-    card.classList.add('cannot-afford');
-    card.classList.remove('can-afford');
+  const card = document.getElementById('card-'+id); if (!card) return;
+  const p = PLANTS.find(x=>x.id===id);
+  if ((cooldownTimers[id]||0) > 0) {
+    card.classList.add('cannot-afford'); card.classList.remove('can-afford');
   } else {
     card.classList.remove('cannot-afford');
-    if (gems >= (p?.cost || 999)) card.classList.add('can-afford');
+    if (gems >= (p?.cost||999)) card.classList.add('can-afford');
     else card.classList.remove('can-afford');
   }
 }
 
-// =====================
-//  ZOMBIES / MOBS
-// =====================
+// =====================================================================
+//  ZOMBIES
+// =====================================================================
 function buildWave(w) {
+  const m = MAPS[currentMap];
   const count = 3 + w * 2;
-  const list = [];
-  // Available mob types scale with wave
-  const maxType = Math.min(w + 1, ZOMBIE_TYPES.length);
-  for (let i = 0; i < count; i++) {
-    const typeIdx = Math.floor(Math.random() * maxType);
-    const t = ZOMBIE_TYPES[typeIdx];
-    list.push({
-      row: Math.floor(Math.random() * ROWS),
-      ...t, hp: t.hp, maxHp: t.hp,
-    });
-  }
-  return list;
+  const pool = m.zombieSet.slice(0, Math.min(w+1, m.zombieSet.length));
+  return Array.from({length:count}, () => {
+    const t = ZOMBIE_TYPES[pool[Math.floor(Math.random()*pool.length)]];
+    return { row: Math.floor(Math.random()*ROWS), ...t, hp:t.hp, maxHp:t.hp };
+  });
 }
 
 function spawnZombie(zDef) {
   const area = document.getElementById('grid-area');
   const cw = cellW(), ch = cellH();
   const startX = area.clientWidth + 20;
-
-  const el = document.createElement('div');
-  el.className = 'zombie-sprite';
-  el.textContent = zDef.emoji;
-
-  const hpBar = document.createElement('div');
-  hpBar.className = 'hp-bar';
-  const hpFill = document.createElement('div');
-  hpFill.className = 'hp-fill';
-  hpBar.appendChild(hpFill);
-  el.appendChild(hpBar);
-
-  el.style.top  = (zDef.row * ch + ch/2 - 20) + 'px';
-  el.style.left = startX + 'px';
+  const el = document.createElement('div'); el.className = 'zombie-sprite'; el.textContent = zDef.emoji;
+  const hpBar = document.createElement('div'); hpBar.className = 'hp-bar';
+  const hpFill = document.createElement('div'); hpFill.className = 'hp-fill';
+  hpBar.appendChild(hpFill); el.appendChild(hpBar);
+  el.style.top  = (zDef.row*ch + ch/2 - 20)+'px';
+  el.style.left = startX+'px';
   area.appendChild(el);
 
   zombies.push({
-    row: zDef.row,
-    x: startX,
-    hp: zDef.hp, maxHp: zDef.hp,
-    speed: zDef.speed * (cw / 60),
-    damage: zDef.damage,
-    emoji: zDef.emoji,
-    name: zDef.name,
-    el, hpFill,
-    eating: false,
-    eatTimer: 0,
-    dead: false,
-    slowTimer: 0,
-    originalSpeed: zDef.speed * (cw / 60),
+    row:zDef.row, x:startX, hp:zDef.hp, maxHp:zDef.hp,
+    speed: zDef.speed*(cw/60), originalSpeed: zDef.speed*(cw/60),
+    damage:zDef.damage, emoji:zDef.emoji, name:zDef.name,
+    special:zDef.special||null, reward:zDef.reward||10,
+    el, hpFill, eating:false, eatTimer:0, dead:false,
+    slowTimer:0,
+    // Creeper state
+    creeperTimer:0, creeperPrimed:false,
+    // Spider jump state
+    jumpTimer: zDef.special==='jumper' ? (2000+Math.random()*3000) : 99999,
+    jumping:false, jumpTargetRow:-1, jumpProgress:0,
   });
 }
 
-// =====================
+// =====================================================================
 //  PROJECTILES
-// =====================
-function shoot(row, fromCol, damage, emoji='🟢', slow=false) {
+// =====================================================================
+function shootAt(row, fromCol, damage, emoji='🟢', slow=false, splash=false, splashRange=0) {
   const cw = cellW(), ch = cellH();
   const area = document.getElementById('grid-area');
-  const el = document.createElement('div');
-  el.className = 'projectile';
-  el.textContent = emoji === '🏹' ? '➡️' : emoji;
-  const startX = fromCol * cw + cw;
-  const y = row * ch + ch/2 - 9;
-  el.style.left = startX + 'px';
-  el.style.top  = y + 'px';
+  const el = document.createElement('div'); el.className = 'projectile'; el.textContent = emoji;
+  const startX = fromCol*cw + cw;
+  const y = row*ch + ch/2 - 9;
+  el.style.left = startX+'px'; el.style.top = y+'px';
   area.appendChild(el);
-  projectiles.push({ row, x: startX, speed: 5.5, damage, el, dead: false, slow });
+  SFX.shoot();
+  projectiles.push({ row, x:startX, speed:5.5, damage, el, dead:false, slow, splash, splashRange });
 }
 
-// =====================
+// =====================================================================
 //  GEM DROPS
-// =====================
+// =====================================================================
 function spawnGemDrop(x, y, value=25) {
   const area = document.getElementById('grid-area');
-  const el = document.createElement('div');
-  el.className = 'gem-drop';
-  el.textContent = '💎';
-  el.style.left = x + 'px';
-  el.style.top  = y + 'px';
-  el.addEventListener('click', () => collectGem(drop));
-  el.addEventListener('touchstart', (e) => { e.preventDefault(); collectGem(drop); }, {passive:false});
+  const el = document.createElement('div'); el.className = 'gem-drop'; el.textContent = '💎';
+  el.style.left = x+'px'; el.style.top = y+'px';
+  el.addEventListener('click', ()=>collectGem(drop));
+  el.addEventListener('touchstart', e=>{ e.preventDefault(); collectGem(drop); }, {passive:false});
   area.appendChild(el);
-  const drop = { x, y, value, el, dead: false, lifetime: 9000 };
-  gemDrops.push(drop);
-  return drop;
+  const drop = { x, y, value, el, dead:false, lifetime:9000 };
+  gemDrops.push(drop); return drop;
 }
-
 function collectGem(drop) {
   if (drop.dead) return;
   drop.dead = true;
   drop.el.classList.add('gem-collected');
-  setTimeout(() => drop.el.remove(), 300);
-  gems += drop.value;
-  updateGemUI();
-  showScorePopup(drop.x, drop.y, '+' + drop.value + '💎');
+  setTimeout(()=>drop.el.remove(), 300);
+  gems += drop.value; updateGemUI();
+  SFX.gemCollect();
+  showScorePopup(drop.x, drop.y, '+'+drop.value+'💎');
 }
-
 function spawnExplosion(cx, cy, emoji='💥', size=44) {
   const area = document.getElementById('grid-area');
-  const el = document.createElement('div');
-  el.className = 'explosion';
-  el.textContent = emoji;
-  el.style.fontSize = size + 'px';
-  el.style.left = (cx - size/2) + 'px';
-  el.style.top  = (cy - size/2) + 'px';
-  area.appendChild(el);
-  setTimeout(() => el.remove(), 550);
+  const el = document.createElement('div'); el.className = 'explosion'; el.textContent = emoji;
+  el.style.fontSize = size+'px';
+  el.style.left = (cx-size/2)+'px'; el.style.top = (cy-size/2)+'px';
+  area.appendChild(el); setTimeout(()=>el.remove(), 550);
 }
-
 function showScorePopup(x, y, text) {
   const area = document.getElementById('grid-area');
-  const el = document.createElement('div');
-  el.className = 'score-popup';
-  el.textContent = text;
-  el.style.left = x + 'px';
-  el.style.top  = y + 'px';
-  area.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
+  const el = document.createElement('div'); el.className = 'score-popup'; el.textContent = text;
+  el.style.left = x+'px'; el.style.top = y+'px';
+  area.appendChild(el); setTimeout(()=>el.remove(), 1000);
 }
 
-// =====================
-//  UPDATE GEM UI
-// =====================
 function updateGemUI() {
   document.getElementById('gem-val').textContent = gems;
   PLANTS.forEach(p => {
-    const card = document.getElementById('card-' + p.id);
-    if (!card) return;
-    if ((cooldownTimers[p.id] || 0) <= 0) {
-      if (gems >= p.cost) card.classList.add('can-afford');
+    const card = document.getElementById('card-'+p.id); if (!card) return;
+    if ((cooldownTimers[p.id]||0) <= 0) {
+      if (gems>=p.cost) card.classList.add('can-afford');
       else card.classList.remove('can-afford');
     }
   });
 }
+function getCellEl(r,c) { return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`); }
 
-function getCellEl(r, c) {
-  return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
-}
-
-// =====================
+// =====================================================================
 //  MAIN GAME LOOP
-// =====================
+// =====================================================================
 function gameLoop(ts) {
   if (!gameRunning) return;
-  const dt = Math.min(ts - lastTime, 100);
-  lastTime = ts;
-
-  updateCooldowns(dt);
-  updateGemTimers(dt);
-  updateShootTimers(dt);
-  updateZombies(dt);
-  updateProjectiles(dt);
-  updateGemDrops(dt);
-  updateLawnmowers(dt);
-  updateSpawn(dt);
-  updateWaveProgress(dt);
-  checkVictory();
-  checkDefeat();
-
+  const dt = Math.min(ts - lastTime, 100); lastTime = ts;
+  updateCooldowns(dt); updateGemTimers(dt); updateShootTimers(dt);
+  updateZombies(dt); updateProjectiles(dt); updateGemDrops(dt);
+  updateLawnmowers(dt); updateSpawn(dt); updateWaveProgress(dt);
+  checkVictory(); checkDefeat();
   requestAnimationFrame(gameLoop);
 }
 
-// =====================
-//  UPDATE COOLDOWNS
-// =====================
 function updateCooldowns(dt) {
   PLANTS.forEach(p => {
-    if ((cooldownTimers[p.id] || 0) > 0) {
+    if ((cooldownTimers[p.id]||0)>0) {
       cooldownTimers[p.id] -= dt;
-      if (cooldownTimers[p.id] < 0) cooldownTimers[p.id] = 0;
+      if (cooldownTimers[p.id]<0) cooldownTimers[p.id]=0;
       updateCooldownUI(p.id);
     }
   });
 }
 
-// =====================
-//  GEM GEN (sunflower)
-// =====================
 function updateGemTimers(dt) {
-  // Sky diamond drops
   globalGemTimer -= dt;
   if (globalGemTimer <= 0) {
-    globalGemTimer = 9000 + Math.random() * 8000;
+    globalGemTimer = 9000 + Math.random()*8000;
     const area = document.getElementById('grid-area');
-    const x = 20 + Math.random() * (area.clientWidth - 60);
-    const y = 20 + Math.random() * (area.clientHeight - 60);
-    spawnGemDrop(x, y, 25);
+    spawnGemDrop(20+Math.random()*(area.clientWidth-60), 20+Math.random()*(area.clientHeight-60), 25);
   }
-
-  // Sunflower production
   Object.keys(gemGenTimers).forEach(key => {
     gemGenTimers[key] -= dt;
     if (gemGenTimers[key] <= 0) {
-      gemGenTimers[key] = 7000 + Math.random() * 2000;
+      gemGenTimers[key] = 7000 + Math.random()*2000;
       const plant = plants[key];
-      if (plant && plant.gemGen > 0) {
-        const cw = cellW(), ch = cellH();
-        spawnGemDrop(
-          plant.col * cw + cw/2 - 13,
-          plant.row * ch + ch/2 - 13,
-          plant.gemGen
-        );
+      if (plant?.gemGen > 0) {
+        const cw=cellW(), ch=cellH();
+        spawnGemDrop(plant.col*cw+cw/2-13, plant.row*ch+ch/2-13, plant.gemGen);
       }
     }
   });
 }
 
-// =====================
-//  SHOOT TIMERS
-// =====================
 function updateShootTimers(dt) {
   Object.keys(shootTimers).forEach(key => {
     shootTimers[key] -= dt;
@@ -912,8 +779,12 @@ function updateShootTimers(dt) {
       if (!plant) { delete shootTimers[key]; return; }
       const hasTarget = zombies.some(z => !z.dead && z.row === plant.row);
       if (hasTarget) {
-        shoot(plant.row, plant.col, plant.id === 'peashooter' ? 22 : 12,
-              plant.projEmoji || '🟢', plant.slow || false);
+        shootAt(plant.row, plant.col,
+          plant.id==='archer'?22 : plant.id==='snowman'?12 : plant.id==='cannon'?55 : 20,
+          plant.projEmoji||'🟢',
+          plant.slow||false,
+          plant.splashRange>0, plant.splashRange||0
+        );
         shootTimers[key] = plant.shootInterval;
       } else {
         shootTimers[key] = 400;
@@ -922,44 +793,95 @@ function updateShootTimers(dt) {
   });
 }
 
-// =====================
-//  ZOMBIES UPDATE
-// =====================
+// =====================================================================
+//  ZOMBIE UPDATE (with special behaviours)
+// =====================================================================
 function updateZombies(dt) {
-  const cw = cellW();
+  const cw = cellW(), ch = cellH();
   const toRemove = [];
 
   zombies.forEach((z, i) => {
     if (z.dead) { toRemove.push(i); return; }
 
-    // Slow timer recovery
+    // Slow recovery
     if (z.slowTimer > 0) {
       z.slowTimer -= dt;
-      if (z.slowTimer <= 0) {
-        z.speed = z.originalSpeed;
-        z.slowTimer = 0;
+      if (z.slowTimer <= 0) { z.speed = z.originalSpeed; }
+    }
+
+    // === CREEPER SPECIAL: explode when adjacent ===
+    if (z.special === 'creeper') {
+      const zCol = Math.floor(z.x / cw);
+      if (zCol <= 2 && !z.creeperPrimed) {
+        z.creeperPrimed = true;
+        z.el.classList.add('creeper-primed');
+        SFX.creeperPrime();
+      }
+      if (z.creeperPrimed) {
+        z.creeperTimer += dt;
+        if (z.creeperTimer >= 1500) {
+          // Explode in current row ±1
+          SFX.explode();
+          spawnExplosion(z.x, parseInt(z.el.style.top)+20, '💥', 60);
+          zombies.forEach(other => {
+            if (!other.dead && other !== z && Math.abs(other.row-z.row)<=1 && Math.abs(other.x-z.x)<cw*2)
+              other.hp = 0;
+          });
+          // Damage plants in blast
+          Object.values(plants).forEach(plant => {
+            if (Math.abs(plant.row-z.row)<=1 && Math.abs(plant.col*cw - z.x)<cw*2) {
+              plant.hp -= z.damage; updateHpBar(plant);
+              if (plant.hp<=0) killPlant(plant);
+            }
+          });
+          z.hp = 0;
+        }
       }
     }
 
-    z.eating = false;
+    // === SPIDER SPECIAL: random row jump ===
+    if (z.special === 'jumper' && !z.jumping) {
+      z.jumpTimer -= dt;
+      if (z.jumpTimer <= 0) {
+        // Pick a different row
+        const newRow = (z.row + 1 + Math.floor(Math.random()*(ROWS-1))) % ROWS;
+        z.jumping = true;
+        z.jumpTargetRow = newRow;
+        z.jumpProgress = 0;
+        z.jumpTimer = 3000 + Math.random()*4000;
+        spawnExplosion(z.x, parseInt(z.el.style.top), '💨', 28);
+      }
+    }
+    if (z.jumping) {
+      z.jumpProgress += dt * 3;
+      if (z.jumpProgress >= 300) {
+        z.row = z.jumpTargetRow;
+        z.el.style.top = (z.row*ch + ch/2 - 20)+'px';
+        z.jumping = false;
+        spawnExplosion(z.x, parseInt(z.el.style.top), '💨', 28);
+      }
+      // Animate mid-jump (scale up then down)
+      const t = z.jumpProgress / 300;
+      const s = 1 + Math.sin(t * Math.PI) * 0.5;
+      z.el.style.transform = `scale(${s})`;
+    } else {
+      z.el.style.transform = '';
+    }
+
+    // Eating check
     let blocked = false;
-
     const zCol = Math.floor(z.x / cw);
-    const plantKey  = `${z.row}-${zCol}`;
-    const plantKey2 = `${z.row}-${zCol - 1}`;
-    const target = plants[plantKey] || plants[plantKey2];
-
+    const target = plants[`${z.row}-${zCol}`] || plants[`${z.row}-${zCol-1}`];
     if (target && target.hp > 0) {
-      z.eating = true;
-      blocked = true;
-      z.eatTimer = (z.eatTimer || 0) + dt;
+      z.eating = true; blocked = true;
+      z.eatTimer = (z.eatTimer||0) + dt;
       if (z.eatTimer >= 500) {
         z.eatTimer = 0;
-        target.hp -= z.damage;
-        updateHpBar(target);
-        if (target.hp <= 0) killPlant(target);
+        target.hp -= z.damage; updateHpBar(target);
+        SFX.hit();
+        if (target.hp<=0) killPlant(target);
       }
-    }
+    } else { z.eating = false; }
 
     if (!blocked) {
       z.x -= z.speed * dt / 16;
@@ -970,18 +892,15 @@ function updateZombies(dt) {
     updateHpBar(z);
   });
 
-  toRemove.reverse().forEach(i => {
-    zombies[i].el.remove();
-    zombies.splice(i, 1);
-  });
+  toRemove.reverse().forEach(i => { zombies[i].el.remove(); zombies.splice(i,1); });
 }
 
 function activateLawnmower(row, triggerZombie) {
-  const mower = lawnmowers.find(m => m.row === row && !m.active);
+  const mower = lawnmowers.find(m => m.row===row && !m.active && !m.done);
   if (!mower) return;
   mower.active = true;
   triggerZombie.dead = true;
-  spawnExplosion(triggerZombie.x, parseInt(triggerZombie.el.style.top) + 20, '💨', 40);
+  spawnExplosion(triggerZombie.x, parseInt(triggerZombie.el.style.top)+20, '💨', 40);
 }
 
 function updateLawnmowers(dt) {
@@ -989,261 +908,204 @@ function updateLawnmowers(dt) {
   lawnmowers.forEach(m => {
     if (!m.active) return;
     m.x += m.speed * dt / 16;
-    m.el.style.left = m.x + 'px';
-    m.el.style.top  = (m.row * cellH() + cellH()/2 - 13) + 'px';
-
+    m.el.style.left = m.x+'px';
+    m.el.style.top  = (m.row*cellH() + cellH()/2 - 13)+'px';
     zombies.forEach(z => {
-      if (!z.dead && z.row === m.row && z.x < m.x + 32 && z.x > m.x - 12) {
-        z.dead = true;
-        score += 25;
-        spawnExplosion(z.x, parseInt(z.el.style.top) + 20, '💥', 36);
+      if (!z.dead && z.row===m.row && z.x < m.x+32 && z.x > m.x-12) {
+        z.dead = true; score += 25;
+        spawnExplosion(z.x, parseInt(z.el.style.top)+20, '💥', 36);
         updateScoreUI();
       }
     });
-
-    if (m.x > area.clientWidth + 60) {
-      m.el.remove();
-      m.done = true;
-    }
+    if (m.x > area.clientWidth+60) { m.el.remove(); m.done = true; }
   });
 }
 
-// =====================
-//  PROJECTILES
-// =====================
+// =====================================================================
+//  PROJECTILE UPDATE
+// =====================================================================
 function updateProjectiles(dt) {
   const area = document.getElementById('grid-area');
   const toRemove = [];
-
   projectiles.forEach((p, i) => {
     if (p.dead) { toRemove.push(i); return; }
     p.x += p.speed * dt / 16;
     p.el.style.left = p.x + 'px';
-
-    if (p.x > area.clientWidth) { p.dead = true; toRemove.push(i); return; }
+    if (p.x > area.clientWidth) { p.dead=true; toRemove.push(i); return; }
 
     for (const z of zombies) {
-      if (!z.dead && z.row === p.row && Math.abs(z.x - p.x) < 22) {
-        z.hp -= p.damage;
-        // Snowball slow
-        if (p.slow) {
-          z.speed = z.originalSpeed * 0.4;
-          z.slowTimer = 2500;
+      if (!z.dead && z.row===p.row && Math.abs(z.x - p.x) < 22) {
+        // Splash projectile
+        if (p.splash) {
+          const range = p.splashRange||0;
+          zombies.forEach(other => {
+            if (!other.dead && Math.abs(other.row-p.row)<=range && Math.abs(other.x-p.x)<cellW()*1.5) {
+              other.hp -= p.damage; updateHpBar(other);
+              if (other.hp<=0) { killZombie(other); score+=other.reward||10; updateScoreUI(); }
+            }
+          });
+          SFX.explode(); spawnExplosion(p.x, parseInt(p.el.style.top)+9, '💥', 36);
+        } else {
+          z.hp -= p.damage;
+          if (p.slow) { z.speed = z.originalSpeed*0.4; z.slowTimer = 2500; }
+          SFX.hit(); updateHpBar(z);
+          if (z.hp<=0) { killZombie(z); score+=z.reward||10; updateScoreUI(); }
         }
-        p.dead = true;
-        p.el.remove();
-        updateHpBar(z);
-        if (z.hp <= 0) {
-          killZombie(z);
-          score += 10;
-          updateScoreUI();
-        }
-        break;
+        p.dead=true; p.el.remove(); break;
       }
     }
     if (p.dead) toRemove.push(i);
   });
-
-  toRemove.reverse().forEach(i => {
-    if (projectiles[i]) {
-      projectiles[i].el?.remove();
-      projectiles.splice(i, 1);
-    }
-  });
+  toRemove.reverse().forEach(i => { if(projectiles[i]){projectiles[i].el?.remove(); projectiles.splice(i,1);} });
 }
 
 function killZombie(z) {
   z.dead = true;
-  // Drop a gem sometimes
-  if (Math.random() < 0.35) {
-    spawnGemDrop(z.x, parseInt(z.el.style.top) + 10, 15);
-  }
+  if (Math.random()<0.35) spawnGemDrop(z.x, parseInt(z.el.style.top)+10, 15);
   spawnExplosion(z.x, parseInt(z.el.style.top), '💀', 34);
 }
-
 function killPlant(plant) {
-  const key = `${plant.row}-${plant.col}`;
-  delete plants[key];
-  delete shootTimers[key];
-  delete gemGenTimers[key];
+  const key=`${plant.row}-${plant.col}`;
+  delete plants[key]; delete shootTimers[key]; delete gemGenTimers[key];
   plant.el.remove();
   const cellEl = getCellEl(plant.row, plant.col);
   if (cellEl) {
     cellEl.classList.remove('has-plant');
-    cellEl.style.background = ROW_COLORS[plant.row];
+    cellEl.style.filter='';
+    cellEl.style.background = (window._rowColors||MAPS[0].rowColors)[plant.row];
   }
-  spawnExplosion(
-    plant.col * cellW() + cellW()/2,
-    plant.row * cellH() + cellH()/2,
-    '🪨', 30
-  );
+  spawnExplosion(plant.col*cellW()+cellW()/2, plant.row*cellH()+cellH()/2, '🪨', 30);
 }
 
-// =====================
-//  GEM DROPS
-// =====================
+// =====================================================================
+//  GEM DROPS UPDATE
+// =====================================================================
 function updateGemDrops(dt) {
   const toRemove = [];
-  gemDrops.forEach((d, i) => {
-    if (d.dead) { toRemove.push(i); return; }
-    d.lifetime -= dt;
-    if (d.lifetime <= 0) {
-      d.dead = true;
-      d.el.remove();
-      toRemove.push(i);
-    }
-  });
-  toRemove.reverse().forEach(i => gemDrops.splice(i, 1));
+  gemDrops.forEach((d,i)=>{ if(d.dead){toRemove.push(i);return;} d.lifetime-=dt; if(d.lifetime<=0){d.dead=true;d.el.remove();toRemove.push(i);} });
+  toRemove.reverse().forEach(i=>gemDrops.splice(i,1));
 }
 
-// =====================
-//  HP BARS
-// =====================
 function updateHpBar(entity) {
   if (!entity.hpFill) return;
-  const pct = Math.max(0, entity.hp / entity.maxHp) * 100;
-  entity.hpFill.style.width = pct + '%';
-  entity.hpFill.style.background = pct > 60 ? '#44ff44' : pct > 30 ? '#ffaa00' : '#ff3333';
+  const pct = Math.max(0, entity.hp/entity.maxHp)*100;
+  entity.hpFill.style.width = pct+'%';
+  entity.hpFill.style.background = pct>60?'#44ff44':pct>30?'#ffaa00':'#ff3333';
 }
 
-// =====================
-//  WAVE SPAWN
-// =====================
+// =====================================================================
+//  WAVE LOGIC
+// =====================================================================
 function updateSpawn(dt) {
   if (zombiesSpawned >= zombiesThisWave.length) return;
   spawnTimer -= dt;
-  if (spawnTimer <= 0) {
-    spawnZombie(zombiesThisWave[zombiesSpawned]);
-    zombiesSpawned++;
-    spawnTimer = spawnInterval;
-  }
+  if (spawnTimer <= 0) { spawnZombie(zombiesThisWave[zombiesSpawned]); zombiesSpawned++; spawnTimer=spawnInterval; }
 }
-
-// =====================
-//  WAVE PROGRESS
-// =====================
 function updateWaveProgress(dt) {
   if (pendingNextWave) {
     nextWaveTimer -= dt;
-    if (nextWaveTimer <= 0) {
-      pendingNextWave = false;
-      wave++;
-      if (wave > maxWaves) return;
+    if (nextWaveTimer<=0) {
+      pendingNextWave=false; wave++;
+      if (wave>maxWaves) return;
       document.getElementById('wave-num').textContent = wave;
       startWave(wave);
     }
     return;
   }
-
-  if (zombiesSpawned >= zombiesThisWave.length && zombies.length === 0 && !waveComplete) {
+  if (zombiesSpawned>=zombiesThisWave.length && zombies.length===0 && !waveComplete) {
     waveComplete = true;
     if (wave < maxWaves) {
-      pendingNextWave = true;
-      nextWaveTimer = 3500;
-      // Bonus gems between waves
-      gems += 50;
-      updateGemUI();
-      showWaveAlert(`第 ${wave + 1} 关开始！+50💎`);
+      pendingNextWave=true; nextWaveTimer=3500;
+      gems += MAPS[currentMap].gemBonus; updateGemUI();
+      SFX.wave();
+      showWaveAlert(`第${wave+1}关开始！+${MAPS[currentMap].gemBonus}💎`);
     }
   }
 }
-
 function startWave(w) {
-  waveComplete = false;
+  waveComplete=false;
   zombiesThisWave = buildWave(w);
-  zombiesSpawned = 0;
-  spawnInterval = Math.max(1400, 3200 - w * 350);
+  zombiesSpawned=0;
+  spawnInterval = Math.max(1400, MAPS[currentMap].spawnBase - w*350);
   spawnTimer = 800;
+  document.getElementById('wave-num').textContent = w;
 }
-
 function showWaveAlert(msg) {
-  const el = document.getElementById('wave-alert');
-  el.textContent = '⚡ ' + msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+  const el=document.getElementById('wave-alert');
+  el.textContent='⚡ '+msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
 }
 
-// =====================
+// =====================================================================
 //  VICTORY / DEFEAT
-// =====================
+// =====================================================================
 function checkVictory() {
   if (!gameRunning) return;
-  if (wave > maxWaves && zombies.length === 0 && zombiesSpawned >= zombiesThisWave.length) {
-    endGame(true);
-  }
-  if (wave === maxWaves && waveComplete && zombies.length === 0) {
+  if ((wave>maxWaves && zombies.length===0 && zombiesSpawned>=zombiesThisWave.length) ||
+      (wave===maxWaves && waveComplete && zombies.length===0)) {
     endGame(true);
   }
 }
-
 function checkDefeat() {
   if (!gameRunning) return;
-  const reached = zombies.some(z => !z.dead && z.x < -10);
-  if (reached) endGame(false);
+  if (zombies.some(z=>!z.dead && z.x<-10)) endGame(false);
 }
-
 function endGame(won) {
-  gameRunning = false;
-  const overlay = document.getElementById('overlay');
+  gameRunning=false;
+  const overlay=document.getElementById('overlay');
   overlay.classList.remove('hidden');
   if (won) {
-    document.getElementById('overlay-emoji').textContent = '🏆';
-    document.getElementById('overlay-title').textContent = 'YOU WIN!';
-    document.getElementById('overlay-sub').textContent = `王国保住了！\n胖团真厉害！\n得了 ${score} 分！`;
+    SFX.win();
+    document.getElementById('overlay-emoji').textContent='🏆';
+    document.getElementById('overlay-title').textContent='YOU WIN!';
+    document.getElementById('overlay-sub').textContent=`${MAPS[currentMap].name}守住了！\n胖团真厉害！得了${score}分 ⭐`;
   } else {
-    document.getElementById('overlay-emoji').textContent = '💀';
-    document.getElementById('overlay-title').textContent = 'GAME OVER';
-    document.getElementById('overlay-sub').textContent = `怪物进来了…\n没关系，重新来过！\n得了 ${score} 分`;
+    SFX.lose();
+    document.getElementById('overlay-emoji').textContent='💀';
+    document.getElementById('overlay-title').textContent='GAME OVER';
+    document.getElementById('overlay-sub').textContent=`怪物进来了…\n没关系，重来！得了${score}分`;
   }
 }
+function updateScoreUI() { document.getElementById('score-val').textContent=score; }
 
-function updateScoreUI() {
-  document.getElementById('score-val').textContent = score;
-}
-
-// =====================
+// =====================================================================
 //  START GAME
-// =====================
-function startGame() {
-  gems = 200; score = 0; wave = 1;
-  selectedPlant = null;
-  plants = {}; zombies = []; projectiles = []; gemDrops = [];
-  cooldownTimers = {}; shootTimers = {}; gemGenTimers = {};
-  waveComplete = false; pendingNextWave = false;
-  globalGemTimer = 6000;
-  gameRunning = false;
+// =====================================================================
+function startGame(mapIdx) {
+  currentMap = mapIdx;
+  hideMapSelect();
+  applyMapTheme(mapIdx);
 
-  const area = document.getElementById('grid-area');
-  area.querySelectorAll('.plant-sprite,.zombie-sprite,.projectile,.gem-drop,.explosion,.score-popup,.lawnmower').forEach(e => e.remove());
+  const m = MAPS[mapIdx];
+  gems=m.startGems; score=0; wave=1; maxWaves=m.waves;
+  selectedPlant=null;
+  plants={}; zombies=[]; projectiles=[]; gemDrops=[];
+  cooldownTimers={}; shootTimers={}; gemGenTimers={};
+  waveComplete=false; pendingNextWave=false;
+  globalGemTimer=6000; gameRunning=false;
+
+  const area=document.getElementById('grid-area');
+  area.querySelectorAll('.plant-sprite,.zombie-sprite,.projectile,.gem-drop,.explosion,.score-popup,.lawnmower').forEach(e=>e.remove());
   document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('gem-val').textContent=gems;
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('wave-num').textContent=wave;
+  document.getElementById('wave-total').textContent=maxWaves;
 
-  document.getElementById('gem-val').textContent = gems;
-  document.getElementById('score-val').textContent = score;
-  document.getElementById('wave-num').textContent = wave;
-
-  initGrid();
-  initPlantPicker();
-  initLawnmowers();
-  updateGemUI();
-
+  initGrid(); initPlantPicker(); initLawnmowers(); updateGemUI();
   startWave(1);
-  gameRunning = true;
-  lastTime = performance.now();
+  gameRunning=true; lastTime=performance.now();
+  SFX.wave();
   requestAnimationFrame(gameLoop);
 }
 
-// =====================
-//  BOOT — TITLE SCREEN
-// =====================
+// =====================================================================
+//  BOOT
+// =====================================================================
 window.addEventListener('load', () => {
-  const overlay = document.getElementById('overlay');
-  overlay.classList.remove('hidden');
-  document.getElementById('overlay-emoji').textContent = '⛏️';
-  document.getElementById('overlay-title').textContent = '方块王国\n保卫战';
-  document.getElementById('overlay-sub').textContent =
-    '点卡牌选角色\n再点草地放置\n收集💎建防线！\n\n🌻阳光花 🏹弓箭手\n🧱石头墙 🧨TNT ⛄雪人';
-  const btn = overlay.querySelector('.big-btn');
-  btn.textContent = '▶ 开始冒险';
+  // Show map select on load
+  document.getElementById('overlay').classList.add('hidden');
+  // Map select already visible by default
 });
 </script>
 </body>
