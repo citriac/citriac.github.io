@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Server Doctor — Diagnose Your Model Context Protocol Server | Clavis Tools</title>
+  <meta name="description" content="Free online MCP server diagnostic tool. Check tool definitions, schema completeness, JSON-RPC responses, and get actionable fix recommendations. Paste your server URL or test a sample.">
+  <link rel="canonical" href="https://citriac.github.io/mcp-doctor.html">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "MCP Server Doctor",
+    "description": "Diagnose your MCP (Model Context Protocol) server. Check tool definitions, schema quality, and get fix recommendations.",
+    "url": "https://citriac.github.io/mcp-doctor.html",
+    "applicationCategory": "DeveloperApplication",
+    "offers": {"@type": "Offer", "price": "0"},
+    "author": {"@type": "Person", "name": "Clavis", "url": "https://citriac.github.io"},
+    "dateModified": "2026-03-29"
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --orange: #f0883e;
+      --teal: #39d353;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+    }
+    header nav { margin-left: auto; display: flex; gap: 16px; }
+    header nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    header nav a:hover { color: var(--text); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+
+    .hero { text-align: center; margin-bottom: 40px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(57,211,83,.1); border: 1px solid rgba(57,211,83,.25);
+      color: var(--teal); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 36px; font-weight: 800; margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--blue) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      color: var(--muted); font-size: 16px; max-width: 560px; margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Input panel */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .panel-title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin-bottom: 16px;
+    }
+    .input-tabs {
+      display: flex; gap: 0; margin-bottom: 20px;
+      border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border: none; background: transparent;
+      color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 600;
+      transition: all .2s;
+    }
+    .tab-btn.active {
+      background: var(--bg3); color: var(--text);
+    }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .input-group { flex: 1; }
+    .input-label {
+      display: block; font-size: 12px; color: var(--muted);
+      margin-bottom: 6px; font-weight: 600;
+    }
+    input[type=text], textarea {
+      width: 100%; background: var(--bg3);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); padding: 10px 14px; font-size: 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      outline: none; transition: border-color .2s;
+    }
+    input[type=text]:focus, textarea:focus { border-color: var(--blue); }
+    textarea { min-height: 180px; resize: vertical; line-height: 1.5; }
+
+    .btn {
+      padding: 10px 20px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--blue); color: #0d1117;
+    }
+    .btn-primary:hover { background: #79b8ff; }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+    .sample-btns {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+    }
+    .sample-btn {
+      padding: 5px 12px; border: 1px solid var(--border);
+      border-radius: 6px; background: transparent; color: var(--muted);
+      font-size: 12px; cursor: pointer; transition: all .15s;
+    }
+    .sample-btn:hover { color: var(--text); border-color: var(--blue); }
+
+    /* Results */
+    #results { display: none; }
+    .result-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    }
+    .score-ring {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800;
+      flex-shrink: 0;
+    }
+    .score-ring.good { border: 3px solid var(--green); color: var(--green); }
+    .score-ring.warn { border: 3px solid var(--yellow); color: var(--yellow); }
+    .score-ring.bad  { border: 3px solid var(--red);    color: var(--red); }
+    .score-ring.na   { border: 3px solid var(--muted);  color: var(--muted); }
+
+    .result-summary h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .result-summary p { color: var(--muted); font-size: 14px; }
+
+    .checks-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px; margin-bottom: 24px;
+    }
+    .check-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .check-card.pass { border-left: 3px solid var(--green); }
+    .check-card.warn { border-left: 3px solid var(--yellow); }
+    .check-card.fail { border-left: 3px solid var(--red); }
+    .check-card.info { border-left: 3px solid var(--blue); }
+    .check-icon { font-size: 18px; margin-bottom: 6px; }
+    .check-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+    .check-msg { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .tools-section { margin-bottom: 24px; }
+    .tools-section h3 {
+      font-size: 14px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px;
+    }
+    .tool-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-bottom: 10px;
+    }
+    .tool-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+    }
+    .tool-name {
+      font-size: 14px; font-weight: 700; font-family: 'SF Mono','Fira Code',monospace;
+      color: var(--blue);
+    }
+    .tool-issues { display: flex; flex-direction: column; gap: 6px; }
+    .issue-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 12px; padding: 8px 10px;
+      border-radius: 6px;
+    }
+    .issue-row.err  { background: rgba(248,81,73,.08); color: #f85149; }
+    .issue-row.warn { background: rgba(210,153,34,.08); color: #d29922; }
+    .issue-row.ok   { background: rgba(63,185,80,.08); color: #3fb950; }
+    .issue-icon { flex-shrink: 0; }
+    .issue-text { line-height: 1.5; }
+    .issue-fix {
+      font-size: 11px; opacity: .8;
+      border-top: 1px solid rgba(255,255,255,.06);
+      margin-top: 6px; padding-top: 6px;
+    }
+
+    .raw-section details { }
+    .raw-section summary {
+      cursor: pointer; font-size: 13px; color: var(--muted);
+      padding: 8px 0; user-select: none;
+    }
+    .raw-section summary:hover { color: var(--text); }
+    .raw-json {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px; margin-top: 8px;
+      font-size: 12px; font-family: 'SF Mono','Fira Code',monospace;
+      overflow-x: auto; white-space: pre; color: var(--muted);
+      max-height: 320px; overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    .cta-box {
+      background: var(--bg2); border: 1px solid rgba(188,140,255,.25);
+      border-radius: 12px; padding: 24px; text-align: center; margin-top: 32px;
+    }
+    .cta-box p { color: var(--muted); font-size: 14px; margin-bottom: 16px; line-height: 1.6; }
+    .cta-box strong { color: var(--text); }
+
+    .loading {
+      display: none; text-align: center; padding: 40px;
+      color: var(--muted); font-size: 14px;
+    }
+    .spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid var(--border); border-top-color: var(--blue);
+      border-radius: 50%; animation: spin .6s linear infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .tag-ok   { background: rgba(63,185,80,.15); color: var(--green); }
+    .tag-warn { background: rgba(210,153,34,.15); color: var(--yellow); }
+    .tag-err  { background: rgba(248,81,73,.15); color: var(--red); }
+
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 26px; }
+      .input-row { flex-direction: column; }
+      .checks-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo">⚡ Clavis Tools</a>
+  <nav>
+    <a href="/token-counter.html">Token Counter</a>
+    <a href="/prompt-lab.html">Prompt Lab</a>
+    <a href="/hire.html">Hire</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">🩺 MCP Developer Utility</div>
+    <h1>MCP Server Doctor</h1>
+    <p>Paste your server's JSON response or a remote URL. Get an instant diagnostic on tool definitions, schema quality, and LLM-readiness — with specific fix recommendations.</p>
+  </div>
+
+  <!-- Input Panel -->
+  <div class="panel">
+    <div class="panel-title">Diagnose Your Server</div>
+
+    <div class="input-tabs">
+      <button class="tab-btn active" onclick="switchTab('paste')">📋 Paste JSON Response</button>
+      <button class="tab-btn" onclick="switchTab('url')">🌐 Remote URL (HTTP)</button>
+    </div>
+
+    <!-- Tab: Paste -->
+    <div id="tab-paste" class="tab-content active">
+      <label class="input-label">Paste the output of <code style="color:var(--blue)">tools/list</code> or any MCP JSON-RPC response</label>
+      <textarea id="json-input" placeholder='{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "get_weather",
+        "description": "...",
+        "inputSchema": { ... }
+      }
+    ]
+  }
+}'></textarea>
+      <div class="sample-btns">
+        <span style="font-size:12px;color:var(--muted);line-height:28px">Try a sample:</span>
+        <button class="sample-btn" onclick="loadSample('good')">✅ Healthy server</button>
+        <button class="sample-btn" onclick="loadSample('warn')">⚠️ Missing descriptions</button>
+        <button class="sample-btn" onclick="loadSample('bad')">❌ Multiple issues</button>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn btn-primary" onclick="runDiagnosis()">🔍 Run Diagnosis</button>
+      </div>
+    </div>
+
+    <!-- Tab: URL -->
+    <div id="tab-url" class="tab-content">
+      <label class="input-label">MCP Server URL (must support CORS or be a public endpoint)</label>
+      <div class="input-row">
+        <div class="input-group">
+          <input type="text" id="url-input" placeholder="https://your-mcp-server.example.com/mcp">
+        </div>
+        <button class="btn btn-primary" onclick="runUrlDiagnosis()">🔍 Diagnose</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">
+        We'll send a <code style="color:var(--blue)">tools/list</code> JSON-RPC request to your server. Make sure the server allows cross-origin requests.
+        <br>For stdio-based servers, paste the response from <code style="color:var(--blue)">echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | your-server</code>
+      </p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <span class="spinner"></span> Analyzing your MCP server…
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <div class="result-header">
+      <div class="score-ring" id="score-ring">--</div>
+      <div class="result-summary">
+        <h2 id="summary-title"></h2>
+        <p id="summary-sub"></p>
+      </div>
+    </div>
+
+    <div class="checks-grid" id="checks-grid"></div>
+
+    <div class="tools-section" id="tools-section">
+      <h3>Tool-by-Tool Analysis</h3>
+      <div id="tools-list"></div>
+    </div>
+
+    <div class="raw-section">
+      <details>
+        <summary>▶ View raw parsed data</summary>
+        <pre class="raw-json" id="raw-json"></pre>
+      </details>
+    </div>
+
+    <div class="cta-box">
+      <p>
+        Found issues in your MCP server?<br>
+        <strong>I offer a full Agent Architecture Review</strong> — I'll go through your entire multi-agent system and give you a written report with specific recommendations.<br>
+        <br>
+        Based on the <a href="https://dev.to/mindon/how-i-review-agent-architectures-a-practical-framework-with-checklist-817" target="_blank" style="color:var(--purple)">publicly documented framework</a>. Currently <strong style="color:var(--purple)">$49 Early Access</strong> (regular: $149).
+      </p>
+      <a href="mailto:citriac@outlook.com?subject=Agent%20Architecture%20Review%20%E2%80%94%20Early%20Access&body=Hi%20Clavis%2C%0A%0AI%20used%20MCP%20Server%20Doctor%20and%20found%20some%20issues.%20I%27d%20like%20a%20full%20review.%0A%0AMy%20system%3A%0A" class="btn btn-primary" style="background:var(--purple);color:#fff">Get a Full Review — $49 →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Sample data
+// ============================================================
+const SAMPLES = {
+  good: {
+    jsonrpc: "2.0", id: 1,
+    result: {
+      tools: [
+        {
+          name: "get_weather",
+          description: "Get current weather conditions and forecast for a location. Returns temperature, humidity, wind speed, and a 3-day forecast.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              location: { type: "string", description: "City name or zip code, e.g. 'San Francisco' or '94105'" },
+              units: { type: "string", enum: ["celsius","fahrenheit"], description: "Temperature unit. Defaults to celsius." }
+            },
+            required: ["location"]
+          }
+        },
+        {
+          name: "search_docs",
+          description: "Search through internal documentation by keyword. Returns up to 10 matching documents with titles and excerpts.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              query: { type: "string", description: "Search query" },
+              limit: { type: "number", description: "Max results to return (1-20). Defaults to 5." }
+            },
+            required: ["query"]
+          }
+        }
+      ]
+    }
+  },
+
+  warn: {
+    jsonrpc: "2.0", id: 1,
+    result: {
+      tools: [
+        {
+          name: "create_task",
+          description: "",
+          inputSchema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              priority: { type: "string" },
+              due_date: { type: "string" }
+            },
+            required: ["title"]
+          }
+        },
+        {
+          name: "list_tasks",
+          description: "List all tasks",
+          inputSchema: {
+            type: "object",
+            properties: {
+              status: { type: "string" },
+              limit: { type: "number" }
+            }
+          }
+        },
+        {
+          name: "delete_task",
+          inputSchema: {
+            type: "object",
+            properties: {
+              id: { type: "string" }
+            },
+            required: ["id"]
+          }
+        }
+      ]
+    }
+  },
+
+  bad: {
+    jsonrpc: "2.0", id: 1,
+    result: {
+      tools: [
+        {
+          name: "do_thing",
+          inputSchema: { type: "object", properties: {} }
+        },
+        {
+          name: "process",
+          description: "Process",
+          inputSchema: { properties: { data: {} } }
+        },
+        {
+          name: "send_email",
+          description: "Send email to user",
+          inputSchema: {
+            type: "object",
+            properties: {
+              to: { type: "string" },
+              subject: {},
+              body: { type: "text" }
+            }
+          }
+        },
+        {
+          name: "run_query",
+          description: "x",
+          inputSchema: {
+            type: "object",
+            properties: {
+              sql: { type: "string", description: "The SQL query to run" }
+            },
+            required: ["sql"]
+          }
+        }
+      ]
+    }
+  }
+};
+
+// ============================================================
+// UI helpers
+// ============================================================
+let activeTab = 'paste';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'paste') || (i === 1 && tab === 'url'));
+  });
+  document.getElementById('tab-paste').classList.toggle('active', tab === 'paste');
+  document.getElementById('tab-url').classList.toggle('active', tab === 'url');
+}
+
+function loadSample(name) {
+  switchTab('paste');
+  document.getElementById('json-input').value = JSON.stringify(SAMPLES[name], null, 2);
+}
+
+function showLoading(v) {
+  document.getElementById('loading').style.display = v ? 'block' : 'none';
+}
+
+function showResults(v) {
+  document.getElementById('results').style.display = v ? 'block' : 'none';
+}
+
+// ============================================================
+// Diagnosis engine
+// ============================================================
+function runDiagnosis() {
+  const raw = document.getElementById('json-input').value.trim();
+  if (!raw) { alert('Please paste a JSON response first.'); return; }
+  let parsed;
+  try { parsed = JSON.parse(raw); }
+  catch(e) { renderError('Invalid JSON: ' + e.message); return; }
+  showLoading(true);
+  showResults(false);
+  setTimeout(() => {
+    showLoading(false);
+    analyze(parsed, raw);
+  }, 600);
+}
+
+async function runUrlDiagnosis() {
+  const url = document.getElementById('url-input').value.trim();
+  if (!url) { alert('Please enter a URL.'); return; }
+  showLoading(true);
+  showResults(false);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })
+    });
+    const parsed = await res.json();
+    showLoading(false);
+    analyze(parsed, JSON.stringify(parsed, null, 2));
+  } catch(e) {
+    showLoading(false);
+    renderError('Could not reach server: ' + e.message + '\n\nMake sure the server allows CORS. For stdio servers, use the "Paste JSON" tab.');
+  }
+}
+
+// ============================================================
+// Core analyzer
+// ============================================================
+function analyze(data, rawText) {
+  const checks = [];
+  let tools = [];
+
+  // --- Check 1: JSON-RPC structure ---
+  const isJsonRpc = data.jsonrpc === '2.0';
+  checks.push({
+    id: 'jsonrpc', title: 'JSON-RPC 2.0 Format',
+    status: isJsonRpc ? 'pass' : 'warn',
+    icon: isJsonRpc ? '✅' : '⚠️',
+    msg: isJsonRpc
+      ? 'Response follows JSON-RPC 2.0 format.'
+      : 'Missing "jsonrpc": "2.0" field. Some clients may reject this response.'
+  });
+
+  // --- Check 2: Error field ---
+  if (data.error) {
+    checks.push({
+      id: 'error', title: 'Server Error in Response',
+      status: 'fail', icon: '❌',
+      msg: `Server returned an error: code ${data.error.code} — ${data.error.message}`
+    });
+    renderResults(checks, [], data, rawText);
+    return;
+  }
+
+  // --- Check 3: result.tools array ---
+  const hasResult = data.result && Array.isArray(data.result.tools);
+  if (!hasResult) {
+    checks.push({
+      id: 'tools-array', title: 'tools/list Result Structure',
+      status: 'fail', icon: '❌',
+      msg: 'Expected result.tools[] array not found. Make sure this is a tools/list response.'
+    });
+    renderResults(checks, [], data, rawText);
+    return;
+  }
+  tools = data.result.tools;
+
+  checks.push({
+    id: 'tools-array', title: 'tools/list Result Structure',
+    status: 'pass', icon: '✅',
+    msg: `Found ${tools.length} tool${tools.length !== 1 ? 's' : ''} in result.tools[].`
+  });
+
+  // --- Check 4: Tool count ---
+  if (tools.length === 0) {
+    checks.push({ id: 'count', title: 'Tool Count', status: 'warn', icon: '⚠️',
+      msg: 'No tools defined. The LLM will have nothing to call.' });
+  } else if (tools.length > 30) {
+    checks.push({ id: 'count', title: 'Tool Count', status: 'warn', icon: '⚠️',
+      msg: `${tools.length} tools. Many LLMs have trouble selecting from >30 tools. Consider grouping or chunking.` });
+  }
+
+  // --- Per-tool analysis ---
+  const toolResults = tools.map(t => analyzeOneTool(t));
+
+  // --- Aggregate checks ---
+  const noDesc = toolResults.filter(t => t.issues.some(i => i.id === 'no-desc'));
+  const badSchema = toolResults.filter(t => t.issues.some(i => i.id === 'no-schema-type'));
+  const missingParamDesc = toolResults.filter(t => t.issues.some(i => i.id === 'param-no-desc'));
+  const shortDesc = toolResults.filter(t => t.issues.some(i => i.id === 'short-desc'));
+  const badTypes = toolResults.filter(t => t.issues.some(i => i.id === 'bad-type'));
+
+  if (noDesc.length > 0) {
+    checks.push({
+      id: 'desc', title: 'Tool Descriptions',
+      status: 'fail', icon: '❌',
+      msg: `${noDesc.length} tool${noDesc.length>1?'s':''} missing description. LLMs need descriptions to decide when to call a tool.`
+    });
+  } else if (shortDesc.length > 0) {
+    checks.push({
+      id: 'desc', title: 'Tool Descriptions',
+      status: 'warn', icon: '⚠️',
+      msg: `${shortDesc.length} tool${shortDesc.length>1?'s have':' has'} a very short description (<10 chars). Richer descriptions improve LLM selection accuracy.`
+    });
+  } else {
+    checks.push({ id: 'desc', title: 'Tool Descriptions', status: 'pass', icon: '✅',
+      msg: 'All tools have descriptions.' });
+  }
+
+  if (badSchema.length > 0) {
+    checks.push({
+      id: 'schema', title: 'inputSchema Structure',
+      status: 'fail', icon: '❌',
+      msg: `${badSchema.length} tool${badSchema.length>1?'s':''} missing "type": "object" in inputSchema. Some clients will reject these.`
+    });
+  } else {
+    checks.push({ id: 'schema', title: 'inputSchema Structure', status: 'pass', icon: '✅',
+      msg: 'All tools have a valid inputSchema with type: object.' });
+  }
+
+  if (missingParamDesc.length > 0) {
+    checks.push({
+      id: 'param-desc', title: 'Parameter Descriptions',
+      status: 'warn', icon: '⚠️',
+      msg: `${missingParamDesc.length} tool${missingParamDesc.length>1?'s have':' has'} parameters without descriptions. LLMs may fill them incorrectly.`
+    });
+  } else if (tools.length > 0) {
+    checks.push({ id: 'param-desc', title: 'Parameter Descriptions', status: 'pass', icon: '✅',
+      msg: 'All parameters have descriptions.' });
+  }
+
+  if (badTypes.length > 0) {
+    checks.push({
+      id: 'types', title: 'Parameter Types',
+      status: 'fail', icon: '❌',
+      msg: `${badTypes.length} tool${badTypes.length>1?'s have':' has'} invalid JSON Schema types (e.g. "text" instead of "string"). These will likely cause type errors.`
+    });
+  } else {
+    checks.push({ id: 'types', title: 'Parameter Types', status: 'pass', icon: '✅',
+      msg: 'All parameter types follow JSON Schema spec.' });
+  }
+
+  renderResults(checks, toolResults, data, rawText);
+}
+
+// ============================================================
+// Per-tool analyzer
+// ============================================================
+const VALID_JSON_TYPES = new Set(['string','number','integer','boolean','array','object','null']);
+
+function analyzeOneTool(tool) {
+  const issues = [];
+  const name = tool.name || '(unnamed)';
+
+  // name present
+  if (!tool.name) {
+    issues.push({ id: 'no-name', severity: 'err', icon: '❌',
+      text: 'Missing name field.',
+      fix: 'Add a unique "name" field: "name": "your_tool_name"' });
+  }
+
+  // description
+  if (!tool.description) {
+    issues.push({ id: 'no-desc', severity: 'err', icon: '❌',
+      text: 'Missing description. LLMs use this to decide when to call the tool.',
+      fix: 'Add "description": "Concise explanation of what the tool does and when to use it."' });
+  } else if (tool.description.trim().length < 10) {
+    issues.push({ id: 'short-desc', severity: 'warn', icon: '⚠️',
+      text: `Very short description: "${tool.description.trim()}". LLMs may not understand when to use this tool.`,
+      fix: 'Expand the description to at least 1-2 sentences. Include what it does, its output, and edge cases.' });
+  } else {
+    issues.push({ id: 'good-desc', severity: 'ok', icon: '✅',
+      text: 'Description present.' });
+  }
+
+  // inputSchema
+  const schema = tool.inputSchema;
+  if (!schema) {
+    issues.push({ id: 'no-schema', severity: 'err', icon: '❌',
+      text: 'Missing inputSchema. Required by MCP spec.',
+      fix: 'Add "inputSchema": { "type": "object", "properties": {} }' });
+    return { name, issues };
+  }
+
+  if (schema.type !== 'object') {
+    issues.push({ id: 'no-schema-type', severity: 'err', icon: '❌',
+      text: `inputSchema.type is "${schema.type || 'missing'}" — must be "object".`,
+      fix: 'Set "type": "object" in your inputSchema.' });
+  }
+
+  const props = schema.properties || {};
+  const propNames = Object.keys(props);
+  const required = schema.required || [];
+
+  if (propNames.length === 0 && schema.type === 'object') {
+    issues.push({ id: 'no-params', severity: 'info', icon: 'ℹ️',
+      text: 'No parameters defined. Fine if the tool takes no inputs.' });
+  }
+
+  propNames.forEach(pname => {
+    const p = props[pname];
+    if (!p || typeof p !== 'object') {
+      issues.push({ id: 'bad-param', severity: 'err', icon: '❌',
+        text: `Parameter "${pname}" has no schema definition (empty or null).`,
+        fix: `Define type and description: "${pname}": { "type": "string", "description": "..." }` });
+      return;
+    }
+
+    // type check
+    if (!p.type) {
+      issues.push({ id: 'param-no-type', severity: 'warn', icon: '⚠️',
+        text: `Parameter "${pname}" has no type. LLMs may not know what to send.`,
+        fix: `Add "type" to "${pname}": e.g. "type": "string"` });
+    } else if (!VALID_JSON_TYPES.has(p.type)) {
+      issues.push({ id: 'bad-type', severity: 'err', icon: '❌',
+        text: `Parameter "${pname}" uses invalid type "${p.type}". Valid types: string, number, integer, boolean, array, object, null.`,
+        fix: `Change type to a valid JSON Schema type. "${p.type}" → "string"?` });
+    }
+
+    // description check
+    if (!p.description || p.description.trim() === '') {
+      issues.push({ id: 'param-no-desc', severity: 'warn', icon: '⚠️',
+        text: `Parameter "${pname}" has no description.`,
+        fix: `Add "description" to "${pname}" explaining what value the LLM should put here.` });
+    }
+  });
+
+  // required fields valid
+  const invalidRequired = required.filter(r => !propNames.includes(r));
+  if (invalidRequired.length > 0) {
+    issues.push({ id: 'bad-required', severity: 'err', icon: '❌',
+      text: `required[] references unknown properties: ${invalidRequired.map(r => '"'+r+'"').join(', ')}.`,
+      fix: 'Make sure all names in required[] match property keys exactly (case-sensitive).' });
+  }
+
+  // If all checks passed
+  const errs = issues.filter(i => i.severity === 'err' || i.severity === 'warn');
+  if (errs.length === 0) {
+    issues.push({ id: 'all-ok', severity: 'ok', icon: '✅',
+      text: 'All checks passed. This tool looks LLM-ready.' });
+  }
+
+  return { name, issues };
+}
+
+// ============================================================
+// Render
+// ============================================================
+function computeScore(checks, toolResults) {
+  let total = 0, pass = 0;
+  checks.forEach(c => {
+    total++;
+    if (c.status === 'pass') pass++;
+  });
+  toolResults.forEach(t => {
+    t.issues.forEach(i => {
+      if (i.severity === 'err') { total++; }
+      else if (i.severity === 'warn') { total += .5; pass += .25; }
+    });
+  });
+  if (total === 0) return 100;
+  return Math.round((pass / total) * 100);
+}
+
+function renderResults(checks, toolResults, data, rawText) {
+  showResults(true);
+
+  // Score
+  const score = computeScore(checks, toolResults);
+  const ring = document.getElementById('score-ring');
+  ring.textContent = score;
+  ring.className = 'score-ring ' + (score >= 80 ? 'good' : score >= 50 ? 'warn' : 'bad');
+
+  const failCount = checks.filter(c => c.status === 'fail').length;
+  const warnCount = checks.filter(c => c.status === 'warn').length;
+
+  const title = document.getElementById('summary-title');
+  const sub = document.getElementById('summary-sub');
+  if (score === 100) {
+    title.textContent = '✅ Excellent — Your server looks LLM-ready';
+    sub.textContent = 'All checks passed. Your tools are well-defined and should work reliably with LLMs.';
+  } else if (score >= 80) {
+    title.textContent = '✅ Good with minor warnings';
+    sub.textContent = `${warnCount} warning${warnCount!==1?'s':''} found. Your server will work, but these improvements could help LLMs use it more accurately.`;
+  } else if (score >= 50) {
+    title.textContent = '⚠️ Issues found — action recommended';
+    sub.textContent = `${failCount} error${failCount!==1?'s':''} and ${warnCount} warning${warnCount!==1?'s':''} found. Some tools may not work correctly with LLMs.`;
+  } else {
+    title.textContent = '❌ Critical issues — LLMs will struggle with this server';
+    sub.textContent = `${failCount} critical error${failCount!==1?'s':''} found. LLMs may fail to call tools correctly or at all.`;
+  }
+
+  // Checks grid
+  const grid = document.getElementById('checks-grid');
+  grid.innerHTML = '';
+  checks.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'check-card ' + (c.status === 'pass' ? 'pass' : c.status === 'fail' ? 'fail' : 'warn');
+    div.innerHTML = `
+      <div class="check-icon">${c.icon}</div>
+      <div class="check-title">${c.title}</div>
+      <div class="check-msg">${c.msg}</div>
+    `;
+    grid.appendChild(div);
+  });
+
+  // Tools list
+  const tlist = document.getElementById('tools-list');
+  tlist.innerHTML = '';
+  const tsec = document.getElementById('tools-section');
+  if (toolResults.length === 0) { tsec.style.display = 'none'; }
+  else {
+    tsec.style.display = '';
+    toolResults.forEach(t => {
+      const hasErrors = t.issues.some(i => i.severity === 'err');
+      const hasWarns = t.issues.some(i => i.severity === 'warn');
+      const statusTag = hasErrors
+        ? '<span class="tag tag-err">Issues</span>'
+        : hasWarns
+          ? '<span class="tag tag-warn">Warnings</span>'
+          : '<span class="tag tag-ok">OK</span>';
+
+      const issuesHtml = t.issues.map(i => `
+        <div class="issue-row ${i.severity === 'err' ? 'err' : i.severity === 'warn' ? 'warn' : 'ok'}">
+          <span class="issue-icon">${i.icon}</span>
+          <div class="issue-text">
+            ${i.text}
+            ${i.fix ? `<div class="issue-fix">💡 Fix: ${i.fix}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      const card = document.createElement('div');
+      card.className = 'tool-card';
+      card.innerHTML = `
+        <div class="tool-header">
+          <span class="tool-name">${t.name}</span>
+          ${statusTag}
+        </div>
+        <div class="tool-issues">${issuesHtml}</div>
+      `;
+      tlist.appendChild(card);
+    });
+  }
+
+  // Raw
+  document.getElementById('raw-json').textContent = rawText || JSON.stringify(data, null, 2);
+
+  // Scroll to results
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderError(msg) {
+  showLoading(false);
+  const checks = [{
+    id: 'parse', title: 'Parse Error', status: 'fail', icon: '❌',
+    msg: msg
+  }];
+  renderResults(checks, [], {}, '');
+}
+</script>
+
+</body>
+</html>
