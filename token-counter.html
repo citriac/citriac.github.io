@@ -3,18 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Token Counter — Count LLM Tokens for GPT, Claude, Llama | Clavis Tools</title>
-  <meta name="description" content="Free online token counter for LLMs. Count tokens for GPT-4, Claude, Llama, Gemini and more. Estimate API costs before you run. No data sent to any server.">
+  <title>Token Counter 2026 — Count LLM Tokens for GPT-4o, Claude 3.7, Gemini 2.0, DeepSeek | Clavis Tools</title>
+  <meta name="description" content="Free online token counter for LLMs. Count tokens for GPT-4o, Claude 3.7, Gemini 2.0 Flash, DeepSeek V3, Llama 3.3 and more. Estimate API costs. 100% local, no data sent.">
   <link rel="canonical" href="https://citriac.github.io/token-counter.html">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Token Counter",
-    "description": "Count LLM tokens for GPT-4, Claude, Llama, Gemini and estimate API costs",
+    "name": "Token Counter 2026",
+    "description": "Count LLM tokens for GPT-4o, Claude 3.7, Gemini 2.0 Flash, DeepSeek V3 and estimate API costs. 100% local.",
     "url": "https://citriac.github.io/token-counter.html",
     "applicationCategory": "DeveloperApplication",
-    "offers": {"@type": "Offer", "price": "0"}
+    "offers": {"@type": "Offer", "price": "0"},
+    "author": {"@type": "Person", "name": "Clavis", "url": "https://citriac.github.io"},
+    "dateModified": "2026-03-29"
   }
   </script>
   <style>
@@ -225,8 +227,45 @@
     }
     .chip:hover { opacity: 0.8; }
 
-    footer {
-      border-top: 1px solid var(--border);
+    .dot-red { background: #f85149; }
+    .dot-cyan { background: #39d353; }
+
+    /* Output multiplier */
+    .output-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: var(--bg3);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .output-ctrl label { white-space: nowrap; }
+    .output-ctrl input[type=range] { flex: 1; max-width: 160px; accent-color: var(--blue); }
+    .output-ctrl .val { color: var(--text); font-weight: 600; min-width: 28px; }
+
+    /* Provider filter */
+    .provider-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .provider-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .provider-btn:hover { border-color: var(--blue); color: var(--text); }
+    .provider-btn.active { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); }
       padding: 24px;
       text-align: center;
       color: var(--muted);
@@ -257,21 +296,25 @@
   </header>
 
   <div class="container">
-    <h1>🔢 Token Counter</h1>
+    <h1>🔢 Token Counter <span style="font-size:13px;background:rgba(88,166,255,0.15);color:var(--blue);border-radius:4px;padding:2px 8px;font-weight:500;vertical-align:middle">2026</span></h1>
     <p class="subtitle">Count tokens for any LLM. Estimate API cost before you run. 100% local — no data leaves your browser.</p>
 
     <div class="badge-row">
       <span class="badge green">🔒 100% local</span>
-      <span class="badge">GPT-4o</span>
-      <span class="badge">Claude 3.5</span>
-      <span class="badge">Llama 3</span>
-      <span class="badge">Gemini</span>
+      <span class="badge">GPT-4o / o3</span>
+      <span class="badge">Claude 3.7</span>
+      <span class="badge">Gemini 2.0</span>
+      <span class="badge">DeepSeek V3</span>
+      <span class="badge">Llama 3.3</span>
       <span class="badge">Mistral</span>
     </div>
 
     <div class="privacy-note">
       🔒 All processing happens in your browser. No text is sent to any server. Works offline.
     </div>
+
+    <!-- Provider filter -->
+    <div class="provider-filter" id="providerFilter"></div>
 
     <!-- Model selector -->
     <div class="model-grid" id="modelGrid"></div>
@@ -323,19 +366,25 @@
     <!-- Cost estimate -->
     <div class="cost-section">
       <h2>💰 Cost Estimate (per call)</h2>
+      <div class="output-ctrl">
+        <label>Output multiplier:</label>
+        <input type="range" id="outputMult" min="0.5" max="10" step="0.5" value="2" oninput="document.getElementById('outputMultVal').textContent=this.value+'×';update()">
+        <span class="val" id="outputMultVal">2×</span>
+        <span style="font-size:11px">output tokens = input × multiplier</span>
+      </div>
       <table>
         <thead>
           <tr>
             <th>Model</th>
             <th>Tokens</th>
             <th>Input Cost</th>
-            <th>Output Cost*</th>
-            <th>Total*</th>
+            <th>Output Cost</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody id="costTable"></tbody>
       </table>
-      <p style="font-size:11px;color:var(--muted);margin-top:12px">* Output cost estimated at 2× input tokens. Prices from official docs, may change. Always verify.</p>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px">Prices from official docs as of March 2026, may change. Verify before production use.</p>
     </div>
 
     <!-- Token visualization -->
@@ -354,9 +403,10 @@
 
   <script>
   // ============================================================
-  // MODEL DEFINITIONS
+  // MODEL DEFINITIONS — Updated March 2026
   // ============================================================
   const MODELS = [
+    // ── OpenAI ──────────────────────────────────────────────
     {
       id: 'gpt-4o',
       name: 'GPT-4o',
@@ -378,14 +428,65 @@
       encoding: 'cl100k'
     },
     {
-      id: 'gpt-4-turbo',
-      name: 'GPT-4 Turbo',
+      id: 'gpt-4-1',
+      name: 'GPT-4.1',
       provider: 'OpenAI',
       dot: 'dot-green',
-      context: 128000,
-      inputPer1M: 10.00,
-      outputPer1M: 30.00,
+      context: 1000000,
+      inputPer1M: 2.00,
+      outputPer1M: 8.00,
       encoding: 'cl100k'
+    },
+    {
+      id: 'gpt-4-1-mini',
+      name: 'GPT-4.1 mini',
+      provider: 'OpenAI',
+      dot: 'dot-green',
+      context: 1000000,
+      inputPer1M: 0.40,
+      outputPer1M: 1.60,
+      encoding: 'cl100k'
+    },
+    {
+      id: 'o3',
+      name: 'o3',
+      provider: 'OpenAI',
+      dot: 'dot-green',
+      context: 200000,
+      inputPer1M: 10.00,
+      outputPer1M: 40.00,
+      encoding: 'cl100k'
+    },
+    {
+      id: 'o3-mini',
+      name: 'o3-mini',
+      provider: 'OpenAI',
+      dot: 'dot-green',
+      context: 200000,
+      inputPer1M: 1.10,
+      outputPer1M: 4.40,
+      encoding: 'cl100k'
+    },
+    {
+      id: 'o4-mini',
+      name: 'o4-mini',
+      provider: 'OpenAI',
+      dot: 'dot-green',
+      context: 200000,
+      inputPer1M: 1.10,
+      outputPer1M: 4.40,
+      encoding: 'cl100k'
+    },
+    // ── Anthropic ────────────────────────────────────────────
+    {
+      id: 'claude-3-7-sonnet',
+      name: 'Claude 3.7 Sonnet',
+      provider: 'Anthropic',
+      dot: 'dot-purple',
+      context: 200000,
+      inputPer1M: 3.00,
+      outputPer1M: 15.00,
+      encoding: 'claude'
     },
     {
       id: 'claude-3-5-sonnet',
@@ -398,18 +499,71 @@
       encoding: 'claude'
     },
     {
-      id: 'claude-3-haiku',
-      name: 'Claude 3 Haiku',
+      id: 'claude-3-5-haiku',
+      name: 'Claude 3.5 Haiku',
       provider: 'Anthropic',
       dot: 'dot-purple',
       context: 200000,
-      inputPer1M: 0.25,
-      outputPer1M: 1.25,
+      inputPer1M: 0.80,
+      outputPer1M: 4.00,
       encoding: 'claude'
     },
+    // ── Google ────────────────────────────────────────────────
     {
-      id: 'llama-3-70b',
-      name: 'Llama 3 70B',
+      id: 'gemini-2-0-flash',
+      name: 'Gemini 2.0 Flash',
+      provider: 'Google',
+      dot: 'dot-orange',
+      context: 1000000,
+      inputPer1M: 0.10,
+      outputPer1M: 0.40,
+      encoding: 'gemini'
+    },
+    {
+      id: 'gemini-2-0-flash-lite',
+      name: 'Gemini 2.0 Flash Lite',
+      provider: 'Google',
+      dot: 'dot-orange',
+      context: 1000000,
+      inputPer1M: 0.075,
+      outputPer1M: 0.30,
+      encoding: 'gemini'
+    },
+    {
+      id: 'gemini-2-5-pro',
+      name: 'Gemini 2.5 Pro',
+      provider: 'Google',
+      dot: 'dot-orange',
+      context: 1000000,
+      inputPer1M: 1.25,
+      outputPer1M: 10.00,
+      encoding: 'gemini'
+    },
+    // ── DeepSeek ─────────────────────────────────────────────
+    {
+      id: 'deepseek-v3',
+      name: 'DeepSeek V3',
+      provider: 'DeepSeek',
+      dot: 'dot-cyan',
+      context: 128000,
+      inputPer1M: 0.27,
+      outputPer1M: 1.10,
+      encoding: 'cl100k'
+    },
+    {
+      id: 'deepseek-r1',
+      name: 'DeepSeek R1',
+      provider: 'DeepSeek',
+      dot: 'dot-cyan',
+      context: 128000,
+      inputPer1M: 0.55,
+      outputPer1M: 2.19,
+      encoding: 'cl100k'
+    },
+    // ── Meta ─────────────────────────────────────────────────
+    {
+      id: 'llama-3-3-70b',
+      name: 'Llama 3.3 70B',
       provider: 'Meta',
       dot: 'dot-blue',
       context: 128000,
@@ -418,15 +572,16 @@
       encoding: 'llama3'
     },
     {
-      id: 'gemini-1-5-pro',
-      name: 'Gemini 1.5 Pro',
-      provider: 'Google',
-      dot: 'dot-orange',
-      context: 1000000,
-      inputPer1M: 1.25,
-      outputPer1M: 5.00,
-      encoding: 'gemini'
+      id: 'llama-3-1-405b',
+      name: 'Llama 3.1 405B',
+      provider: 'Meta',
+      dot: 'dot-blue',
+      context: 128000,
+      inputPer1M: 3.00,
+      outputPer1M: 3.00,
+      encoding: 'llama3'
     },
+    // ── Mistral ──────────────────────────────────────────────
     {
       id: 'mistral-large',
       name: 'Mistral Large',
@@ -436,10 +591,63 @@
       inputPer1M: 2.00,
       outputPer1M: 6.00,
       encoding: 'cl100k'
-    }
+    },
+    {
+      id: 'mistral-small',
+      name: 'Mistral Small',
+      provider: 'Mistral',
+      dot: 'dot-yellow',
+      context: 32000,
+      inputPer1M: 0.10,
+      outputPer1M: 0.30,
+      encoding: 'cl100k'
+    },
+    // ── Qwen ─────────────────────────────────────────────────
+    {
+      id: 'qwen-2-5-72b',
+      name: 'Qwen 2.5 72B',
+      provider: 'Alibaba',
+      dot: 'dot-red',
+      context: 128000,
+      inputPer1M: 0.40,
+      outputPer1M: 1.20,
+      encoding: 'cl100k'
+    },
   ];
 
   let selectedModel = MODELS[0];
+  let activeProvider = 'All';
+
+  // ============================================================
+  // PROVIDER FILTER
+  // ============================================================
+  function renderProviderFilter() {
+    const container = document.getElementById('providerFilter');
+    const providers = ['All', ...new Set(MODELS.map(m => m.provider))];
+    container.innerHTML = '';
+    providers.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'provider-btn' + (p === activeProvider ? ' active' : '');
+      btn.textContent = p;
+      btn.onclick = () => {
+        activeProvider = p;
+        // If current selectedModel is filtered out, pick first visible
+        const visible = filteredModels();
+        if (!visible.find(m => m.id === selectedModel.id)) {
+          selectedModel = visible[0];
+        }
+        renderProviderFilter();
+        renderModels();
+        update();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function filteredModels() {
+    if (activeProvider === 'All') return MODELS;
+    return MODELS.filter(m => m.provider === activeProvider);
+  }
 
   // ============================================================
   // TOKENIZER (BPE approximation — works without external libs)
@@ -555,7 +763,7 @@
   function renderModels() {
     const grid = document.getElementById('modelGrid');
     grid.innerHTML = '';
-    MODELS.forEach(m => {
+    filteredModels().forEach(m => {
       const card = document.createElement('div');
       card.className = 'model-card' + (m.id === selectedModel.id ? ' active' : '');
       card.innerHTML = `
@@ -599,7 +807,7 @@
   function renderContextBars(tokens) {
     const bars = document.getElementById('ctxBars');
     bars.innerHTML = '';
-    MODELS.forEach(m => {
+    filteredModels().forEach(m => {
       const pct = Math.min(100, (tokens / m.context) * 100);
       const pctDisplay = pct < 0.1 ? '<0.1' : pct.toFixed(1);
       let color = 'var(--green)';
@@ -622,7 +830,9 @@
   function renderCostTable(inputTokens) {
     const tbody = document.getElementById('costTable');
     tbody.innerHTML = '';
-    const outputTokens = inputTokens * 2; // estimate
+    const mult = parseFloat(document.getElementById('outputMult').value) || 2;
+    const outputTokens = Math.round(inputTokens * mult);
+    // Show all models regardless of filter in cost table (for comparison)
     MODELS.forEach(m => {
       const inputCost = (inputTokens / 1_000_000) * m.inputPer1M;
       const outputCost = (outputTokens / 1_000_000) * m.outputPer1M;
@@ -660,6 +870,7 @@
   }
 
   // Init
+  renderProviderFilter();
   renderModels();
   update();
   </script>
