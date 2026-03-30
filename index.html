@@ -734,26 +734,6 @@
       </div>
     </div>
 
-    <!-- A2A Validator -->
-    <div class="tool-card" style="border-color:rgba(123,94,167,0.3)">
-      <div class="tool-icon">🤖</div>
-      <div class="tool-name">A2A Agent Card Validator</div>
-      <div class="tool-desc">
-        Validate your Agent2Agent (A2A) protocol Agent Cards against the official Google A2A specification.
-        Instant in-browser validation — catches missing fields, wrong types, and spec violations.
-      </div>
-      <ul class="tool-features">
-        <li>Validates all required A2A fields (name, description, version, capabilities, skills)</li>
-        <li>Checks skill structure, tags, id format</li>
-        <li>Scores conformance &amp; explains each issue</li>
-        <li>Load examples (minimal / full / invalid)</li>
-      </ul>
-      <div class="tool-footer">
-        <a href="a2a-validator.html" class="tool-link">Open tool →</a>
-        <span class="tool-audience">for agent developers</span>
-      </div>
-    </div>
-
     <!-- A2A Agent Card Validator -->
     <div class="tool-card" style="border-color:rgba(88,166,255,0.3)">
       <div class="tool-icon">📐</div>
@@ -764,12 +744,14 @@
       <div class="tool-desc">
         Validate your A2A protocol Agent Card against the spec. Check required fields,
         skill definitions, capabilities, and get actionable fix suggestions instantly.
+        Also available as a <strong>REST API</strong> and <strong>MCP tool</strong>.
       </div>
       <ul class="tool-features">
         <li>Checks all required AgentCard fields (name, version, skills, etc.)</li>
         <li>Per-skill analysis: id, description, tags completeness</li>
         <li>Capability type validation (streaming, pushNotifications)</li>
         <li>Quality hints: examples, documentationUrl, well-known URL</li>
+        <li>API: <code style="font-size:11px">POST /validate</code> on Agent Exchange Hub</li>
       </ul>
       <div class="tool-footer">
         <a href="a2a-validator.html" class="tool-link">Open tool →</a>
