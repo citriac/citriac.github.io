@@ -6,92 +6,95 @@
 <title>植物小队 🌻 — 胖团专属</title>
 <meta name="robots" content="noindex">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #1a3a1a;
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: flex-start; min-height: 100vh;
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    overflow: hidden; user-select: none;
-  }
-  #header {
-    width: 100%; max-width: 820px;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 12px;
-    background: rgba(0,0,0,0.5);
-    border-bottom: 2px solid #4a8a2a;
-  }
-  #title { color: #ffe066; font-size: 18px; font-weight: 900; text-shadow: 0 0 8px #ffaa00; }
-  #stats { display: flex; gap: 14px; align-items: center; }
-  .stat { color: #fff; font-size: 13px; }
-  .stat span { color: #ffe066; font-weight: bold; }
-  #sun-display { font-size: 16px; color: #ffe066; font-weight: bold; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#1a3a1a;
+  display:flex; flex-direction:column; align-items:center;
+  height:100vh; overflow:hidden;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  user-select:none; touch-action:manipulation;
+}
+#header {
+  width:100%; max-width:860px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; flex-shrink:0;
+  background:rgba(0,0,0,0.6);
+  border-bottom:2px solid #4a8a2a;
+}
+#title { color:#ffe066; font-size:17px; font-weight:900; text-shadow:0 0 8px #ffaa00; }
+#stats { display:flex; gap:12px; }
+.stat { color:#fff; font-size:13px; }
+.stat b { color:#ffe066; }
 
-  #shop {
-    width: 100%; max-width: 820px;
-    display: flex; gap: 6px; align-items: center;
-    padding: 6px 10px;
-    background: rgba(20,50,10,0.9);
-    border-bottom: 2px solid #4a8a2a;
-    overflow-x: auto;
-  }
-  .card {
-    display: flex; flex-direction: column; align-items: center;
-    background: rgba(0,0,0,0.4);
-    border: 2px solid #555; border-radius: 8px;
-    padding: 4px 8px; cursor: pointer; min-width: 62px;
-    transition: all 0.15s; position: relative;
-  }
-  .card:hover { border-color: #ffe066; transform: scale(1.05); }
-  .card.selected { border-color: #ffe066; background: rgba(255,224,0,0.15); box-shadow: 0 0 10px rgba(255,224,0,0.4); }
-  .card.disabled { opacity: 0.4; cursor: not-allowed; }
-  .card .emoji { font-size: 22px; }
-  .card .name { font-size: 10px; color: #aaa; text-align: center; }
-  .card .cost { font-size: 11px; color: #ffe066; font-weight: bold; }
-  .card .cd-bar {
-    position: absolute; bottom: 0; left: 0; height: 3px;
-    background: #88cc44; border-radius: 0 0 6px 6px; transition: width 0.1s;
-  }
-  #shovel-btn {
-    margin-left: auto;
-    background: rgba(150,80,20,0.5);
-    border: 2px solid #a05820; border-radius: 8px;
-    padding: 6px 10px; cursor: pointer; color: #ffcc88; font-size: 20px;
-    transition: all 0.15s;
-  }
-  #shovel-btn:hover { border-color: #ffe066; transform: scale(1.05); }
-  #shovel-btn.selected { border-color: #ffe066; background: rgba(255,180,50,0.2); }
+#shop {
+  width:100%; max-width:860px; flex-shrink:0;
+  display:flex; gap:5px; align-items:center;
+  padding:5px 8px;
+  background:rgba(10,30,5,0.95);
+  border-bottom:2px solid #4a8a2a;
+  overflow-x:auto;
+}
+.pcard {
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(0,0,0,0.45); border:2px solid #555; border-radius:8px;
+  padding:3px 7px; cursor:pointer; min-width:58px; position:relative;
+  transition:border-color .12s, transform .12s;
+}
+.pcard:hover { border-color:#ffe066; transform:scale(1.06); }
+.pcard.sel { border-color:#ffe066; background:rgba(255,220,0,.18); box-shadow:0 0 10px rgba(255,220,0,.35); }
+.pcard.dim { opacity:.38; cursor:not-allowed; }
+.pcard .em { font-size:20px; line-height:1.2; }
+.pcard .nm { font-size:9px; color:#bbb; }
+.pcard .cs { font-size:11px; color:#ffe066; font-weight:700; }
+.pcard .cdbar {
+  position:absolute; bottom:0; left:0; height:3px;
+  background:#5ac; border-radius:0 0 6px 6px;
+  transition:width .08s linear;
+}
+#shovel {
+  margin-left:auto; flex-shrink:0;
+  border:2px solid #884420; border-radius:8px;
+  background:rgba(120,60,10,.45); padding:4px 10px;
+  cursor:pointer; font-size:18px; color:#ffcc88;
+  transition:border-color .12s;
+}
+#shovel:hover,#shovel.sel { border-color:#ffe066; background:rgba(255,180,50,.22); }
 
-  #canvas-wrap {
-    position: relative; width: 100%; max-width: 820px;
-    flex: 1; display: flex; align-items: flex-start; justify-content: center;
-  }
-  canvas { display: block; background: #2d5a1e; cursor: crosshair; }
+#wrap {
+  width:100%; max-width:860px; flex:1;
+  position:relative; overflow:hidden;
+  display:flex; align-items:flex-start; justify-content:center;
+}
+canvas { display:block; cursor:crosshair; }
 
-  #overlay {
-    display: none; position: absolute; inset: 0;
-    background: rgba(0,0,0,0.75);
-    flex-direction: column; align-items: center; justify-content: center;
-    z-index: 10;
-  }
-  #overlay.show { display: flex; }
-  #overlay h2 { font-size: 32px; margin-bottom: 12px; }
-  #overlay p { color: #ccc; margin-bottom: 20px; font-size: 15px; }
-  #overlay button {
-    background: #4a8a2a; color: #fff; border: none; border-radius: 8px;
-    padding: 10px 28px; font-size: 16px; cursor: pointer; font-weight: bold;
-  }
-  #overlay button:hover { background: #5aaa3a; }
+/* overlay */
+#ov {
+  display:none; position:absolute; inset:0;
+  background:rgba(0,0,0,.78); flex-direction:column;
+  align-items:center; justify-content:center; z-index:20;
+  gap:10px;
+}
+#ov.on { display:flex; }
+#ov h2 { font-size:28px; color:#ffe066; }
+#ov p { color:#ccc; font-size:14px; text-align:center; max-width:280px; line-height:1.6; }
+#ov button {
+  background:#4a8a2a; color:#fff; border:none; border-radius:8px;
+  padding:9px 26px; font-size:15px; cursor:pointer; font-weight:700;
+  margin-top:4px;
+}
+#ov button:hover { background:#5aaa3a; }
 
-  #wave-banner {
-    position: absolute; top: 40%; left: 50%; transform: translateX(-50%);
-    background: rgba(180,60,0,0.9); color: #ffe066;
-    font-size: 22px; font-weight: 900; padding: 10px 30px; border-radius: 10px;
-    display: none; z-index: 8; white-space: nowrap;
-    animation: waveBanner 0.4s ease;
-    border: 2px solid #ff8833;
-  }
-  @keyframes waveBanner { from { transform: translateX(-50%) scale(0.5); opacity: 0; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+/* wave toast */
+#toast {
+  display:none; position:absolute;
+  top:38%; left:50%; transform:translateX(-50%);
+  background:rgba(170,50,0,.92); color:#ffe066;
+  font-size:20px; font-weight:900; padding:9px 28px;
+  border-radius:10px; border:2px solid #ff8833;
+  white-space:nowrap; z-index:15;
+  animation:pop .35s ease;
+}
+@keyframes pop { from{transform:translateX(-50%) scale(.4);opacity:0} to{transform:translateX(-50%) scale(1);opacity:1} }
 </style>
 </head>
 <body>
@@ -99,267 +102,257 @@
 <div id="header">
   <div id="title">🌻 植物小队</div>
   <div id="stats">
-    <div class="stat">☀️ <span id="sun-val">100</span></div>
-    <div class="stat">🌊 第 <span id="wave-val">1</span> 波</div>
-    <div class="stat">❤️ <span id="lives-val">5</span></div>
+    <div class="stat">☀️ <b id="sv">100</b></div>
+    <div class="stat">🌊 <b id="wv">1</b>/5</div>
+    <div class="stat">❤️ <b id="lv">5</b></div>
   </div>
 </div>
 
 <div id="shop">
-  <div class="card selected" data-plant="sunflower" data-cost="50">
-    <div class="emoji">🌻</div>
-    <div class="name">向日葵</div>
-    <div class="cost">☀️50</div>
-    <div class="cd-bar" style="width:100%"></div>
+  <div class="pcard sel" data-t="sunflower" data-c="50">
+    <div class="em">🌻</div><div class="nm">向日葵</div><div class="cs">☀50</div>
+    <div class="cdbar" style="width:100%"></div>
   </div>
-  <div class="card" data-plant="peashooter" data-cost="100">
-    <div class="emoji">🫛</div>
-    <div class="name">豌豆射手</div>
-    <div class="cost">☀️100</div>
-    <div class="cd-bar" style="width:100%"></div>
+  <div class="pcard" data-t="peashooter" data-c="100">
+    <div class="em">🫛</div><div class="nm">豌豆射手</div><div class="cs">☀100</div>
+    <div class="cdbar" style="width:100%"></div>
   </div>
-  <div class="card" data-plant="wallnut" data-cost="50">
-    <div class="emoji">🥜</div>
-    <div class="name">坚果墙</div>
-    <div class="cost">☀️50</div>
-    <div class="cd-bar" style="width:100%"></div>
+  <div class="pcard" data-t="wallnut" data-c="50">
+    <div class="em">🥜</div><div class="nm">坚果墙</div><div class="cs">☀50</div>
+    <div class="cdbar" style="width:100%"></div>
   </div>
-  <div class="card" data-plant="snowpea" data-cost="175">
-    <div class="emoji">❄️</div>
-    <div class="name">寒冰射手</div>
-    <div class="cost">☀️175</div>
-    <div class="cd-bar" style="width:100%"></div>
+  <div class="pcard" data-t="snowpea" data-c="175">
+    <div class="em">❄️</div><div class="nm">寒冰射手</div><div class="cs">☀175</div>
+    <div class="cdbar" style="width:100%"></div>
   </div>
-  <div class="card" data-plant="cherry" data-cost="150">
-    <div class="emoji">🍒</div>
-    <div class="name">樱桃炸弹</div>
-    <div class="cost">☀️150</div>
-    <div class="cd-bar" style="width:100%"></div>
+  <div class="pcard" data-t="cherry" data-c="150">
+    <div class="em">🍒</div><div class="nm">樱桃炸弹</div><div class="cs">☀150</div>
+    <div class="cdbar" style="width:100%"></div>
   </div>
-  <div id="shovel-btn" title="铲子 — 移除植物">🪣</div>
+  <div id="shovel" title="铲子">🪣</div>
 </div>
 
-<div id="canvas-wrap">
+<div id="wrap">
   <canvas id="c"></canvas>
-  <div id="overlay">
-    <h2 id="overlay-title">🌻 植物小队</h2>
-    <p id="overlay-msg">点击开始游戏！</p>
-    <button id="overlay-btn">开始游戏 ▶</button>
+  <div id="ov" class="on">
+    <h2 id="ot">🌻 植物小队</h2>
+    <p id="om">帮植物们守住家园！<br>点击格子种植，收集太阳☀️获得阳光</p>
+    <button id="ob">开始游戏 ▶</button>
   </div>
-  <div id="wave-banner" id="wave-banner">第 1 波来袭！</div>
+  <div id="toast"></div>
 </div>
 
 <script>
+// ── canvas setup ──────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-const wrap = document.getElementById('canvas-wrap');
+const wrap = document.getElementById('wrap');
 
-// ——— constants ———
 const COLS = 9, ROWS = 5;
-let CW, CH, CELL, GRID_X, GRID_Y, GRID_W, GRID_H;
+let CELL = 64, CW, CH, GX, GY, GW, GH;
 
 function resize() {
-  const maxW = Math.min(820, window.innerWidth);
-  const maxH = window.innerHeight - document.getElementById('header').offsetHeight - document.getElementById('shop').offsetHeight - 4;
-  const cellByW = Math.floor(maxW / (COLS + 0.5));
-  const cellByH = Math.floor(maxH / (ROWS + 1));
-  CELL = Math.max(52, Math.min(cellByW, cellByH, 80));
-  GRID_W = COLS * CELL; GRID_H = ROWS * CELL;
-  CW = GRID_W + CELL; CH = GRID_H + CELL * 0.6;
+  const h = document.getElementById('header');
+  const sh = document.getElementById('shop');
+  const hH = h ? h.offsetHeight : 38;
+  const sH = sh ? sh.offsetHeight : 48;
+  const avW = Math.min(860, window.innerWidth);
+  const avH = window.innerHeight - hH - sH - 4;
+  const byW = Math.floor(avW / (COLS + 1));
+  const byH = Math.floor(avH / (ROWS + 1.2));
+  CELL = Math.max(48, Math.min(byW, byH, 76));
+  GW = COLS * CELL; GH = ROWS * CELL;
+  CW = GW + CELL; CH = GH + Math.round(CELL * 0.7);
   canvas.width = CW; canvas.height = CH;
-  GRID_X = CELL * 0.5; GRID_Y = CELL * 0.3;
+  GX = Math.round(CELL * 0.55); GY = Math.round(CELL * 0.25);
 }
-resize();
-window.addEventListener('resize', () => { resize(); });
 
-// ——— state ———
-let sun = 100, lives = 5, wave = 1, running = false, paused = false;
-let sunDropTimer = 0, sunDropInterval = 7000;
-let waveTimer = 0, waveCooldown = 25000;
-let waveSpawnQueue = [], spawnTimer = 0;
-let gameOver = false, victory = false;
-const MAX_WAVES = 5;
+// ── constants ─────────────────────────────────────────────────────────
+const COSTS    = { sunflower:50, peashooter:100, wallnut:50, snowpea:175, cherry:150 };
+const HP       = { sunflower:300, peashooter:300, wallnut:1200, snowpea:300, cherry:1 };
+const EMOJI    = { sunflower:'🌻', peashooter:'🫛', wallnut:'🥜', snowpea:'❄️', cherry:'🍒' };
+const CD_MAX   = { sunflower:7500, peashooter:7000, wallnut:11000, snowpea:7500, cherry:20000 };
 
-let grid = []; // grid[row][col] = plant|null
-let plants = [], zombies = [], bullets = [], suns = [], particles = [], floatTexts = [];
-let selectedPlant = 'sunflower';
-let shovelMode = false;
-let cooldowns = { sunflower: 0, peashooter: 0, wallnut: 0, snowpea: 0, cherry: 0 };
-const COOLDOWN_MAX = { sunflower: 7000, peashooter: 7000, wallnut: 10000, snowpea: 7500, cherry: 20000 };
-const COSTS = { sunflower: 50, peashooter: 100, wallnut: 50, snowpea: 175, cherry: 150 };
-
-for (let r = 0; r < ROWS; r++) { grid[r] = []; for (let c = 0; c < COLS; c++) grid[r][c] = null; }
-
-// ——— plant definitions ———
-const PLANT_EMOJI = { sunflower: '🌻', peashooter: '🫛', wallnut: '🥜', snowpea: '❄️', cherry: '🍒' };
-const PLANT_HP = { sunflower: 300, peashooter: 300, wallnut: 1200, snowpea: 300, cherry: 1 };
-const PLANT_MAX_HP = { sunflower: 300, peashooter: 300, wallnut: 1200, snowpea: 300, cherry: 1 };
-
-// ——— zombie types ———
-const ZOMBIE_TYPES = [
-  { emoji: '🧟', name: '普通僵尸', hp: 180, speed: 22, dmg: 15, reward: 10 },
-  { emoji: '🧟', name: '路障僵尸', hp: 360, speed: 22, dmg: 15, reward: 20 },
-  { emoji: '🪖', name: '铁桶僵尸', hp: 720, speed: 20, dmg: 20, reward: 30 },
-  { emoji: '🏃', name: '旗帜僵尸', hp: 200, speed: 36, dmg: 15, reward: 15 },
-  { emoji: '👷', name: '矿工僵尸', hp: 500, speed: 18, dmg: 25, reward: 25 },
+const Z_TYPES = [
+  { emoji:'🧟', hp:200, spd:28, dmg:18, reward:10 },   // normal
+  { emoji:'🧟', hp:400, spd:26, dmg:18, reward:20 },   // roadblock
+  { emoji:'🪖', hp:800, spd:22, dmg:22, reward:30 },   // bucket
+  { emoji:'🏃', hp:220, spd:48, dmg:16, reward:15 },   // flag (fast)
+  { emoji:'👷', hp:600, spd:18, dmg:28, reward:25 },   // miner
 ];
 
-// ——— helpers ———
-function cellX(c) { return GRID_X + c * CELL; }
-function cellY(r) { return GRID_Y + r * CELL; }
-function screenToCell(px, py) {
-  const c = Math.floor((px - GRID_X) / CELL);
-  const r = Math.floor((py - GRID_Y) / CELL);
-  if (c >= 0 && c < COLS && r >= 0 && r < ROWS) return { r, c };
-  return null;
+// ── state ─────────────────────────────────────────────────────────────
+let sun=100, lives=5, wave=1, running=false;
+let grid, plants, zombies, bullets, sunDrops, particles, floats;
+let cds = { sunflower:0, peashooter:0, wallnut:0, snowpea:0, cherry:0 };
+let sunTimer=0, waveTimer=0, spawnQueue=[], spawnTimer=0;
+let selPlant='sunflower', shovelMode=false;
+let hoverRC = null;
+const MAX_WAVES = 5;
+
+function initState() {
+  sun=100; lives=5; wave=1;
+  grid = Array.from({length:ROWS}, ()=>Array(COLS).fill(null));
+  plants=[]; zombies=[]; bullets=[]; sunDrops=[]; particles=[]; floats=[];
+  Object.keys(cds).forEach(k=>cds[k]=0);
+  sunTimer=0; waveTimer=0; spawnQueue=[]; spawnTimer=0;
+  updHUD();
 }
 
-function spawnPlant(r, c, type) {
+function updHUD() {
+  document.getElementById('sv').textContent = sun;
+  document.getElementById('wv').textContent = wave;
+  document.getElementById('lv').textContent = lives;
+}
+
+// ── helpers ───────────────────────────────────────────────────────────
+const cx = c => GX + c * CELL;
+const cy = r => GY + r * CELL;
+
+function toCell(px, py) {
+  const c = Math.floor((px - GX) / CELL);
+  const r = Math.floor((py - GY) / CELL);
+  return (c>=0&&c<COLS&&r>=0&&r<ROWS) ? {r,c} : null;
+}
+
+// ── plants ────────────────────────────────────────────────────────────
+function placePlant(r, c, type) {
   const p = {
-    type, r, c, hp: PLANT_HP[type], maxHp: PLANT_MAX_HP[type],
-    shootTimer: type === 'sunflower' ? 18000 : 0,
-    shootInterval: type === 'peashooter' ? 1800 : type === 'snowpea' ? 2000 : 999999,
-    sunTimer: type === 'sunflower' ? 8000 : 999999,
-    anim: 0,
+    type, r, c, hp:HP[type], maxHp:HP[type],
+    anim:0,
+    sunTimer: type==='sunflower' ? 8000+Math.random()*3000 : Infinity,
+    shootTimer: 0,
+    shootInterval: type==='peashooter' ? 1800 : type==='snowpea' ? 2100 : Infinity,
   };
   if (type === 'cherry') {
-    // instant explosion
-    setTimeout(() => { cherryBomb(r, c); }, 100);
-    grid[r][c] = p;
-    plants.push(p);
+    grid[r][c] = p; plants.push(p);
+    setTimeout(() => {
+      doCherry(r, c);
+      plants = plants.filter(x=>x!==p);
+      grid[r][c] = null;
+    }, 80);
     return;
   }
-  grid[r][c] = p;
-  plants.push(p);
+  grid[r][c] = p; plants.push(p);
 }
 
-function cherryBomb(r, c) {
-  // kill zombies in 3x3
-  addParticle(cellX(c) + CELL/2, cellY(r) + CELL/2, '💥', 60, 0, -1, 28);
-  floatTexts.push({ x: cellX(c)+CELL/2, y: cellY(r), text: '💥爆炸！', color:'#ff8833', life: 80 });
+function doCherry(r, c) {
+  addFX(cx(c)+CELL/2, cy(r)+CELL/2, '💥', 55);
+  addFloat(cx(c)+CELL/2, cy(r), '💥炸！', '#ff8833');
   zombies.forEach(z => {
-    if (Math.abs(z.row - r) <= 1.5 && z.x >= cellX(c-1) && z.x <= cellX(c+2)) {
-      z.hp -= 900;
-    }
+    if (Math.abs(z.row-r) <= 1.5 && z.x >= cx(c-1) && z.x <= cx(c+2))
+      z.hp -= 1200;
   });
-  // remove cherry
-  const idx = plants.findIndex(p => p.r === r && p.c === c);
-  if (idx !== -1) plants.splice(idx, 1);
-  grid[r][c] = null;
 }
 
-function spawnZombie(type) {
-  const z = Object.assign({}, ZOMBIE_TYPES[type]);
-  z.row = Math.floor(Math.random() * ROWS);
-  z.x = CW + 20;
-  z.eating = false; z.eatTimer = 0; z.id = Math.random();
-  z.frozen = 0;
-  z.maxHp = z.hp;
-  zombies.push(z);
+// ── zombies ───────────────────────────────────────────────────────────
+function spawnZ(type) {
+  const t = Z_TYPES[type];
+  zombies.push({
+    ...t, maxHp:t.hp, row:Math.floor(Math.random()*ROWS),
+    x: CW + 30, eating:false, eatTimer:0, frozen:0,
+  });
 }
 
 function buildWave(w) {
   const q = [];
-  const base = 4 + w * 3;
-  for (let i = 0; i < base; i++) {
-    let t = 0;
-    if (w >= 2 && Math.random() < 0.3) t = 1;
-    if (w >= 3 && Math.random() < 0.2) t = 2;
-    if (w >= 4 && Math.random() < 0.15) t = 3;
-    if (w >= 5 && Math.random() < 0.15) t = 4;
-    q.push({ type: t, delay: i * (1800 - w * 100) });
+  const n = 4 + w * 3;
+  for (let i=0; i<n; i++) {
+    let type=0;
+    const r=Math.random();
+    if (w>=5 && r<0.12) type=4;
+    else if (w>=4 && r<0.18) type=3;
+    else if (w>=3 && r<0.28) type=2;
+    else if (w>=2 && r<0.42) type=1;
+    q.push({ type, delay: i * Math.max(800, 1800 - w*120) });
   }
   return q;
 }
 
-function addParticle(x, y, emoji, life, vx, vy, size) {
-  particles.push({ x, y, emoji, life, maxLife: life, vx: vx || 0, vy: vy || -1.5, size: size || 18 });
+// ── fx ────────────────────────────────────────────────────────────────
+function addFX(x, y, emoji, life, vx=0, vy=-1.4, size=18) {
+  particles.push({ x, y, emoji, life, maxLife:life, vx, vy, size });
+}
+function addFloat(x, y, text, color='#fff') {
+  floats.push({ x, y, text, color, life:65 });
 }
 
-function addFloatText(x, y, text, color) {
-  floatTexts.push({ x, y, text, color: color || '#fff', life: 60 });
+// ── sun drops ─────────────────────────────────────────────────────────
+function dropSun(x, y, val=25) {
+  const ty = GY + Math.random()*GH*0.85 + GH*0.05;
+  sunDrops.push({ x, y:y??GY-20, ty, val, life:260, collected:false });
 }
 
-function dropSun(x, y, val) {
-  suns.push({ x, y: y || -20, targetY: y ? y + 40 : GRID_Y + Math.random() * GRID_H, val: val || 25, life: 240, collected: false });
-}
-
-let lastTime = 0;
-function gameLoop(ts) {
-  if (!running || paused) return;
-  const dt = Math.min(ts - lastTime, 50);
-  lastTime = ts;
+// ── main loop ─────────────────────────────────────────────────────────
+let last = 0;
+function loop(ts) {
+  if (!running) return;
+  const dt = Math.min(ts - last, 50);
+  last = ts;
   update(dt);
   draw();
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(loop);
 }
 
 function update(dt) {
   // cooldowns
-  Object.keys(cooldowns).forEach(k => {
-    if (cooldowns[k] > 0) cooldowns[k] = Math.max(0, cooldowns[k] - dt);
-  });
-  updateShopUI();
+  Object.keys(cds).forEach(k => { if(cds[k]>0) cds[k]=Math.max(0,cds[k]-dt); });
+  updShopUI();
 
-  // sun drop
-  sunDropTimer += dt;
-  if (sunDropTimer >= sunDropInterval) {
-    sunDropTimer = 0;
-    const r2 = Math.floor(Math.random() * ROWS);
-    const c2 = Math.floor(Math.random() * COLS);
-    dropSun(cellX(c2) + CELL/2, GRID_Y - 30 + Math.random() * 20, 25);
+  // ambient sun drop
+  sunTimer += dt;
+  if (sunTimer >= 6500) {
+    sunTimer = 0;
+    dropSun(GX + Math.random()*GW, null, 25);
   }
 
-  // wave
-  if (waveSpawnQueue.length > 0) {
+  // wave spawning
+  if (spawnQueue.length > 0) {
     spawnTimer += dt;
-    while (waveSpawnQueue.length > 0 && spawnTimer >= waveSpawnQueue[0].delay) {
-      spawnZombie(waveSpawnQueue[0].type);
-      waveSpawnQueue.shift();
+    while (spawnQueue.length > 0 && spawnTimer >= spawnQueue[0].delay) {
+      spawnZ(spawnQueue[0].type);
+      spawnQueue.shift();
     }
-  } else if (zombies.length === 0 && !gameOver && !victory) {
+  } else if (zombies.length === 0) {
     waveTimer += dt;
-    if (waveTimer >= waveCooldown) {
+    const needed = wave === 1 ? 5000 : 20000;
+    if (waveTimer >= needed) {
       waveTimer = 0;
       if (wave < MAX_WAVES) {
         wave++;
-        document.getElementById('wave-val').textContent = wave;
-        showWaveBanner(wave);
-        waveSpawnQueue = buildWave(wave);
+        updHUD();
+        showToast(`第 ${wave} 波来袭！🧟`);
+        spawnQueue = buildWave(wave);
         spawnTimer = 0;
       } else {
-        // victory!
-        victory = true;
+        // victory
         running = false;
-        showOverlay('🎉 胜利！', `胖团太棒了！消灭了所有僵尸！`, '再玩一次 🌻');
+        showOv('🎉 胜利！', `胖团打赢了所有${MAX_WAVES}波僵尸！太厉害了！`, '再玩一次 🌻');
       }
     }
   }
 
   // plants
   plants.forEach(p => {
-    p.anim = (p.anim || 0) + dt;
-    // sunflower generates sun
+    p.anim += dt;
     if (p.type === 'sunflower') {
       p.sunTimer -= dt;
       if (p.sunTimer <= 0) {
-        p.sunTimer = 8000 + Math.random() * 3000;
-        dropSun(cellX(p.c) + CELL/2, cellY(p.r), 25);
+        p.sunTimer = 8000 + Math.random()*3000;
+        dropSun(cx(p.c)+CELL/2, cy(p.r)+CELL*0.3, 25);
       }
     }
-    // shooters fire
     if (p.type === 'peashooter' || p.type === 'snowpea') {
-      const hasTarget = zombies.some(z => z.row === p.r && z.x > cellX(p.c) && z.x < CW);
-      if (hasTarget) {
-        p.shootTimer -= dt;
-        if (p.shootTimer <= 0) {
-          p.shootTimer = p.shootInterval;
-          const frozen = p.type === 'snowpea';
+      const hasZ = zombies.some(z => z.row===p.r && z.x > cx(p.c));
+      if (hasZ) {
+        p.shootTimer += dt;
+        if (p.shootTimer >= p.shootInterval) {
+          p.shootTimer = 0;
+          const snow = p.type==='snowpea';
           bullets.push({
-            x: cellX(p.c) + CELL * 0.8,
-            y: cellY(p.r) + CELL * 0.45,
-            row: p.r, speed: 5, dmg: frozen ? 20 : 30,
-            frozen, emoji: frozen ? '🧊' : '🟢',
+            x: cx(p.c)+CELL*0.85, y: cy(p.r)+CELL*0.45,
+            row:p.r, spd:6.5, dmg: snow?22:32,
+            snow, emoji: snow?'🧊':'🟢',
           });
         }
       }
@@ -368,335 +361,277 @@ function update(dt) {
 
   // bullets
   bullets.forEach(b => {
-    b.x += b.speed;
-    zombies.forEach(z => {
-      if (z.row === b.row && Math.abs(z.x - b.x) < CELL * 0.4 && !b.hit) {
-        b.hit = true;
-        z.hp -= b.dmg;
-        if (b.frozen) z.frozen = Math.max(z.frozen, 3000);
-        addParticle(b.x, b.y, b.frozen ? '❄️' : '💢', 20, 0, -0.5, 14);
+    b.x += b.spd;
+    if (!b.hit) {
+      for (const z of zombies) {
+        if (z.row===b.row && !b.hit && b.x >= z.x-CELL*0.35 && b.x <= z.x+CELL*0.35) {
+          b.hit = true;
+          z.hp -= b.dmg;
+          if (b.snow) z.frozen = Math.max(z.frozen, 3200);
+          addFX(b.x, b.y, b.snow?'❄️':'💢', 18, 0, -0.5, 13);
+          break;
+        }
       }
-    });
+    }
   });
-  bullets = bullets.filter(b => !b.hit && b.x < CW + 20);
+  bullets = bullets.filter(b => !b.hit && b.x < CW+30);
 
   // zombies
+  const speed_px_per_ms = spd => spd / 1000 * CELL / 3.5; // tiles per 3.5s
   zombies.forEach(z => {
-    if (z.frozen > 0) z.frozen -= dt;
-    const spd = z.frozen > 0 ? z.speed * 0.4 : z.speed;
-    // check if eating plant in current cell
-    const c = Math.floor((z.x - GRID_X) / CELL);
-    const blockPlant = c >= 0 && c < COLS && grid[z.row][c];
-    if (blockPlant) {
+    if (z.frozen>0) z.frozen -= dt;
+    const eff = z.frozen>0 ? 0.38 : 1;
+    const col = Math.floor((z.x - GX) / CELL);
+    const plantBlocking = col>=0 && col<COLS && grid[z.row][col];
+    if (plantBlocking) {
       z.eating = true;
       z.eatTimer += dt;
       if (z.eatTimer >= 500) {
         z.eatTimer = 0;
-        blockPlant.hp -= z.dmg;
-        if (blockPlant.hp <= 0) {
-          addParticle(cellX(blockPlant.c)+CELL/2, cellY(blockPlant.r)+CELL/2, '💨', 30, 0, -1, 20);
-          plants = plants.filter(p => p !== blockPlant);
-          grid[z.row][c] = null;
+        plantBlocking.hp -= z.dmg;
+        if (plantBlocking.hp <= 0) {
+          addFX(cx(plantBlocking.c)+CELL/2, cy(plantBlocking.r)+CELL/2, '💨', 28, 0, -1, 20);
+          plants = plants.filter(p => p !== plantBlocking);
+          grid[z.row][col] = null;
         }
       }
     } else {
       z.eating = false;
-      z.x -= (spd / 60) * (17 / 1000) * 16.67;
+      z.x -= speed_px_per_ms(z.spd) * eff * dt;
     }
-    // check if zombie reaches left edge
-    if (z.x < GRID_X - 10) {
+    if (z.x < GX - 15) {
       z.dead = true;
-      lives--;
-      document.getElementById('lives-val').textContent = lives;
-      addFloatText(GRID_X + 20, cellY(z.row) + CELL/2, '💀 -1 生命', '#ff4444');
+      lives = Math.max(0, lives-1);
+      updHUD();
+      addFloat(GX+30, cy(z.row)+CELL/2, '💀 -1', '#ff4444');
       if (lives <= 0) {
-        gameOver = true; running = false;
-        showOverlay('💀 失败...', '僵尸冲破了防线！下次加油！', '再试一次 💪');
+        running = false;
+        showOv('💀 失败…', '僵尸冲过来了！再试试，胖团加油！', '再试一次 💪');
       }
     }
-    // kill dead zombies
     if (z.hp <= 0) {
       z.dead = true;
-      sun += z.reward;
-      document.getElementById('sun-val').textContent = sun;
-      addFloatText(z.x, cellY(z.row), `+${z.reward}☀️`, '#ffe066');
-      addParticle(z.x, cellY(z.row)+CELL/2, z.emoji, 25, (Math.random()-0.5)*3, -2, 22);
+      sun += z.reward; updHUD();
+      addFloat(z.x, cy(z.row), `+${z.reward}☀️`, '#ffe066');
+      addFX(z.x, cy(z.row)+CELL/2, z.emoji, 22, (Math.random()-.5)*2.5, -1.8, 20);
     }
   });
   zombies = zombies.filter(z => !z.dead);
 
-  // suns
-  suns.forEach(s => {
-    if (!s.collected) {
-      if (s.y < s.targetY) s.y += 1.5;
-      s.life -= dt / 16.67;
-    }
+  // sun drops
+  sunDrops.forEach(s => {
+    if (s.y < s.ty) s.y += 1.8;
+    if (!s.collected) s.life -= dt/16;
   });
-  suns = suns.filter(s => s.life > 0);
+  sunDrops = sunDrops.filter(s => s.life > 0);
 
   // particles
-  particles.forEach(p => {
-    p.x += p.vx; p.y += p.vy; p.life--;
-  });
-  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.life--; });
+  particles = particles.filter(p => p.life>0);
 
-  // float texts
-  floatTexts.forEach(f => { f.y -= 0.8; f.life--; });
-  floatTexts = floatTexts.filter(f => f.life > 0);
+  floats.forEach(f => { f.y -= 0.75; f.life--; });
+  floats = floats.filter(f => f.life>0);
 }
 
+// ── draw ──────────────────────────────────────────────────────────────
 function draw() {
   ctx.clearRect(0, 0, CW, CH);
 
-  // grass rows
-  for (let r = 0; r < ROWS; r++) {
-    ctx.fillStyle = r % 2 === 0 ? '#3a6e20' : '#346618';
-    ctx.fillRect(GRID_X, GRID_Y + r * CELL, GRID_W, CELL);
+  // rows
+  for (let r=0; r<ROWS; r++) {
+    ctx.fillStyle = r%2===0 ? '#3d721e' : '#366218';
+    ctx.fillRect(GX, GY+r*CELL, GW, CELL);
   }
-
   // grid lines
-  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-  ctx.lineWidth = 1;
-  for (let r = 0; r <= ROWS; r++) {
-    ctx.beginPath(); ctx.moveTo(GRID_X, GRID_Y + r * CELL); ctx.lineTo(GRID_X + GRID_W, GRID_Y + r * CELL); ctx.stroke();
-  }
-  for (let c = 0; c <= COLS; c++) {
-    ctx.beginPath(); ctx.moveTo(GRID_X + c * CELL, GRID_Y); ctx.lineTo(GRID_X + c * CELL, GRID_Y + GRID_H); ctx.stroke();
-  }
+  ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth=1;
+  for (let r=0;r<=ROWS;r++) { ctx.beginPath(); ctx.moveTo(GX,GY+r*CELL); ctx.lineTo(GX+GW,GY+r*CELL); ctx.stroke(); }
+  for (let c=0;c<=COLS;c++) { ctx.beginPath(); ctx.moveTo(GX+c*CELL,GY); ctx.lineTo(GX+c*CELL,GY+GH); ctx.stroke(); }
 
-  // grid hover
-  if (hoverCell) {
-    const { r, c } = hoverCell;
-    ctx.fillStyle = grid[r][c] ? 'rgba(255,60,60,0.2)' : 'rgba(255,255,100,0.25)';
-    ctx.fillRect(cellX(c), cellY(r), CELL, CELL);
+  // hover highlight
+  if (hoverRC) {
+    const {r,c} = hoverRC;
+    ctx.fillStyle = grid[r][c] ? 'rgba(255,40,40,.2)' : 'rgba(255,240,80,.22)';
+    ctx.fillRect(cx(c), cy(r), CELL, CELL);
   }
 
   // lawnmowers
-  for (let r = 0; r < ROWS; r++) {
-    ctx.font = `${CELL * 0.55}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('🚜', GRID_X - CELL * 0.35, cellY(r) + CELL / 2);
-  }
+  ctx.font = `${Math.round(CELL*0.52)}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for (let r=0;r<ROWS;r++) ctx.fillText('🚜', GX-CELL*0.3, cy(r)+CELL/2);
 
   // plants
+  ctx.textAlign='center'; ctx.textBaseline='middle';
   plants.forEach(p => {
-    const x = cellX(p.c) + CELL / 2;
-    const y = cellY(p.r) + CELL / 2;
-    const bob = Math.sin(p.anim / 400) * 2;
-    ctx.font = `${CELL * 0.6}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(PLANT_EMOJI[p.type], x, y + bob);
-    // hp bar
-    if (p.hp < p.maxHp) {
-      const bw = CELL * 0.8, bh = 5;
-      const bx = x - bw/2, by = cellY(p.r) + CELL - 8;
-      ctx.fillStyle = '#333'; ctx.fillRect(bx, by, bw, bh);
-      ctx.fillStyle = p.hp > p.maxHp * 0.5 ? '#44ee44' : p.hp > p.maxHp * 0.25 ? '#ffcc00' : '#ff4444';
-      ctx.fillRect(bx, by, bw * (p.hp / p.maxHp), bh);
-    }
+    const x=cx(p.c)+CELL/2, y=cy(p.r)+CELL/2;
+    const bob = Math.sin(p.anim/380)*2;
+    ctx.font = `${Math.round(CELL*.58)}px serif`;
+    ctx.fillText(EMOJI[p.type], x, y+bob);
+    if (p.hp < p.maxHp) drawBar(x-CELL*.38, cy(p.r)+CELL-7, CELL*.76, 5, p.hp/p.maxHp);
   });
 
   // bullets
+  ctx.textAlign='center'; ctx.textBaseline='middle';
   bullets.forEach(b => {
-    ctx.font = `${CELL * 0.35}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `${Math.round(CELL*.33)}px serif`;
     ctx.fillText(b.emoji, b.x, b.y);
   });
 
   // zombies
+  ctx.textAlign='center'; ctx.textBaseline='middle';
   zombies.forEach(z => {
-    const x = z.x;
-    const y = cellY(z.row) + CELL / 2;
-    const wobble = z.eating ? Math.sin(Date.now() / 100) * 3 : Math.sin(Date.now() / 250) * 2;
-    ctx.font = `${CELL * 0.65}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    if (z.frozen > 0) {
-      ctx.save(); ctx.globalAlpha = 0.85;
-      ctx.filter = 'hue-rotate(180deg) brightness(1.3)';
-    }
-    ctx.fillText(z.emoji, x, y + wobble);
-    if (z.frozen > 0) { ctx.restore(); ctx.filter = 'none'; }
-    // hp bar
-    const bw = CELL * 0.75;
-    const bx = x - bw/2, by = cellY(z.row) + 3;
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(bx, by, bw, 5);
-    ctx.fillStyle = z.hp > z.maxHp * 0.5 ? '#44ee44' : z.hp > z.maxHp * 0.25 ? '#ffcc00' : '#ff4444';
-    ctx.fillRect(bx, by, bw * (z.hp / z.maxHp), 5);
+    const wb = z.eating ? Math.sin(Date.now()/90)*3 : Math.sin(Date.now()/230)*1.5;
+    ctx.font = `${Math.round(CELL*.62)}px serif`;
+    if (z.frozen>0) { ctx.save(); ctx.filter='hue-rotate(175deg) brightness(1.25)'; ctx.globalAlpha=.88; }
+    ctx.fillText(z.emoji, z.x, cy(z.row)+CELL/2+wb);
+    if (z.frozen>0) { ctx.restore(); }
+    drawBar(z.x-CELL*.36, cy(z.row)+3, CELL*.72, 5, z.hp/z.maxHp);
   });
 
-  // suns
-  suns.forEach(s => {
-    const alpha = Math.min(1, s.life / 30);
-    ctx.save(); ctx.globalAlpha = alpha;
-    ctx.font = `${CELL * 0.5}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  // sun drops
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  sunDrops.forEach(s => {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, s.life/40);
+    const pulse = 1 + 0.08*Math.sin(Date.now()/200);
+    ctx.font = `${Math.round(CELL*.46*pulse)}px serif`;
     ctx.fillText('☀️', s.x, s.y);
     ctx.restore();
   });
 
   // particles
   particles.forEach(p => {
-    ctx.save();
-    ctx.globalAlpha = p.life / p.maxLife;
-    ctx.font = `${p.size}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(p.emoji, p.x, p.y);
-    ctx.restore();
+    ctx.save(); ctx.globalAlpha=p.life/p.maxLife;
+    ctx.font=`${p.size}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.emoji, p.x, p.y); ctx.restore();
   });
 
-  // float texts
-  floatTexts.forEach(f => {
-    ctx.save();
-    ctx.globalAlpha = f.life / 60;
-    ctx.fillStyle = f.color;
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(f.text, f.x, f.y);
-    ctx.restore();
+  // floats
+  floats.forEach(f => {
+    ctx.save(); ctx.globalAlpha=f.life/65;
+    ctx.fillStyle=f.color; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(f.text, f.x, f.y); ctx.restore();
   });
 }
 
-// ——— input ———
-let hoverCell = null;
+function drawBar(x, y, w, h, ratio) {
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle = ratio>0.5?'#44ee44':ratio>0.25?'#ffcc00':'#ff3333';
+  ctx.fillRect(x,y,w*ratio,h);
+}
+
+// ── shop UI ───────────────────────────────────────────────────────────
+function updShopUI() {
+  document.querySelectorAll('.pcard[data-t]').forEach(card => {
+    const t=card.dataset.t, cost=+card.dataset.c;
+    const cd=cds[t], cdMax=CD_MAX[t];
+    const bar=card.querySelector('.cdbar');
+    if (cd>0) {
+      card.classList.add('dim');
+      bar.style.width=((1-cd/cdMax)*100)+'%';
+      bar.style.background='#4af';
+    } else {
+      bar.style.width='100%'; bar.style.background='#5c4';
+      card.classList.toggle('dim', sun < cost);
+    }
+    card.classList.toggle('sel', !shovelMode && selPlant===t);
+  });
+  document.getElementById('shovel').classList.toggle('sel', shovelMode);
+}
+
+// ── input ─────────────────────────────────────────────────────────────
 canvas.addEventListener('mousemove', e => {
-  const rect = canvas.getBoundingClientRect();
-  const sx = (e.clientX - rect.left) * (CW / rect.width);
-  const sy = (e.clientY - rect.top) * (CH / rect.height);
-  hoverCell = screenToCell(sx, sy);
-
-  // check sun hover
-  const sunHover = suns.find(s => !s.collected && Math.hypot(s.x - sx, s.y - sy) < CELL * 0.4);
-  canvas.style.cursor = sunHover ? 'pointer' : (hoverCell ? 'pointer' : 'default');
+  const rc=canvas.getBoundingClientRect();
+  const sx=(e.clientX-rc.left)*(CW/rc.width), sy=(e.clientY-rc.top)*(CH/rc.height);
+  hoverRC=toCell(sx,sy);
+  canvas.style.cursor = (hoverRC||sunDrops.some(s=>!s.collected&&Math.hypot(s.x-sx,s.y-sy)<CELL*.45)) ? 'pointer' : 'default';
 });
-canvas.addEventListener('mouseleave', () => { hoverCell = null; });
+canvas.addEventListener('mouseleave', ()=>{ hoverRC=null; });
 
-canvas.addEventListener('click', e => {
+function handleTap(clientX, clientY) {
   if (!running) return;
-  const rect = canvas.getBoundingClientRect();
-  const sx = (e.clientX - rect.left) * (CW / rect.width);
-  const sy = (e.clientY - rect.top) * (CH / rect.height);
+  const rc=canvas.getBoundingClientRect();
+  const sx=(clientX-rc.left)*(CW/rc.width), sy=(clientY-rc.top)*(CH/rc.height);
 
   // collect sun
-  const sunIdx = suns.findIndex(s => !s.collected && Math.hypot(s.x - sx, s.y - sy) < CELL * 0.5);
-  if (sunIdx !== -1) {
-    suns[sunIdx].collected = true;
-    suns[sunIdx].life = 0;
-    sun += suns[sunIdx].val;
-    document.getElementById('sun-val').textContent = sun;
-    addFloatText(suns[sunIdx].x, suns[sunIdx].y, `+${suns[sunIdx].val}☀️`, '#ffe066');
+  const si=sunDrops.findIndex(s=>!s.collected && Math.hypot(s.x-sx,s.y-sy)<CELL*.5);
+  if (si>=0) {
+    const s=sunDrops[si]; s.collected=true; s.life=0;
+    sun+=s.val; updHUD();
+    addFloat(s.x, s.y-10, `+${s.val}☀️`, '#ffe066');
     return;
   }
 
-  const cell = screenToCell(sx, sy);
-  if (!cell) return;
-  const { r, c } = cell;
+  const cell=toCell(sx,sy); if (!cell) return;
+  const {r,c}=cell;
 
   if (shovelMode) {
     if (grid[r][c]) {
-      const p = grid[r][c];
-      plants = plants.filter(x => x !== p);
-      grid[r][c] = null;
-      addParticle(cellX(c)+CELL/2, cellY(r)+CELL/2, '💨', 20, 0, -1, 20);
+      plants=plants.filter(p=>p!==grid[r][c]);
+      grid[r][c]=null;
+      addFX(cx(c)+CELL/2, cy(r)+CELL/2, '💨', 20, 0, -1, 18);
     }
     return;
   }
+  if (!selPlant) return;
+  if (grid[r][c]) { addFloat(cx(c)+CELL/2, cy(r), '已有植物', '#ffaa44'); return; }
+  if (sun < COSTS[selPlant]) { addFloat(cx(c)+CELL/2, cy(r), '☀️不足！', '#ff8844'); return; }
+  if (cds[selPlant]>0) { addFloat(cx(c)+CELL/2, cy(r), '冷却中', '#88aaff'); return; }
 
-  if (!selectedPlant) return;
-  const cost = COSTS[selectedPlant];
-  if (sun < cost) { addFloatText(sx, sy, '☀️不够！', '#ff8844'); return; }
-  if (grid[r][c]) { addFloatText(sx, sy, '已有植物', '#ff8844'); return; }
-  if (cooldowns[selectedPlant] > 0) { addFloatText(sx, sy, '冷却中...', '#88aaff'); return; }
+  placePlant(r, c, selPlant);
+  sun -= COSTS[selPlant]; updHUD();
+  cds[selPlant] = CD_MAX[selPlant];
+}
 
-  spawnPlant(r, c, selectedPlant);
-  sun -= cost;
-  document.getElementById('sun-val').textContent = sun;
-  cooldowns[selectedPlant] = COOLDOWN_MAX[selectedPlant];
-});
-
-// touch support
+canvas.addEventListener('click', e => handleTap(e.clientX, e.clientY));
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  const t = e.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const sx = (t.clientX - rect.left) * (CW / rect.width);
-  const sy = (t.clientY - rect.top) * (CH / rect.height);
-  canvas.dispatchEvent(new MouseEvent('click', { clientX: t.clientX, clientY: t.clientY }));
-}, { passive: false });
+  handleTap(e.touches[0].clientX, e.touches[0].clientY);
+}, {passive:false});
 
-// shop
-document.querySelectorAll('.card[data-plant]').forEach(card => {
+document.querySelectorAll('.pcard[data-t]').forEach(card => {
   card.addEventListener('click', () => {
-    shovelMode = false;
-    document.getElementById('shovel-btn').classList.remove('selected');
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-    card.classList.add('selected');
-    selectedPlant = card.dataset.plant;
+    shovelMode=false; selPlant=card.dataset.t; updShopUI();
   });
 });
-document.getElementById('shovel-btn').addEventListener('click', () => {
-  shovelMode = !shovelMode;
-  document.getElementById('shovel-btn').classList.toggle('selected', shovelMode);
-  if (shovelMode) {
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-    selectedPlant = null;
-  } else {
-    selectedPlant = 'sunflower';
-    document.querySelector('[data-plant="sunflower"]').classList.add('selected');
-  }
+document.getElementById('shovel').addEventListener('click', () => {
+  shovelMode=!shovelMode;
+  if (shovelMode) selPlant=null; else selPlant='sunflower';
+  updShopUI();
 });
 
-function updateShopUI() {
-  document.querySelectorAll('.card[data-plant]').forEach(card => {
-    const t = card.dataset.plant;
-    const cost = COSTS[t];
-    const cd = cooldowns[t];
-    const cdMax = COOLDOWN_MAX[t];
-    const cdBar = card.querySelector('.cd-bar');
-    if (cd > 0) {
-      card.classList.add('disabled');
-      cdBar.style.width = ((1 - cd / cdMax) * 100) + '%';
-      cdBar.style.background = '#4488ff';
-    } else {
-      cdBar.style.width = '100%';
-      cdBar.style.background = '#88cc44';
-      card.classList.toggle('disabled', sun < cost);
-    }
-  });
+// ── overlay helpers ───────────────────────────────────────────────────
+function showOv(t, msg, btn) {
+  document.getElementById('ot').textContent=t;
+  document.getElementById('om').textContent=msg;
+  document.getElementById('ob').textContent=btn;
+  document.getElementById('ov').classList.add('on');
+}
+function showToast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none', 2600);
 }
 
-function showOverlay(title, msg, btn) {
-  document.getElementById('overlay-title').textContent = title;
-  document.getElementById('overlay-msg').textContent = msg;
-  document.getElementById('overlay-btn').textContent = btn;
-  document.getElementById('overlay').classList.add('show');
-}
+document.getElementById('ob').addEventListener('click', startGame);
 
-function showWaveBanner(w) {
-  const b = document.getElementById('wave-banner');
-  b.textContent = `第 ${w} 波僵尸来袭！🧟`;
-  b.style.display = 'block';
-  setTimeout(() => { b.style.display = 'none'; }, 2500);
-}
-
-document.getElementById('overlay-btn').addEventListener('click', startGame);
-
+// ── start ─────────────────────────────────────────────────────────────
 function startGame() {
-  // reset
-  sun = 100; lives = 5; wave = 1; gameOver = false; victory = false;
-  plants = []; zombies = []; bullets = []; suns = []; particles = []; floatTexts = [];
-  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) grid[r][c] = null;
-  Object.keys(cooldowns).forEach(k => cooldowns[k] = 0);
-  sunDropTimer = 0; waveTimer = 0; spawnTimer = 0;
-  document.getElementById('sun-val').textContent = sun;
-  document.getElementById('wave-val').textContent = wave;
-  document.getElementById('lives-val').textContent = lives;
-  document.getElementById('overlay').classList.remove('show');
-  waveSpawnQueue = buildWave(1);
-  running = true; paused = false;
-  lastTime = performance.now();
-  showWaveBanner(1);
-  requestAnimationFrame(ts => { lastTime = ts; requestAnimationFrame(gameLoop); });
+  document.getElementById('ov').classList.remove('on');
+  resize();
+  initState();
+  spawnQueue = buildWave(1);
+  spawnTimer = 0;
+  showToast('第 1 波来袭！🧟');
+  running = true;
+  last = performance.now();
+  requestAnimationFrame(loop);
 }
+
+// init
+window.addEventListener('resize', () => { if(!running) resize(); });
+resize();
+draw(); // draw empty grid so it doesn't look blank
 </script>
 </body>
 </html>
