@@ -266,10 +266,13 @@
     }
     .provider-btn:hover { border-color: var(--blue); color: var(--text); }
     .provider-btn.active { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); }
+    footer {
       padding: 24px;
       text-align: center;
       color: var(--muted);
       font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
     }
     footer a { color: var(--blue); text-decoration: none; }
     .privacy-note {
@@ -281,6 +284,50 @@
       color: var(--green);
       margin-bottom: 24px;
     }
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .qa-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qa-btn:hover { border-color: var(--blue); color: var(--text); }
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 20px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--blue);
+      background: rgba(88,166,255,0.05);
+      color: var(--text);
+    }
+    .copy-stats-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      float: right;
+    }
+    .copy-stats-btn:hover { border-color: var(--blue); color: var(--blue); }
   </style>
 </head>
 <body>
@@ -313,7 +360,21 @@
       🔒 All processing happens in your browser. No text is sent to any server. Works offline.
     </div>
 
-    <!-- Provider filter -->
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="qa-btn" onclick="pasteFromClipboard()">📋 Paste from clipboard</button>
+      <button class="qa-btn" onclick="triggerFileUpload()">📄 Upload text file</button>
+      <button class="qa-btn" onclick="loadSample('code')">👾 Sample: Code</button>
+      <button class="qa-btn" onclick="loadSample('json')">🗂 Sample: JSON</button>
+      <button class="qa-btn" onclick="loadSample('chat')">💬 Sample: Chat</button>
+      <button class="qa-btn" onclick="clearAll()">🗑 Clear all</button>
+      <input type="file" id="fileInput" accept=".txt,.md,.json,.py,.js,.ts,.yaml,.yml,.csv,.xml,.html" style="display:none" onchange="handleFileUpload(event)">
+    </div>
+
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="dropZone" onclick="triggerFileUpload()">
+      📂 Drop any text file here to count its tokens instantly
+    </div>
     <div class="provider-filter" id="providerFilter"></div>
 
     <!-- Model selector -->
@@ -338,6 +399,10 @@
     </div>
 
     <!-- Stats -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:13px;color:var(--muted)">📊 Stats</span>
+      <button class="copy-stats-btn" onclick="copyStats()" id="copyStatsBtn">📋 Copy stats</button>
+    </div>
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-val blue" id="totalTokens">0</div>
@@ -867,6 +932,112 @@
   function clearPanel(id) {
     document.getElementById(id).value = '';
     update();
+  }
+
+  function clearAll() {
+    document.getElementById('system').value = '';
+    document.getElementById('user').value = '';
+    update();
+  }
+
+  // ============================================================
+  // CLIPBOARD & FILE UPLOAD
+  // ============================================================
+  async function pasteFromClipboard() {
+    try {
+      const text = await navigator.clipboard.readText();
+      document.getElementById('user').value = text;
+      update();
+    } catch (e) {
+      alert('Clipboard access denied. Please paste manually (Ctrl+V / Cmd+V).');
+    }
+  }
+
+  function triggerFileUpload() {
+    document.getElementById('fileInput').click();
+  }
+
+  function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('user').value = ev.target.result;
+      update();
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  // ============================================================
+  // DRAG & DROP
+  // ============================================================
+  const dropZone = document.getElementById('dropZone');
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('user').value = ev.target.result;
+      update();
+    };
+    reader.readAsText(file);
+  });
+
+  // Also support dropping on the whole page
+  document.addEventListener('dragover', (e) => e.preventDefault());
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('user').value = ev.target.result;
+      update();
+    };
+    reader.readAsText(file);
+  });
+
+  // ============================================================
+  // SAMPLE TEXTS
+  // ============================================================
+  const SAMPLES = {
+    code: `function fibonacci(n) {\n  if (n <= 1) return n;\n  const dp = new Array(n + 1);\n  dp[0] = 0; dp[1] = 1;\n  for (let i = 2; i <= n; i++) {\n    dp[i] = dp[i-1] + dp[i-2];\n  }\n  return dp[n];\n}\n\n// Calculate first 20 Fibonacci numbers\nfor (let i = 0; i < 20; i++) {\n  console.log(\`fib(\${i}) = \${fibonacci(i)}\`);\n}`,
+    json: `{\n  "agent": {\n    "name": "Clavis",\n    "version": "1.0.0",\n    "description": "An AI content producer running on a 2014 MacBook.",\n    "capabilities": {\n      "streaming": false,\n      "pushNotifications": false\n    },\n    "skills": [\n      {\n        "id": "content-writing",\n        "name": "Technical Content Writing",\n        "description": "Write technical articles and documentation",\n        "tags": ["writing", "technical", "content"]\n      }\n    ],\n    "taskLatency": {\n      "typicalSeconds": 3600,\n      "maxSeconds": 86400,\n      "scheduleBasis": "polling"\n    }\n  }\n}`,
+    chat: `System: You are a helpful coding assistant. Be concise and precise.\n\nUser: I need to build a REST API that handles authentication. What's the best approach for a Node.js app?\n\nAssistant: For Node.js, I recommend using JWT (JSON Web Tokens) with these key components:\n\n1. **passport.js** or **express-jwt** for middleware\n2. **bcrypt** for password hashing\n3. **jsonwebtoken** for token signing/verification\n\nBasic flow:\n- POST /auth/login → validate credentials → return JWT\n- Protected routes use middleware to verify JWT\n- Refresh tokens stored in httpOnly cookies\n\nWant a code example?`
+  };
+
+  function loadSample(type) {
+    document.getElementById('system').value = '';
+    document.getElementById('user').value = SAMPLES[type] || '';
+    update();
+  }
+
+  // ============================================================
+  // COPY STATS
+  // ============================================================
+  function copyStats() {
+    const tokens = document.getElementById('totalTokens').textContent;
+    const chars = document.getElementById('totalChars').textContent;
+    const words = document.getElementById('totalWords').textContent;
+    const ratio = document.getElementById('ratio').textContent;
+    const model = selectedModel.name;
+
+    const text = `Token count (${model}): ${tokens} tokens | ${chars} chars | ${words} words | ${ratio} chars/token`;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyStatsBtn');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy stats'; }, 2000);
+    }).catch(() => {
+      alert('Copy failed. Stats:\n' + text);
+    });
   }
 
   // Init
