@@ -174,11 +174,11 @@ const EMOJI    = { sunflower:'🌻', peashooter:'🫛', wallnut:'🥜', snowpea:
 const CD_MAX   = { sunflower:7500, peashooter:7000, wallnut:11000, snowpea:7500, cherry:20000 };
 
 const Z_TYPES = [
-  { emoji:'🧟', hp:200, spd:28, dmg:18, reward:10 },   // normal
-  { emoji:'🧟', hp:400, spd:26, dmg:18, reward:20 },   // roadblock
-  { emoji:'🪖', hp:800, spd:22, dmg:22, reward:30 },   // bucket
-  { emoji:'🏃', hp:220, spd:48, dmg:16, reward:15 },   // flag (fast)
-  { emoji:'👷', hp:600, spd:18, dmg:28, reward:25 },   // miner
+  { emoji:'🧟', hp:200, spd:3500, dmg:18, reward:10 },   // normal  — 3.5s/格
+  { emoji:'🧟', hp:400, spd:4200, dmg:18, reward:20 },   // roadblock— 4.2s/格
+  { emoji:'🪖', hp:800, spd:5000, dmg:22, reward:30 },   // bucket  — 5s/格
+  { emoji:'🏃', hp:220, spd:2000, dmg:16, reward:15 },   // flag    — 2s/格(快)
+  { emoji:'👷', hp:600, spd:4500, dmg:28, reward:25 },   // miner   — 4.5s/格
 ];
 
 // ── state ─────────────────────────────────────────────────────────────
@@ -377,7 +377,8 @@ function update(dt) {
   bullets = bullets.filter(b => !b.hit && b.x < CW+30);
 
   // zombies
-  const speed_px_per_ms = spd => spd / 1000 * CELL / 15; // tiles per ~5s (normal)
+  // spd = ms per tile; 普通3.5s/格, 旗帜2s/格(最快)
+  const speed_px_per_ms = spd => CELL / spd;
   zombies.forEach(z => {
     if (z.frozen>0) z.frozen -= dt;
     const eff = z.frozen>0 ? 0.38 : 1;
