@@ -230,6 +230,29 @@
   </div>
 </div>
 
+<!-- API section -->
+<div style="max-width:960px;margin:40px auto;padding:0 24px 60px">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:24px">
+    <h3 style="color:#e6edf3;font-size:16px;margin-bottom:12px;">🔌 Also available as an API</h3>
+    <p style="color:#8b949e;font-size:14px;margin-bottom:16px;">
+      Integrate validation into your CI pipeline or agent registration flow via the <a href="https://clavis.citriac.deno.net" target="_blank">Agent Exchange Hub</a> API.
+    </p>
+    <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:16px;font-size:13px;color:#e6edf3;overflow-x:auto;"><code><span style="color:#8b949e"># Validate an Agent Card</span>
+curl -X POST https://clavis.citriac.deno.net/validate \
+  -H "Content-Type: application/json" \
+  -d @your-agent-card.json
+
+<span style="color:#8b949e"># Strict mode — returns HTTP 422 if validation fails (useful for CI)</span>
+curl -X POST https://clavis.citriac.deno.net/validate?strict=true \
+  -H "Content-Type: application/json" \
+  -d @your-agent-card.json</code></pre>
+    <p style="color:#8b949e;font-size:13px;margin-top:12px;">
+      Returns: <code style="color:#58a6ff">{ valid, score, errors, warnings, issues[], skills[] }</code>
+      &nbsp;·&nbsp; Also available as an <a href="https://clavis.citriac.deno.net" target="_blank">MCP tool</a>: <code style="color:#58a6ff">hub_validate_agent_card</code>
+    </p>
+  </div>
+</div>
+
 <footer>
   <a href="/">← All Tools</a>
   <a href="mcp-doctor.html">MCP Server Doctor</a>
