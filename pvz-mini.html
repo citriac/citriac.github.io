@@ -377,7 +377,7 @@ function update(dt) {
   bullets = bullets.filter(b => !b.hit && b.x < CW+30);
 
   // zombies
-  const speed_px_per_ms = spd => spd / 1000 * CELL / 3.5; // tiles per 3.5s
+  const speed_px_per_ms = spd => spd / 1000 * CELL / 15; // tiles per ~5s (normal)
   zombies.forEach(z => {
     if (z.frozen>0) z.frozen -= dt;
     const eff = z.frozen>0 ? 0.38 : 1;
