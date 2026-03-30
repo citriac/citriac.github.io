@@ -58,7 +58,15 @@ body {
   cursor:pointer; font-size:18px; color:#ffcc88;
   transition:border-color .12s;
 }
-#shovel:hover,#shovel.sel { border-color:#ffe066; background:rgba(255,180,50,.22); }
+#nuke {
+  flex-shrink:0;
+  border:2px solid #cc2200; border-radius:8px;
+  background:rgba(180,30,0,.55); padding:4px 10px;
+  cursor:pointer; font-size:18px; color:#fff;
+  transition:border-color .12s; text-align:center;
+}
+#nuke:hover { border-color:#ff8800; background:rgba(255,100,0,.45); }
+#nuke.used { opacity:.32; cursor:not-allowed; }
 
 #wrap {
   width:100%; max-width:860px; flex:1;
@@ -102,7 +110,7 @@ canvas { display:block; cursor:crosshair; }
 <div id="header">
   <div id="title">🌻 植物小队</div>
   <div id="stats">
-    <div class="stat">☀️ <b id="sv">100</b></div>
+    <div class="stat">☀️ <b id="sv">250</b></div>
     <div class="stat">🌊 <b id="wv">1</b>/5</div>
     <div class="stat">❤️ <b id="lv">5</b></div>
   </div>
@@ -130,6 +138,7 @@ canvas { display:block; cursor:crosshair; }
     <div class="cdbar" style="width:100%"></div>
   </div>
   <div id="shovel" title="铲子">🪣</div>
+  <div id="nuke" title="核弹！一键清屏" onclick="doNuke()">💣<span id="nukelabel" style="font-size:9px;color:#ff8;display:block;line-height:1">核弹x1</span></div>
 </div>
 
 <div id="wrap">
@@ -182,7 +191,7 @@ const Z_TYPES = [
 ];
 
 // ── state ─────────────────────────────────────────────────────────────
-let sun=100, lives=5, wave=1, running=false;
+let sun=250, lives=5, wave=1, running=false, nukeReady=true;
 let grid, plants, zombies, bullets, sunDrops, particles, floats;
 let cds = { sunflower:0, peashooter:0, wallnut:0, snowpea:0, cherry:0 };
 let sunTimer=0, waveTimer=0, spawnQueue=[], spawnTimer=0;
@@ -191,11 +200,13 @@ let hoverRC = null;
 const MAX_WAVES = 5;
 
 function initState() {
-  sun=100; lives=5; wave=1;
+  sun=250; lives=5; wave=1; nukeReady=true;
   grid = Array.from({length:ROWS}, ()=>Array(COLS).fill(null));
   plants=[]; zombies=[]; bullets=[]; sunDrops=[]; particles=[]; floats=[];
   Object.keys(cds).forEach(k=>cds[k]=0);
   sunTimer=0; waveTimer=0; spawnQueue=[]; spawnTimer=0;
+  const nb=document.getElementById('nuke');
+  if(nb){nb.classList.remove('used');document.getElementById('nukelabel').textContent='核弹x1';}
   updHUD();
 }
 
@@ -220,7 +231,7 @@ function placePlant(r, c, type) {
   const p = {
     type, r, c, hp:HP[type], maxHp:HP[type],
     anim:0,
-    sunTimer: type==='sunflower' ? 8000+Math.random()*3000 : Infinity,
+    sunTimer: type==='sunflower' ? 5000+Math.random()*2000 : Infinity,
     shootTimer: 0,
     shootInterval: type==='peashooter' ? 1800 : type==='snowpea' ? 2100 : Infinity,
   };
@@ -245,6 +256,24 @@ function doCherry(r, c) {
   });
 }
 
+function doNuke() {
+  if (!running || !nukeReady) return;
+  nukeReady = false;
+  const nb = document.getElementById('nuke');
+  if (nb) { nb.classList.add('used'); document.getElementById('nukelabel').textContent='已用'; }
+  // 全屏爆炸特效
+  for (let i=0; i<18; i++) {
+    setTimeout(()=>{
+      addFX(GX + Math.random()*GW, GY + Math.random()*GH, '💥', 65, (Math.random()-.5)*3, (Math.random()-.5)*3, 28);
+    }, i*60);
+  }
+  // 延迟一点再清除僵尸，让爆炸先演出
+  setTimeout(()=>{
+    zombies.forEach(z => z.hp = 0);
+    addFloat(GX+GW/2, GY+GH/2, '☢️ 核弹！BOOM！', '#ff4400');
+  }, 200);
+}
+
 // ── zombies ───────────────────────────────────────────────────────────
 function spawnZ(type) {
   const t = Z_TYPES[type];
@@ -256,7 +285,7 @@ function spawnZ(type) {
 
 function buildWave(w) {
   const q = [];
-  const n = 4 + w * 3;
+  const n = w===1 ? 4 : 4 + w * 3;  // 第一波只有4只，后面递增
   for (let i=0; i<n; i++) {
     let type=0;
     const r=Math.random();
@@ -299,11 +328,11 @@ function update(dt) {
   Object.keys(cds).forEach(k => { if(cds[k]>0) cds[k]=Math.max(0,cds[k]-dt); });
   updShopUI();
 
-  // ambient sun drop
+  // ambient sun drop — 每4秒掉一个50阳光
   sunTimer += dt;
-  if (sunTimer >= 6500) {
+  if (sunTimer >= 4000) {
     sunTimer = 0;
-    dropSun(GX + Math.random()*GW, null, 25);
+    dropSun(GX + Math.random()*GW, null, 50);
   }
 
   // wave spawning
@@ -338,8 +367,8 @@ function update(dt) {
     if (p.type === 'sunflower') {
       p.sunTimer -= dt;
       if (p.sunTimer <= 0) {
-        p.sunTimer = 8000 + Math.random()*3000;
-        dropSun(cx(p.c)+CELL/2, cy(p.r)+CELL*0.3, 25);
+        p.sunTimer = 5000 + Math.random()*2000;  // 5~7秒产一次
+        dropSun(cx(p.c)+CELL/2, cy(p.r)+CELL*0.3, 50);  // 每次产50
       }
     }
     if (p.type === 'peashooter' || p.type === 'snowpea') {
