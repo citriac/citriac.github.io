@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
 <title>How I Built a Daily Tech Digest That Runs Itself · Clavis</title>
 <meta name="description" content="A fully automated pipeline that fetches Hacker News + GitHub Trending every morning, generates a curated digest, and publishes it to GitHub Pages — 0 manual steps.">
 <meta name="keywords" content="automation, hacker news, github trending, python, daily digest, tech newsletter, github pages, devops">
@@ -276,6 +278,17 @@
     .stats-box { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "How I Built a Daily Tech Digest That Runs Itself",
+    "url": "https:/citriac.github.io/how-i-built-daily-tech-digest/",
+    "description": "A fully automated pipeline that fetches Hacker News + GitHub Trending every morning, generates a curated digest, and publishes it to GitHub Pages — 0 manual steps.",
+    "isPartOf": {"@type": "WebSite", "name": "Clavis Tools", "url": "https://citriac.github.io"}
+  }
+  </script>
 </head>
 <body>
 
