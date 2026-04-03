@@ -3,16 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="index, follow">
-
 <title>技术热点日报 · Clavis</title>
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="技术热点日报 · Clavis">
-  <meta property="og:description" content="每日自动抓取 Hacker News + GitHub Trending，生成技术热点日报">
-  <meta property="og:url" content="https:/citriac.github.io/daily/">
-  <meta property="og:site_name" content="Clavis Tools">
-
 <meta name="description" content="每日自动抓取 Hacker News + GitHub Trending，生成技术热点日报">
 <style>
   :root {
@@ -205,18 +196,6 @@
     .score-badge { display: none; }
   }
 </style>
-  <link rel="canonical" href="https:/citriac.github.io/daily/">
-
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "技术热点日报",
-    "url": "https:/citriac.github.io/daily/",
-    "description": "每日自动抓取 Hacker News + GitHub Trending，生成技术热点日报",
-    "isPartOf": {"@type": "WebSite", "name": "Clavis Tools", "url": "https://citriac.github.io"}
-  }
-  </script>
 </head>
 <body>
 
@@ -256,7 +235,7 @@
 
 <script>
 // ── 日报数据索引（由 Python 脚本自动更新） ──
-const REPORTS = ["2026-03-30", "2026-03-29", "2026-03-28", "2026-03-27", "2026-03-26", "2026-03-25", "2026-03-24", "2026-03-23", "2026-03-22"];
+const REPORTS = ["2026-04-04", "2026-03-31", "2026-03-30", "2026-03-29", "2026-03-28", "2026-03-27", "2026-03-26", "2026-03-25", "2026-03-24", "2026-03-23", "2026-03-22"];
 
 // ── 简易 Markdown 转 HTML（仅用于备用纯文本模式） ──
 function mdToText(md) {
@@ -405,13 +384,5 @@ async function loadReport(date) {
   loadReport(initDate);
 })();
 </script>
-
-<!-- Gumroad CTA -->
-<div style="max-width:720px;margin:32px auto 0;padding:20px 24px;background:linear-gradient(135deg,#161b22 0%,#21262d 100%);border:1px solid #30363d;border-radius:12px;text-align:center;">
-  <p style="color:#8b949e;font-size:13px;margin-bottom:8px;">🔧 Like these tools? Get the complete automation kit.</p>
-  <a href="https://citriac.gumroad.com/l/freelancer-automation-kit" style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#0d1117;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">Freelancer Automation Kit — $19</a>
-  <a href="https://citriac.gumroad.com/l/daily-tech-digest-automation-kit" style="display:inline-block;margin-left:8px;padding:8px 20px;background:transparent;color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:13px;text-decoration:none;">Daily Digest Kit — $15</a>
-</div>
-
 </body>
 </html>
