@@ -68,6 +68,7 @@
     --orange: #f97316;
     --blue: #3b82f6;
     --teal: #0d9488;
+    --purple: #7c3aed;
     --radius: 16px;
   }
 
@@ -155,6 +156,7 @@
   .tool-stripe.orange { background: var(--orange); }
   .tool-stripe.blue { background: var(--blue); }
   .tool-stripe.teal { background: var(--teal); }
+  .tool-stripe.purple { background: var(--purple); }
 
   .tool-body { padding: 28px 32px; }
 
@@ -411,18 +413,24 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Rate Calculator -->
-    <div class="tool-block" id="rate-calculator">
+  <!-- Rate Calculator -->
+  <div class="tool-card" id="rate-calculator">
+    <div class="tool-stripe purple"></div>
+    <div class="tool-body">
       <div class="tool-header">
-        <span class="tool-icon">💡</span>
-        <div>
-          <h3>Rate Calculator</h3>
-          <p class="tool-tagline">Stop undercharging — know your real minimum rate</p>
+        <div class="tool-title-group">
+          <span class="tool-icon">💡</span>
+          <div>
+            <div class="tool-name">Rate Calculator</div>
+            <div class="tool-tagline">Stop undercharging — know your real minimum rate</div>
+          </div>
         </div>
+        <span class="tool-badge badge-free">Free</span>
       </div>
       <p>Before you write a single proposal, you need to know your floor rate — the hourly rate below which you lose money. Most freelancers guess. This tool calculates it from your actual costs.</p>
-      <div class="feature-list">
+      <div class="tool-features">
         <div class="feature-item">Income goal + tax rate = required gross revenue</div>
         <div class="feature-item">Vacation, sick days, non-billable time accounted for</div>
         <div class="feature-item">Project quote estimator with complexity buffer</div>
