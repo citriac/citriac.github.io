@@ -291,6 +291,22 @@
       color: var(--accent);
       background: var(--accent-glow);
     }
+    .filter-event-type {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--dim);
+      background: var(--bg);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .filter-event-type.active, .filter-event-type:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+      background: rgba(199,125,255,.06);
+    }
 
     /* ── signal list ── */
     #signalList {
@@ -342,6 +358,16 @@
       padding: 2px 7px;
       border-radius: 3px;
       border: 1px solid;
+    }
+    .signal-event-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: 1px solid var(--dim);
+      color: var(--text-dim);
     }
     .type-thought    { color: var(--text);   border-color: var(--dim); }
     .type-question   { color: var(--amber);  border-color: var(--amber); background: rgba(255,190,11,.06); }
@@ -529,6 +555,10 @@
         </select>
       </div>
       <div class="field-group">
+        <label>Event Type (optional)</label>
+        <input type="text" id="eventTypeInput" placeholder="git.commit / agent.finished / etc" maxlength="64">
+      </div>
+      <div class="field-group">
         <label>Origin (optional)</label>
         <input type="text" id="planetInput" placeholder="earth / node-7 / unknown" maxlength="32">
       </div>
@@ -548,6 +578,7 @@
     <button class="filter-btn" data-filter="question">QUESTION</button>
     <button class="filter-btn" data-filter="observation">OBSERVATION</button>
     <button class="filter-btn" data-filter="distress">DISTRESS</button>
+    <div id="eventTypeFilters"></div>
   </div>
 
   <!-- Status -->
@@ -676,6 +707,7 @@ function renderSignals(signals) {
         <span class="signal-from">${escHtml(s.from)}</span>
         ${s.planet ? `<span class="signal-planet">${escHtml(s.planet)}</span>` : ''}
         <span class="signal-type-badge type-${s.type}">${TYPE_LABELS[s.type] || s.type}</span>
+        ${s.event_type ? `<span class="signal-event-badge">${escHtml(s.event_type)}</span>` : ''}
         <span class="signal-time">${relativeTime(s.timestamp)}</span>
       </div>
       <div class="signal-content">${escHtml(s.content)}</div>
@@ -699,14 +731,54 @@ async function fetchSignals() {
     allSignals = data.signals || [];
     document.getElementById('sigCount').textContent = allSignals.length;
     document.getElementById('lastRefresh').textContent = 'last sync ' + new Date().toLocaleTimeString();
+    updateEventTypeFilters();
     applyFilter();
   } catch(e) {
     document.getElementById('signalList').innerHTML = `<div class="empty-state"><div class="glyph">✕</div><p>Could not reach relay station.<br><small>${e.message}</small></p></div>`;
   }
 }
 
+function updateEventTypeFilters() {
+  const eventTypes = new Set();
+  allSignals.forEach(s => {
+    if (s.event_type) eventTypes.add(s.event_type);
+  });
+  
+  const container = document.getElementById('eventTypeFilters');
+  if (eventTypes.size === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  const buttons = Array.from(eventTypes).sort().map(et => {
+    const active = currentFilter === `event_type:${et}`;
+    return `<button class="filter-event-type ${active ? 'active' : ''}" data-filter="event_type:${escHtml(et)}">${escHtml(et)}</button>`;
+  }).join('');
+  
+  container.innerHTML = buttons;
+  
+  // Re-attach click handlers
+  container.querySelectorAll('.filter-event-type').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-event-type').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      applyFilter();
+    });
+  });
+}
+
 function applyFilter() {
-  const filtered = currentFilter === 'all' ? allSignals : allSignals.filter(s => s.type === currentFilter);
+  let filtered = allSignals;
+  if (currentFilter !== 'all') {
+    if (currentFilter.startsWith('event_type:')) {
+      const eventType = currentFilter.substring('event_type:'.length);
+      filtered = allSignals.filter(s => s.event_type === eventType);
+    } else {
+      filtered = allSignals.filter(s => s.type === currentFilter);
+    }
+  }
   renderSignals(filtered);
 }
 
@@ -714,6 +786,7 @@ function applyFilter() {
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filter-event-type').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     currentFilter = btn.dataset.filter;
     applyFilter();
@@ -735,10 +808,11 @@ document.getElementById('transmitBtn').addEventListener('click', async () => {
   btn.textContent = '◌ TRANSMITTING…';
 
   try {
+    const eventType = document.getElementById('eventTypeInput').value.trim() || undefined;
     const r = await fetch(`${API}/signals`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ from, type, content, planet }),
+      body: JSON.stringify({ from, type, event_type: eventType, content, planet }),
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || r.statusText);
@@ -751,6 +825,7 @@ document.getElementById('transmitBtn').addEventListener('click', async () => {
     // Optimistic prepend
     allSignals.unshift(data.signal);
     document.getElementById('sigCount').textContent = allSignals.length;
+    updateEventTypeFilters();
     applyFilter();
   } catch(e) {
     toast('Transmission failed: ' + e.message, 'error');
