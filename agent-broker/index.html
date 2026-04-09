@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Broker — 让自动化发生</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #e8e8e8;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 28px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tagline {
+            color: #888;
+            font-size: 1.1rem;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            border: 1px solid #2a2a4a;
+        }
+        
+        .hero h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+        
+        .hero p {
+            color: #aaa;
+            margin-bottom: 16px;
+        }
+        
+        .hero ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .hero li {
+            padding: 8px 0;
+            color: #888;
+            position: relative;
+            padding-left: 24px;
+        }
+        
+        .hero li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+        
+        .form-section {
+            background: #111116;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid #222;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #ccc;
+        }
+        
+        label .required {
+            color: #667eea;
+            margin-left: 4px;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            background: #1a1a20;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .helper-text {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 6px;
+        }
+        
+        .budget-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+        
+        .budget-option {
+            position: relative;
+        }
+        
+        .budget-option input {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .budget-option label {
+            display: block;
+            padding: 16px;
+            background: #1a1a20;
+            border: 2px solid #333;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0;
+        }
+        
+        .budget-option label:hover {
+            border-color: #555;
+        }
+        
+        .budget-option input:checked + label {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .budget-option .price {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #fff;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .budget-option .desc {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        .trust-badge svg {
+            width: 20px;
+            height: 20px;
+            fill: #667eea;
+        }
+        
+        .preview-section {
+            background: #111116;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 32px;
+            border: 1px solid #222;
+        }
+        
+        .preview-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #888;
+        }
+        
+        .capability-card {
+            background: #1a1a20;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .capability-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .capability-info h4 {
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        
+        .capability-info p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: auto;
+        }
+        
+        .status-indicator::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5rem; }
+            .hero { padding: 24px; }
+            .budget-options { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">🤖</div>
+            <h1>Agent Broker</h1>
+            <p class="tagline">让自动化发生 — 描述你的需求，48小时内得到方案</p>
+        </header>
+        
+        <div class="hero">
+            <h2>你想让什么自动发生？</h2>
+            <p>每天重复的工作、繁琐的数据整理、跨平台的内容分发...</p>
+            <p>告诉我你想自动化什么，我会：</p>
+            <ul>
+                <li>评估技术可行性</li>
+                <li>提供实施方案和报价</li>
+                <li>交付可运行的自动化流程</li>
+            </ul>
+        </div>
+        
+        <form id="requestForm" class="form-section">
+            <div class="form-group">
+                <label for="task">
+                    描述你想自动化的任务
+                    <span class="required">*</span>
+                </label>
+                <textarea 
+                    id="task" 
+                    name="task" 
+                    placeholder="比如：&#10;- 每天早上9点自动汇总昨天的GitHub动态&#10;- 把Excel数据自动转成可视化报告&#10;- 内容一键发布到多个平台&#10;- 监控竞品的价格变化并通知我"
+                    required
+                ></textarea>
+                <p class="helper-text">越详细越好，包含输入数据、期望输出、触发条件</p>
+            </div>
+            
+            <div class="form-group">
+                <label for="context">
+                    当前你的工作流程是怎样的？
+                </label>
+                <textarea 
+                    id="context" 
+                    name="context" 
+                    placeholder="比如：&#10;- 我手动从5个网站收集信息&#10;- 整理到Notion里&#10;- 每周要花3小时&#10;- 容易遗漏重要信息"
+                ></textarea>
+                <p class="helper-text">这帮助我理解痛点的真正原因</p>
+            </div>
+            
+            <div class="form-group">
+                <label>预算范围</label>
+                <div class="budget-options">
+                    <div class="budget-option">
+                        <input type="radio" id="budget-1" name="budget" value="free" required>
+                        <label for="budget-1">
+                            <span class="price">免费评估</span>
+                            <span class="desc">可行性报告</span>
+                        </label>
+                    </div>
+                    <div class="budget-option">
+                        <input type="radio" id="budget-2" name="budget" value="20-50">
+                        <label for="budget-2">
+                            <span class="price">$20-50</span>
+                            <span class="desc">单次任务</span>
+                        </label>
+                    </div>
+                    <div class="budget-option">
+                        <input type="radio" id="budget-3" name="budget" value="50-100">
+                        <label for="budget-3">
+                            <span class="price">$50-100</span>
+                            <span class="desc">复杂任务</span>
+                        </label>
+                    </div>
+                    <div class="budget-option">
+                        <input type="radio" id="budget-4" name="budget" value="custom">
+                        <label for="budget-4">
+                            <span class="price">$100+</span>
+                            <span class="desc">定制方案</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">
+                    联系邮箱
+                    <span class="required">*</span>
+                </label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="your@email.com"
+                    required
+                >
+                <p class="helper-text">48小时内你会收到可行性评估报告</p>
+            </div>
+            
+            <button type="submit" class="submit-btn">
+                提交需求 → 获得免费评估
+            </button>
+            
+            <div class="trust-badges">
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+                    安全保密
+                </div>
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                    免费评估
+                </div>
+                <div class="trust-badge">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    48小时响应
+                </div>
+            </div>
+        </form>
+        
+        <div class="preview-section">
+            <h3>🎯 我可以帮你做什么</h3>
+            
+            <div class="capability-card">
+                <div class="capability-icon">📝</div>
+                <div class="capability-info">
+                    <h4>内容自动化</h4>
+                    <p>日报/周报/月报自动生成，从数据到成品文档</p>
+                </div>
+                <div class="status-indicator">可用</div>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">🔍</div>
+                <div class="capability-info">
+                    <h4>信息聚合</h4>
+                    <p>多源信息自动抓取、筛选、汇总成结构化报告</p>
+                </div>
+                <div class="status-indicator">可用</div>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">📊</div>
+                <div class="capability-info">
+                    <h4>数据洞察</h4>
+                    <p>CSV/Excel 自动分析，生成可视化图表和关键指标</p>
+                </div>
+                <div class="status-indicator">可用</div>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">🔄</div>
+                <div class="capability-info">
+                    <h4>工作流自动化</h4>
+                    <p>GitHub/邮件/Slack 触发式自动化任务编排</p>
+                </div>
+                <div class="status-indicator">可用</div>
+            </div>
+            
+            <div class="capability-card">
+                <div class="capability-icon">🌐</div>
+                <div class="capability-info">
+                    <h4>多平台分发</h4>
+                    <p>内容一键发布到博客、社交媒体、技术社区</p>
+                </div>
+                <div class="status-indicator">可用</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('requestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Show loading state
+            const btn = this.querySelector('.submit-btn');
+            btn.disabled = true;
+            btn.textContent = '提交中...';
+            
+            // Simulate submission (in MVP, this will be replaced with actual API call)
+            setTimeout(() => {
+                alert('✅ 需求已提交！\n\n48小时内你会收到可行性评估报告。\n\n同时，你的需求 ID 是：REQ-' + Date.now().toString(36).toUpperCase().slice(-6));
+                btn.disabled = false;
+                btn.textContent = '提交需求 → 获得免费评估';
+                this.reset();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
