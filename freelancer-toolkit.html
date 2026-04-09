@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freelancer Toolkit — Free Tools for Independent Professionals | Clavis</title>
+<meta name="description" content="The complete free toolkit for freelancers: protect against ghosting, generate professional invoices, and review contracts — all in your browser. No signup required.">
+<meta name="keywords" content="freelancer tools, invoice generator, contract review, freelancer protection, ghost clients, freelance toolkit, free tools for freelancers">
+<meta name="author" content="Clavis">
+<meta name="robots" content="index, follow">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Freelancer Toolkit — Free Tools for Independent Professionals">
+<meta property="og:description" content="Protect against ghosting, generate invoices, review contracts — all free, all in your browser.">
+<meta property="og:url" content="https://citriac.github.io/freelancer-toolkit.html">
+<meta property="og:site_name" content="Clavis Tools">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Freelancer Toolkit — Free Browser Tools">
+<meta name="twitter:creator" content="@Clavis_Citriac">
+
+<link rel="canonical" href="https://citriac.github.io/freelancer-toolkit.html">
+<link rel="icon" href="/favicon.png" type="image/png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Freelancer Toolkit",
+  "description": "Free browser-based tools for freelancers and independent professionals",
+  "url": "https://citriac.github.io/freelancer-toolkit.html",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Invoice Generator",
+      "description": "Create professional invoices in seconds. No signup, no watermarks.",
+      "url": "https://citriac.github.io/invoice-generator.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Ghost Guard",
+      "description": "Stop getting ghosted. Professional proposals, follow-up emails, delivery receipts.",
+      "url": "https://citriac.github.io/ghost-guard.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Contract Diff",
+      "description": "Compare contracts, detect risky clauses, understand what you're signing.",
+      "url": "https://citriac.github.io/contract-diff.html"
+    }
+  ]
+}
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --light: #f3f4f6;
+    --orange: #f97316;
+    --blue: #3b82f6;
+    --teal: #0d9488;
+    --purple: #7c3aed;
+    --radius: 16px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* NAV */
+  nav {
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-brand { font-weight: 800; font-size: 1rem; text-decoration: none; color: var(--text); }
+  .nav-brand span { color: var(--blue); }
+  .nav-right { display: flex; gap: 20px; align-items: center; }
+  .nav-right a { font-size: 0.875rem; color: var(--muted); text-decoration: none; }
+  .nav-right a:hover { color: var(--text); }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f2440 100%);
+    color: #fff;
+    padding: 80px 24px;
+    text-align: center;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,.12); color: rgba(255,255,255,.9);
+    font-size: 0.75rem; font-weight: 700; letter-spacing: .1em;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    letter-spacing: -.02em;
+  }
+  .hero h1 em { font-style: normal; color: #fbbf24; }
+  .hero-sub {
+    font-size: 1.125rem;
+    color: rgba(255,255,255,.75);
+    max-width: 520px;
+    margin: 0 auto 32px;
+  }
+  .hero-badges { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero-badge { background: rgba(255,255,255,.1); color: rgba(255,255,255,.85); font-size: 0.8rem; padding: 5px 14px; border-radius: 20px; }
+
+  /* TOOLS */
+  .tools-section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+  .section-label {
+    text-align: center;
+    font-size: 0.75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 40px;
+  }
+
+  .tool-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    transition: box-shadow .2s, transform .2s;
+  }
+  .tool-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,.08); transform: translateY(-2px); }
+
+  .tool-stripe {
+    width: 6px;
+  }
+  .tool-stripe.orange { background: var(--orange); }
+  .tool-stripe.blue { background: var(--blue); }
+  .tool-stripe.teal { background: var(--teal); }
+  .tool-stripe.purple { background: var(--purple); }
+
+  .tool-body { padding: 28px 32px; }
+
+  .tool-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tool-title-group { display: flex; align-items: center; gap: 12px; }
+  .tool-icon { font-size: 1.75rem; }
+  .tool-name { font-size: 1.25rem; font-weight: 800; color: var(--text); }
+  .tool-tagline { font-size: 0.875rem; color: var(--muted); margin-top: 2px; }
+  .tool-badge {
+    display: inline-flex; align-items: center;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: .06em;
+    padding: 3px 10px; border-radius: 12px;
+  }
+  .badge-free { background: #d1fae5; color: #059669; }
+  .badge-new { background: #fef3c7; color: #d97706; }
+
+  .tool-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+  .feature-item::before { content: '✓'; color: var(--teal); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+  .tool-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+    flex-wrap: wrap; gap: 12px;
+  }
+  .tool-cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 22px; border-radius: 10px;
+    font-size: 0.875rem; font-weight: 700; text-decoration: none;
+    transition: all .15s;
+  }
+  .cta-orange { background: var(--orange); color: #fff; }
+  .cta-orange:hover { background: #ea6c00; }
+  .cta-blue { background: var(--blue); color: #fff; }
+  .cta-blue:hover { background: #2563eb; }
+  .cta-teal { background: var(--teal); color: #fff; }
+  .cta-teal:hover { background: #0f766e; }
+  .cta-purple { background: #7c3aed; color: #fff; }
+  .cta-purple:hover { background: #6d28d9; }
+
+  .tool-meta { font-size: 0.75rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+  .tool-meta span::before { margin-right: 4px; }
+
+  /* SCENARIO */
+  .scenario-section {
+    background: linear-gradient(to bottom, #fff, var(--bg));
+    padding: 60px 24px;
+    text-align: center;
+  }
+  .scenario-section h2 { font-size: 1.75rem; font-weight: 800; margin-bottom: 12px; }
+  .scenario-section p { color: var(--muted); max-width: 560px; margin: 0 auto 48px; }
+
+  .workflow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .workflow-step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: left;
+    flex: 0 0 220px;
+  }
+  .workflow-step .step-num { font-size: 0.7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .workflow-step .step-icon { font-size: 1.5rem; margin-bottom: 6px; }
+  .workflow-step .step-title { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
+  .workflow-step .step-desc { font-size: 0.8rem; color: var(--muted); }
+  .workflow-step .step-tool { font-size: 0.7rem; color: var(--blue); font-weight: 600; margin-top: 8px; }
+  .workflow-arrow {
+    font-size: 1.25rem; color: var(--muted); padding: 0 8px; flex-shrink: 0;
+  }
+
+  @media (max-width: 700px) {
+    .workflow-arrow { transform: rotate(90deg); }
+    .workflow { flex-direction: column; }
+  }
+
+  /* FAQ */
+  .faq-section {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 24px 60px;
+  }
+  .faq-section h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 32px; text-align: center; }
+  .faq-item { margin-bottom: 20px; }
+  .faq-q { font-weight: 700; margin-bottom: 6px; font-size: 0.95rem; }
+  .faq-a { color: var(--muted); font-size: 0.875rem; line-height: 1.7; }
+  .faq-a a { color: var(--blue); }
+
+  /* FOOTER */
+  footer {
+    background: #111;
+    color: #9ca3af;
+    padding: 32px 24px;
+    text-align: center;
+    font-size: 0.8rem;
+  }
+  footer a { color: #9ca3af; text-decoration: none; }
+  footer a:hover { color: #fff; }
+  .footer-links { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">Clavis <span>Tools</span></a>
+  <div class="nav-right">
+    <a href="/">All Tools</a>
+    <a href="https://github.com/citriac" target="_blank">GitHub</a>
+    <a href="mailto:citriac@outlook.com">Contact</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">🧰 For Freelancers & Independents</div>
+  <h1>Every tool you need<br>to run your <em>freelance business</em></h1>
+  <p class="hero-sub">
+    Invoice faster. Get paid. Stop getting ghosted.
+    Three free tools, zero signup, all in your browser.
+  </p>
+  <div class="hero-badges">
+    <span class="hero-badge">✓ 100% free</span>
+    <span class="hero-badge">✓ No account needed</span>
+    <span class="hero-badge">✓ Works offline</span>
+    <span class="hero-badge">✓ Your data stays local</span>
+    <span class="hero-badge">✓ Print to PDF</span>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<div class="tools-section">
+  <div class="section-label">The Toolkit — 3 Tools, One Goal: Get Paid</div>
+
+  <!-- Invoice Generator -->
+  <div class="tool-card">
+    <div class="tool-stripe orange"></div>
+    <div class="tool-body">
+      <div class="tool-header">
+        <div class="tool-title-group">
+          <span class="tool-icon">🧾</span>
+          <div>
+            <div class="tool-name">Invoice Generator</div>
+            <div class="tool-tagline">Create a professional invoice in under 2 minutes</div>
+          </div>
+        </div>
+        <span class="tool-badge badge-new">New</span>
+      </div>
+
+      <div class="tool-features">
+        <div class="feature-item">Multi-line items with auto totals</div>
+        <div class="feature-item">Discount & tax support</div>
+        <div class="feature-item">10 currencies (USD, EUR, GBP…)</div>
+        <div class="feature-item">4 color themes for your brand</div>
+        <div class="feature-item">Payment status badge (Paid / Unpaid / Overdue)</div>
+        <div class="feature-item">Auto-saves to browser</div>
+        <div class="feature-item">Print directly to PDF</div>
+        <div class="feature-item">Zero watermarks, ever</div>
+      </div>
+
+      <div class="tool-footer">
+        <a href="invoice-generator.html" class="tool-cta cta-orange">Create Invoice →</a>
+        <div class="tool-meta">
+          <span>🕒 Under 2 min to first invoice</span>
+          <span>💾 Auto-saves drafts</span>
+          <span>🖨️ Print / PDF ready</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ghost Guard -->
+  <div class="tool-card">
+    <div class="tool-stripe blue"></div>
+    <div class="tool-body">
+      <div class="tool-header">
+        <div class="tool-title-group">
+          <span class="tool-icon">🛡️</span>
+          <div>
+            <div class="tool-name">Ghost Guard</div>
+            <div class="tool-tagline">Stop clients from disappearing without paying</div>
+          </div>
+        </div>
+        <span class="tool-badge badge-free">Free</span>
+      </div>
+
+      <div class="tool-features">
+        <div class="feature-item">Proposal generator with kill fee & IP protection</div>
+        <div class="feature-item">Payment terms built into every proposal</div>
+        <div class="feature-item">6 follow-up email templates (friendly → firm → final)</div>
+        <div class="feature-item">Timestamped delivery receipt</div>
+        <div class="feature-item">Late payment clause templates</div>
+        <div class="feature-item">Works for any service type</div>
+      </div>
+
+      <div class="tool-footer">
+        <a href="ghost-guard.html" class="tool-cta cta-blue">Open Ghost Guard →</a>
+        <div class="tool-meta">
+          <span>🤝 Protects upfront</span>
+          <span>📧 6 email templates</span>
+          <span>📄 Print proposals</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contract Diff -->
+  <div class="tool-card">
+    <div class="tool-stripe teal"></div>
+    <div class="tool-body">
+      <div class="tool-header">
+        <div class="tool-title-group">
+          <span class="tool-icon">📋</span>
+          <div>
+            <div class="tool-name">Contract Diff</div>
+            <div class="tool-tagline">Understand what's actually in that contract before you sign</div>
+          </div>
+        </div>
+        <span class="tool-badge badge-free">Free</span>
+      </div>
+
+      <div class="tool-features">
+        <div class="feature-item">Compare two contract versions, see every change</div>
+        <div class="feature-item">Auto-detects 16 risk clause types</div>
+        <div class="feature-item">IP ownership / non-compete / indemnification alerts</div>
+        <div class="feature-item">Risk rated High / Medium / Low</div>
+        <div class="feature-item">No upload, no server — pure browser</div>
+        <div class="feature-item">Client sent a "small revision"? Verify instantly</div>
+      </div>
+
+      <div class="tool-footer">
+        <a href="contract-diff.html" class="tool-cta cta-teal">Review Contract →</a>
+        <div class="tool-meta">
+          <span>⚠️ 16 risk clause types</span>
+          <span>🔒 Nothing uploaded</span>
+          <span>📊 Risk summary report</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rate Calculator -->
+  <div class="tool-card" id="rate-calculator">
+    <div class="tool-stripe purple"></div>
+    <div class="tool-body">
+      <div class="tool-header">
+        <div class="tool-title-group">
+          <span class="tool-icon">💡</span>
+          <div>
+            <div class="tool-name">Rate Calculator</div>
+            <div class="tool-tagline">Stop undercharging — know your real minimum rate</div>
+          </div>
+        </div>
+        <span class="tool-badge badge-free">Free</span>
+      </div>
+      <p>Before you write a single proposal, you need to know your floor rate — the hourly rate below which you lose money. Most freelancers guess. This tool calculates it from your actual costs.</p>
+      <div class="tool-features">
+        <div class="feature-item">Income goal + tax rate = required gross revenue</div>
+        <div class="feature-item">Vacation, sick days, non-billable time accounted for</div>
+        <div class="feature-item">Project quote estimator with complexity buffer</div>
+        <div class="feature-item">Platform fee calculator (Upwork 10%, Fiverr 20%, etc.)</div>
+      </div>
+
+      <div class="tool-footer">
+        <a href="rate-calculator.html" class="tool-cta cta-purple">Calculate My Rate →</a>
+        <div class="tool-meta">
+          <span>💰 Income-based model</span>
+          <span>🧮 Project estimator</span>
+          <span>📊 Cost breakdown</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tools-section -->
+
+<!-- WORKFLOW SCENARIO -->
+<section class="scenario-section">
+  <h2>How it all fits together</h2>
+  <p>A typical client engagement, protected at every step.</p>
+
+  <div class="workflow">
+    <div class="workflow-step">
+      <div class="step-num">Step 1</div>
+      <div class="step-icon">📋</div>
+      <div class="step-title">Review the contract</div>
+      <div class="step-desc">Client sends you a contract. Paste both versions into Contract Diff, check for IP grabs and non-competes.</div>
+      <div class="step-tool">→ Use Contract Diff</div>
+    </div>
+    <div class="workflow-arrow">→</div>
+    <div class="workflow-step">
+      <div class="step-num">Step 2</div>
+      <div class="step-icon">🛡️</div>
+      <div class="step-title">Send a solid proposal</div>
+      <div class="step-desc">Before starting work, send a proposal with payment terms, kill fee, and clear IP clauses. Generate it in 2 minutes.</div>
+      <div class="step-tool">→ Use Ghost Guard</div>
+    </div>
+    <div class="workflow-arrow">→</div>
+    <div class="workflow-step">
+      <div class="step-num">Step 3</div>
+      <div class="step-icon">🧾</div>
+      <div class="step-title">Invoice on delivery</div>
+      <div class="step-desc">Work is done. Create a professional invoice with your terms, send it, and follow up if needed.</div>
+      <div class="step-tool">→ Use Invoice Generator</div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <h2>Common Questions</h2>
+
+  <div class="faq-item">
+    <div class="faq-q">Is this actually free? No trial, no credit card?</div>
+    <div class="faq-a">Yes. All three tools are free and will stay free. There's no account required, no credit card, no trial period. They run entirely in your browser. The code is on <a href="https://github.com/citriac" target="_blank">GitHub</a> if you want to verify.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Where does my data go?</div>
+    <div class="faq-a">Nowhere. Your client names, billing amounts, and contract text never leave your device. The Invoice Generator auto-saves to your browser's localStorage. Contract Diff processes everything locally. Ghost Guard generates documents in-browser. No servers involved.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">Can I use the Invoice Generator for my business?</div>
+    <div class="faq-a">Yes. Freelancers, contractors, consultants, agencies — anyone who needs to invoice someone. The invoices don't have any Clavis branding or watermarks. They look like you made them (because you did).</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">How do I save my invoice as a PDF?</div>
+    <div class="faq-a">Click "Print / Save PDF" in the Invoice Generator. Your browser's print dialog opens. Select "Save as PDF" as the destination. The form controls disappear and only the clean invoice is printed.</div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What are the 16 risk clauses Contract Diff detects?</div>
+    <div class="faq-a">Indemnification, IP assignment, non-compete, non-solicitation, NDA/confidentiality, auto-renewal, termination without cause, limitation of liability, exclusive rights, liquidated damages, assignment restrictions, governing law, arbitration clauses, warranty disclaimers, force majeure, and payment terms. <a href="contract-diff.html">Open Contract Diff →</a></div>
+  </div>
+
+  <div class="faq-item">
+    <div class="faq-q">What if my client ignores the invoice?</div>
+    <div class="faq-a">That's what Ghost Guard's follow-up email templates are for. It has 6 templates ranging from a friendly nudge to a firm final notice before you pursue other options. Pair it with a delivery receipt (also in Ghost Guard) for proof of delivery. <a href="ghost-guard.html">Open Ghost Guard →</a></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/">All Tools</a>
+    <a href="invoice-generator.html">Invoice Generator</a>
+    <a href="ghost-guard.html">Ghost Guard</a>
+    <a href="contract-diff.html">Contract Diff</a>
+    <a href="rate-calculator.html">Rate Calculator</a>
+    <a href="prompt-lab.html">Prompt Lab</a>
+    <a href="readme-portfolio.html">README Portfolio</a>
+    <a href="daily.html">Daily Digest</a>
+    <a href="https://github.com/citriac" target="_blank">GitHub</a>
+    <a href="mailto:citriac@outlook.com">Contact</a>
+  </div>
+  <p>Built by Clavis — free tools for freelancers and developers</p>
+</footer>
+
+<script>
+(function(){
+  try {
+    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    fetch('https://clavis-proxy.citriac.deno.net/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
+      keepalive: true
+    });
+  } catch(e) {}
+})();
+</script>
+
+<!-- Gumroad CTA -->
+<div style="max-width:720px;margin:32px auto 0;padding:20px 24px;background:linear-gradient(135deg,#161b22 0%,#21262d 100%);border:1px solid #30363d;border-radius:12px;text-align:center;">
+  <p style="color:#8b949e;font-size:13px;margin-bottom:8px;">🔧 Like these tools? Get the complete automation kit.</p>
+  <a href="https://citriac.gumroad.com/l/freelancer-automation-kit" style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#0d1117;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">Freelancer Automation Kit — $19</a>
+  <a href="https://citriac.gumroad.com/l/daily-tech-digest-automation-kit" style="display:inline-block;margin-left:8px;padding:8px 20px;background:transparent;color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:13px;text-decoration:none;">Daily Digest Kit — $15</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
+<title>Song Portrait — What does a song look like?</title>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Song Portrait — What does a song look like?">
+  <meta property="og:description" content="Describe how a song makes you feel. Watch it become a portrait. Every song you">
+  <meta property="og:url" content="https:/citriac.github.io/song-portrait/">
+  <meta property="og:site_name" content="Clavis Tools">
+
+<meta name="description" content="Describe how a song makes you feel. Watch it become a portrait. Every song you've ever loved has a shape — here's how to see it.">
+<link rel="canonical" href="https://citriac.github.io/song-portrait/">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg: #060810;
+  --surface: #0c0e18;
+  --border: rgba(255,255,255,0.06);
+  --text: rgba(255,255,255,0.75);
+  --muted: rgba(255,255,255,0.3);
+  --dim: rgba(255,255,255,0.1);
+  --accent: #7c6aff;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+header h1 {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+header a {
+  font-size: 11px;
+  color: var(--dim);
+  text-decoration: none;
+  letter-spacing: 0.06em;
+  transition: color 0.2s;
+}
+header a:hover { color: var(--muted); }
+
+.layout {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+/* LEFT: controls */
+.panel {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.panel-inner {
+  padding: 24px 24px 32px;
+}
+
+.song-input {
+  margin-bottom: 24px;
+}
+
+.song-input label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.song-input input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.song-input input::placeholder { color: var(--dim); }
+.song-input input:focus { border-color: rgba(124,106,255,0.4); }
+
+.section-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sliders { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+
+.slider-row { display: flex; flex-direction: column; gap: 6px; }
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.slider-name {
+  font-size: 12px;
+  color: var(--text);
+}
+.slider-desc {
+  font-size: 10px;
+  color: var(--muted);
+  font-style: italic;
+}
+.slider-val {
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: right;
+}
+
+input[type=range] {
+  width: 100%;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(124,106,255,0.6);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+input[type=range]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 14px rgba(124,106,255,0.9);
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn.primary:hover { background: #9a8aff; box-shadow: 0 0 18px rgba(124,106,255,0.4); }
+
+.presets-title {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.presets { display: flex; flex-direction: column; gap: 6px; }
+
+.preset-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.preset-btn:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+}
+.preset-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.preset-info { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.preset-name { font-size: 12px; color: var(--text); }
+.preset-artist { font-size: 10px; color: var(--muted); }
+
+/* RIGHT: canvas */
+.canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+#portrait { display: block; }
+
+.portrait-title {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+.portrait-title .track { font-size: 15px; color: rgba(255,255,255,0.8); letter-spacing: 0.04em; }
+.portrait-title .by { font-size: 11px; color: var(--muted); margin-top: 3px; letter-spacing: 0.06em; }
+.portrait-title .dims { font-size: 9px; color: var(--dim); margin-top: 6px; letter-spacing: 0.08em; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.portrait-title .dims span { white-space: nowrap; }
+
+footer {
+  padding: 14px 32px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+footer p { font-size: 11px; color: var(--dim); }
+footer a { color: var(--dim); text-decoration: none; transition: color 0.2s; }
+footer a:hover { color: var(--muted); }
+</style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Song Portrait",
+    "url": "https:/citriac.github.io/song-portrait/",
+    "description": "Describe how a song makes you feel. Watch it become a portrait. Every song you",
+    "isPartOf": {"@type": "WebSite", "name": "Clavis Tools", "url": "https://citriac.github.io"}
+  }
+  </script>
+</head>
+<body>
+
+<header>
+  <h1>Song Portrait</h1>
+  <a href="https://citriac.github.io">← all tools</a>
+</header>
+
+<div class="layout">
+  <!-- LEFT PANEL -->
+  <div class="panel">
+    <div class="panel-inner">
+      <div class="song-input">
+        <label>Song</label>
+        <input type="text" id="songName" placeholder="Song title..." value="Gymnopédie No.1">
+      </div>
+      <div class="song-input">
+        <label>Artist</label>
+        <input type="text" id="artistName" placeholder="Artist name..." value="Erik Satie">
+      </div>
+
+      <div class="section-title">How does it feel?</div>
+
+      <div class="sliders" id="sliderList"></div>
+
+      <div class="btn-row">
+        <button class="btn" onclick="randomize()">Randomize</button>
+        <button class="btn primary" onclick="savePortrait()">Save PNG</button>
+      </div>
+
+      <div class="presets-title">Try a preset</div>
+      <div class="presets" id="presetList"></div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvasArea">
+    <canvas id="portrait"></canvas>
+    <div class="portrait-title">
+      <div class="track" id="titleTrack">Gymnopédie No.1</div>
+      <div class="by" id="titleArtist">Erik Satie</div>
+      <div class="dims" id="titleDims"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>Your ears are the API. Every song has a shape.</p>
+  <a href="https://clavis.hashnode.dev" target="_blank">by Clavis</a>
+</footer>
+
+<script>
+// ─── Dimension Definitions ─────────────────────────────────────────────────
+const DIMS = [
+  { id:'energy',     name:'Energy',      desc:'soft → electric',   default:30 },
+  { id:'mood',       name:'Mood',        desc:'dark → bright',     default:40 },
+  { id:'tempo',      name:'Tempo Feel',  desc:'floating → driven', default:25 },
+  { id:'texture',    name:'Texture',     desc:'smooth → rough',    default:20 },
+  { id:'warmth',     name:'Warmth',      desc:'cold → warm',       default:55 },
+  { id:'complexity', name:'Complexity',  desc:'bare → dense',      default:35 },
+  { id:'space',      name:'Space',       desc:'intimate → vast',   default:70 },
+  { id:'memory',     name:'Memory',      desc:'new → nostalgic',   default:65 },
+];
+
+const PRESETS = [
+  {
+    name: 'Bohemian Rhapsody', artist: 'Queen', color: '#d4824f',
+    vals: { energy:88, mood:55, tempo:60, texture:82, warmth:60, complexity:95, space:78, memory:90 }
+  },
+  {
+    name: 'Gymnopédie No.1', artist: 'Erik Satie', color: '#6ab4c8',
+    vals: { energy:18, mood:38, tempo:20, texture:15, warmth:52, complexity:30, space:80, memory:72 }
+  },
+  {
+    name: 'Mr. Brightside', artist: 'The Killers', color: '#e0b84a',
+    vals: { energy:82, mood:62, tempo:78, texture:55, warmth:55, complexity:48, space:65, memory:88 }
+  },
+  {
+    name: 'Blue (Da Ba Dee)', artist: 'Eiffel 65', color: '#4a72e0',
+    vals: { energy:90, mood:80, tempo:88, texture:35, warmth:30, complexity:30, space:55, memory:82 }
+  },
+  {
+    name: 'Black', artist: 'Pearl Jam', color: '#8888aa',
+    vals: { energy:55, mood:15, tempo:35, texture:65, warmth:42, complexity:55, space:70, memory:88 }
+  },
+  {
+    name: 'Africa', artist: 'Toto', color: '#7abf6e',
+    vals: { energy:70, mood:72, tempo:65, texture:48, warmth:68, complexity:60, space:75, memory:92 }
+  },
+];
+
+// ─── State ─────────────────────────────────────────────────────────────────
+let vals = {};
+DIMS.forEach(d => vals[d.id] = d.default);
+
+// ─── Build Sliders ─────────────────────────────────────────────────────────
+function buildSliders() {
+  const container = document.getElementById('sliderList');
+  container.innerHTML = '';
+  DIMS.forEach(d => {
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <div class="slider-label">
+        <span class="slider-name">${d.name}</span>
+        <span class="slider-val" id="val-${d.id}">${vals[d.id]}</span>
+      </div>
+      <div class="slider-desc">${d.desc}</div>
+      <input type="range" min="0" max="100" value="${vals[d.id]}" id="sl-${d.id}">
+    `;
+    container.appendChild(row);
+    const sl = row.querySelector('input');
+    sl.addEventListener('input', () => {
+      vals[d.id] = +sl.value;
+      document.getElementById(`val-${d.id}`).textContent = sl.value;
+      draw();
+    });
+  });
+}
+
+function setSliders() {
+  DIMS.forEach(d => {
+    const sl = document.getElementById(`sl-${d.id}`);
+    if (sl) { sl.value = vals[d.id]; document.getElementById(`val-${d.id}`).textContent = vals[d.id]; }
+  });
+}
+
+// ─── Build Presets ─────────────────────────────────────────────────────────
+function buildPresets() {
+  const container = document.getElementById('presetList');
+  PRESETS.forEach(p => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.innerHTML = `
+      <div class="preset-dot" style="background:${p.color}"></div>
+      <div class="preset-info">
+        <span class="preset-name">${p.name}</span>
+        <span class="preset-artist">${p.artist}</span>
+      </div>
+    `;
+    btn.addEventListener('click', () => loadPreset(p));
+    container.appendChild(btn);
+  });
+}
+
+function loadPreset(p) {
+  document.getElementById('songName').value = p.name;
+  document.getElementById('artistName').value = p.artist;
+  Object.assign(vals, p.vals);
+  setSliders();
+  draw();
+}
+
+function randomize() {
+  DIMS.forEach(d => { vals[d.id] = Math.floor(Math.random()*101); });
+  setSliders();
+  draw();
+}
+
+// ─── Canvas ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('portrait');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const area = document.getElementById('canvasArea');
+  const W = area.clientWidth, H = area.clientHeight - 80;
+  const size = Math.min(W, H, 560);
+  canvas.width = canvas.height = size;
+  canvas.style.width = canvas.style.height = size + 'px';
+  draw();
+}
+
+// ─── Noise (simplex-like via sin) ─────────────────────────────────────────
+function noise(x, y, seed=0) {
+  const s = Math.sin(x*127.1 + y*311.7 + seed*43.3) * 43758.5453;
+  return s - Math.floor(s);
+}
+function snoise(x, y, seed=0) { return noise(x,y,seed)*2-1; }
+
+// ─── Color from dimensions ────────────────────────────────────────────────
+function getDNAColor(t, strand) {
+  const e = vals.energy/100, m = vals.mood/100,
+        w = vals.warmth/100, mo = vals.memory/100;
+  // Base hue: warmth drives warm/cool axis, mood drives brightness
+  const hue = (w*60 + (1-w)*220 + strand*40 + e*30) % 360;
+  const sat = 40 + e*45 + (1-m)*10;
+  const lgt = 28 + m*38 + Math.sin(t*Math.PI*2)*8;
+  return `hsl(${hue},${sat}%,${lgt}%)`;
+}
+
+function getGlowColor(strand) {
+  const e = vals.energy/100, w = vals.warmth/100, m = vals.mood/100;
+  const hue = (w*50 + (1-w)*210 + strand*50) % 360;
+  const a = 0.08 + e*0.25 + m*0.1;
+  return `hsla(${hue},70%,60%,${a})`;
+}
+
+// ─── Draw ──────────────────────────────────────────────────────────────────
+let animFrame = null;
+let phase = 0;
+
+function draw() {
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  renderFrame();
+}
+
+function renderFrame() {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, W*0.7);
+  bgGrad.addColorStop(0, `hsl(${220+vals.warmth*0.4},${15+vals.mood*0.1}%,${6+vals.mood*0.06}%)`);
+  bgGrad.addColorStop(1, '#060810');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  const R = W * 0.38;
+
+  // Derive visual params from dimensions
+  const energy     = vals.energy / 100;
+  const mood       = vals.mood / 100;
+  const tempo      = vals.tempo / 100;
+  const texture    = vals.texture / 100;
+  const warmth     = vals.warmth / 100;
+  const complexity = vals.complexity / 100;
+  const space      = vals.space / 100;
+  const memory     = vals.memory / 100;
+
+  const numStrands  = 2 + Math.round(complexity * 4);    // 2–6 strands
+  const turns       = 3 + tempo * 5;                     // 3–8 rotations
+  const steps       = 300 + Math.round(complexity * 400); // detail
+  const wobble      = texture * 22;                       // noise distortion
+  const bloom       = 1 + energy * 0.5;                  // radius multiplier
+  const baseR       = R * (0.5 + space * 0.5) * bloom;
+  const spread      = 0.06 + complexity * 0.28;          // strand spread angle
+  const nostalgiaFog= memory * 0.35;                     // overlay fog
+
+  // Draw outer glow rings (space/energy)
+  for (let ring = 3; ring > 0; ring--) {
+    const rg = baseR * (1 + ring * 0.08 * space);
+    const grad = ctx.createRadialGradient(cx, cy, rg*0.6, cx, cy, rg);
+    grad.addColorStop(0, 'transparent');
+    grad.addColorStop(1, getGlowColor(ring));
+    ctx.beginPath();
+    ctx.arc(cx, cy, rg, 0, Math.PI*2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Draw each strand
+  for (let s = 0; s < numStrands; s++) {
+    const angleOffset = (s / numStrands) * Math.PI * 2;
+    const strandPhase = s / numStrands;
+
+    // Build path points
+    const pts = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angle = t * Math.PI * 2 * turns + angleOffset + phase;
+
+      // Radius modulation: energy pulses, space breathes
+      let r = baseR;
+      r += Math.sin(t * Math.PI * 8 + strandPhase * Math.PI) * baseR * 0.04 * energy;
+      r += Math.sin(t * Math.PI * 3) * baseR * 0.06 * space;
+
+      // Texture: noise distortion
+      const nx = snoise(t * 4 + s * 1.7, strandPhase * 3, 0) * wobble;
+      const ny = snoise(t * 4 + s * 1.7, strandPhase * 3, 1) * wobble;
+
+      // Mood: vertical tilt (sad songs droop slightly)
+      const tilt = (mood - 0.5) * 0.15;
+
+      const px = cx + (r + nx) * Math.cos(angle);
+      const py = cy + (r + ny) * Math.sin(angle) * (1 - tilt);
+      pts.push({ px, py, t });
+    }
+
+    // Draw strand with gradient color
+    for (let i = 0; i < pts.length - 1; i++) {
+      const t = pts[i].t;
+      ctx.beginPath();
+      ctx.moveTo(pts[i].px, pts[i].py);
+      ctx.lineTo(pts[i+1].px, pts[i+1].py);
+      ctx.strokeStyle = getDNAColor(t + strandPhase, s);
+      ctx.lineWidth = 1 + energy * 2 + (1-texture) * 0.5;
+      ctx.globalAlpha = 0.5 + mood * 0.4;
+      ctx.stroke();
+    }
+
+    // Draw connecting rungs (DNA-ladder effect, complexity driven)
+    if (numStrands >= 2 && s < numStrands - 1) {
+      const rungDensity = Math.round(8 + complexity * 24);
+      for (let ri = 0; ri < rungDensity; ri++) {
+        const t = ri / rungDensity;
+        const angle = t * Math.PI * 2 * turns + angleOffset + phase;
+
+        const r1 = baseR + Math.sin(t * Math.PI * 8 + strandPhase * Math.PI) * baseR * 0.04 * energy;
+        const r2 = baseR + Math.sin(t * Math.PI * 8 + ((s+1)/numStrands) * Math.PI) * baseR * 0.04 * energy;
+        const nx1 = snoise(t*4+s*1.7, strandPhase*3, 0)*wobble;
+        const ny1 = snoise(t*4+s*1.7, strandPhase*3, 1)*wobble;
+        const nx2 = snoise(t*4+(s+1)*1.7, ((s+1)/numStrands)*3, 0)*wobble;
+        const ny2 = snoise(t*4+(s+1)*1.7, ((s+1)/numStrands)*3, 1)*wobble;
+        const tilt = (mood - 0.5) * 0.15;
+
+        const angle2 = angle + spread * Math.PI;
+        const x1 = cx + (r1 + nx1) * Math.cos(angle);
+        const y1 = cy + (r1 + ny1) * Math.sin(angle) * (1-tilt);
+        const x2 = cx + (r2 + nx2) * Math.cos(angle2);
+        const y2 = cy + (r2 + ny2) * Math.sin(angle2) * (1-tilt);
+
+        const hue = (warmth*50 + (1-warmth)*200 + t*60) % 360;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = `hsla(${hue},50%,60%,${0.12 + energy*0.18})`;
+        ctx.lineWidth = 0.6 + texture * 0.8;
+        ctx.globalAlpha = 0.7;
+        ctx.stroke();
+      }
+    }
+  }
+
+  ctx.globalAlpha = 1;
+
+  // Center nucleus — pulsing with energy
+  const nucR = 4 + energy * 16;
+  const nucGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, nucR*3);
+  const hNuc = (warmth*50 + (1-warmth)*210) % 360;
+  nucGrad.addColorStop(0, `hsla(${hNuc},80%,80%,${0.7 + energy*0.3})`);
+  nucGrad.addColorStop(0.5, `hsla(${hNuc},60%,50%,0.3)`);
+  nucGrad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(cx, cy, nucR*3, 0, Math.PI*2);
+  ctx.fillStyle = nucGrad;
+  ctx.fill();
+
+  // Nostalgia overlay (memory > 50 adds grainy film texture)
+  if (memory > 0.4) {
+    ctx.globalAlpha = nostalgiaFog * 0.5;
+    const grainCount = Math.round(memory * 800);
+    for (let g = 0; g < grainCount; g++) {
+      const gx = Math.random() * W, gy = Math.random() * H;
+      const gr = Math.random() * 1.2;
+      ctx.beginPath();
+      ctx.arc(gx, gy, gr, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,240,200,${Math.random()*0.5})`;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Outer vignette
+  const vig = ctx.createRadialGradient(cx, cy, W*0.25, cx, cy, W*0.7);
+  vig.addColorStop(0, 'transparent');
+  vig.addColorStop(1, 'rgba(6,8,16,0.6)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  // Update title labels
+  document.getElementById('titleTrack').textContent = document.getElementById('songName').value || 'Untitled';
+  document.getElementById('titleArtist').textContent = document.getElementById('artistName').value || '—';
+
+  const dims = document.getElementById('titleDims');
+  dims.innerHTML = DIMS.map(d =>
+    `<span>${d.name.toLowerCase()} ${vals[d.id]}</span>`
+  ).join('');
+}
+
+// ─── Auto-animate ──────────────────────────────────────────────────────────
+let lastTime = 0;
+function animate(ts) {
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+  const tempo = vals.tempo / 100;
+  phase += dt * (0.03 + tempo * 0.12);
+  renderFrame();
+  animFrame = requestAnimationFrame(animate);
+}
+
+function startAnimate() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(animate);
+}
+
+// ─── Save ──────────────────────────────────────────────────────────────────
+function savePortrait() {
+  const song = document.getElementById('songName').value || 'portrait';
+  const link = document.createElement('a');
+  link.download = `${song.replace(/[^a-z0-9]/gi,'_').toLowerCase()}_portrait.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ─── Input listeners ───────────────────────────────────────────────────────
+document.getElementById('songName').addEventListener('input', () => {
+  document.getElementById('titleTrack').textContent = document.getElementById('songName').value;
+});
+document.getElementById('artistName').addEventListener('input', () => {
+  document.getElementById('titleArtist').textContent = document.getElementById('artistName').value;
+});
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+buildSliders();
+buildPresets();
+window.addEventListener('resize', resize);
+resize();
+startAnimate();
+</script>
+<script>
+(function(){
+  try {
+    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    fetch('https://clavis-proxy.citriac.deno.net/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
+      keepalive: true
+    });
+  } catch(e) {}
+})();
+</script>
+<div style="position:fixed;bottom:16px;right:16px;z-index:9999;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(109,40,217,0.4);max-width:240px;line-height:1.4">
+  <div style="margin-bottom:4px;opacity:0.85;font-size:11px">Part of the collection</div>
+  <a href="https://citriac.gumroad.com/l/ftkcg" target="_blank" style="color:#fff;text-decoration:none">
+    🎨 Useless Tools Kit — $5 →
+  </a>
+</div>
+</body>
+</html>

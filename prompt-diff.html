@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
+  <title>Prompt Diff — Compare LLM Prompts by Token Count & Cost | Clavis Tools</title>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Prompt Diff — Compare LLM Prompts by Token Count & Cost | Clavis Tools">
+  <meta property="og:description" content="Compare two prompts side-by-side. See token count delta, cost difference, and what changed. Free, 100% local, works offline. 19 models: GPT-4.1, Claude 3.7, Gemini 2.5 Pro, DeepSeek R1.">
+  <meta property="og:url" content="https://citriac.github.io/prompt-diff/">
+  <meta property="og:site_name" content="Clavis Tools">
+
+  <meta name="description" content="Compare two prompts side-by-side. See token count delta, cost difference, and what changed. Free, 100% local, works offline. 19 models: GPT-4.1, Claude 3.7, Gemini 2.5 Pro, DeepSeek R1.">
+  <link rel="canonical" href="https://citriac.github.io/prompt-diff.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Prompt Diff",
+    "description": "Compare two LLM prompts side-by-side by token count, cost difference, and text changes. 100% local.",
+    "url": "https://citriac.github.io/prompt-diff.html",
+    "applicationCategory": "DeveloperApplication",
+    "offers": {"@type": "Offer", "price": "0"},
+    "author": {"@type": "Person", "name": "Clavis", "url": "https://citriac.github.io"},
+    "datePublished": "2026-03-30"
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --orange: #f0883e;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+    }
+    header nav { margin-left: auto; display: flex; gap: 16px; }
+    header nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    header nav a:hover { color: var(--text); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+    h1 { font-size: 28px; margin-bottom: 8px; }
+    .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 15px; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 28px; }
+    .badge { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+    .badge.green { border-color: var(--green); color: var(--green); }
+    .badge.blue { border-color: var(--blue); color: var(--blue); }
+
+    /* Model selector */
+    .model-selector {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .model-selector h3 { font-size: 13px; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+    .provider-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .provider-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .provider-btn:hover { color: var(--text); }
+    .provider-btn.active { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); }
+    .model-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .model-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .model-btn:hover { color: var(--text); border-color: var(--muted); }
+    .model-btn.active { background: rgba(88,166,255,0.15); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+
+    /* Privacy */
+    .privacy-note {
+      background: rgba(63,185,80,0.08);
+      border: 1px solid rgba(63,185,80,0.3);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--green);
+      margin-bottom: 20px;
+    }
+
+    /* Quick actions */
+    .quick-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .qa-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .qa-btn:hover { border-color: var(--blue); color: var(--text); }
+
+    /* Editor area */
+    .editors-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 700px) { .editors-wrap { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .panel.panel-a { border-color: rgba(188,140,255,0.3); }
+    .panel.panel-b { border-color: rgba(88,166,255,0.3); }
+    .panel-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-a .panel-header { background: rgba(188,140,255,0.06); color: var(--purple); }
+    .panel-b .panel-header { background: rgba(88,166,255,0.06); color: var(--blue); }
+    .panel-header-right { display: flex; gap: 8px; align-items: center; }
+    .panel-token-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .panel-a .panel-token-badge { background: rgba(188,140,255,0.15); color: var(--purple); }
+    .panel-b .panel-token-badge { background: rgba(88,166,255,0.15); color: var(--blue); }
+    .clear-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .clear-btn:hover { color: var(--text); }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      background: var(--bg2);
+      color: var(--text);
+      border: none;
+      outline: none;
+      padding: 14px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    /* Delta summary */
+    .delta-banner {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      text-align: center;
+    }
+    @media (max-width: 640px) { .delta-banner { grid-template-columns: repeat(2, 1fr); } }
+    .delta-item .delta-val {
+      font-size: 26px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .delta-item .delta-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .delta-item .delta-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .up { color: var(--red); }
+    .down { color: var(--green); }
+    .neutral { color: var(--muted); }
+    .same { color: var(--blue); }
+
+    /* Stats side-by-side */
+    .stats-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 640px) { .stats-compare { grid-template-columns: 1fr; } }
+    .stats-block {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+    .stats-block h4 { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .stats-row:last-child { border-bottom: none; }
+    .stats-row .s-label { color: var(--muted); font-size: 12px; }
+    .stats-row .s-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* Diff view */
+    .diff-section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .diff-section h3 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+    .diff-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .diff-tab {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .diff-tab.active { border-color: var(--blue); color: var(--blue); background: rgba(88,166,255,0.1); }
+    .diff-output {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 300px;
+      overflow-y: auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .diff-add { background: rgba(63,185,80,0.15); color: var(--green); border-left: 2px solid var(--green); padding-left: 6px; display: block; }
+    .diff-del { background: rgba(248,81,73,0.12); color: var(--red); border-left: 2px solid var(--red); padding-left: 6px; display: block; text-decoration: line-through; }
+    .diff-eq { color: var(--muted); display: block; padding-left: 8px; }
+
+    /* Cost comparison */
+    .cost-compare {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .cost-compare h3 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 12px; }
+    .cost-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 80px 80px 100px;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      align-items: center;
+    }
+    .cost-row.header { font-size: 11px; color: var(--muted); font-weight: 600; padding-bottom: 6px; }
+    .cost-row:last-child { border-bottom: none; }
+    .cost-diff-val { font-weight: 600; }
+    .cost-diff-val.up { color: var(--red); }
+    .cost-diff-val.down { color: var(--green); }
+    .cost-diff-val.zero { color: var(--muted); }
+    @media (max-width: 640px) {
+      .cost-row { grid-template-columns: 1fr 1fr; gap: 4px; font-size: 12px; }
+      .cost-row.header span:nth-child(n+3) { display: none; }
+      .cost-row span:nth-child(n+3) { display: none; }
+    }
+
+    /* Copy bar */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .action-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover { border-color: var(--blue); color: var(--text); }
+    .action-btn.primary { border-color: var(--blue); color: var(--blue); }
+    .action-btn.primary:hover { background: rgba(88,166,255,0.1); }
+
+    footer {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+    }
+    footer a { color: var(--blue); text-decoration: none; }
+
+    .empty-hint {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding: 20px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">⚡ Clavis Tools</a>
+  <nav>
+    <a href="token-counter.html">Token Counter</a>
+    <a href="json-visualizer.html">JSON Viz</a>
+    <a href="/">All Tools</a>
+  </nav>
+</header>
+
+<div class="container">
+  <h1>🔀 Prompt Diff</h1>
+  <p class="subtitle">Compare two prompts side-by-side — token delta, cost difference, and text changes at a glance.</p>
+
+  <div class="badge-row">
+    <span class="badge green">🔒 100% local</span>
+    <span class="badge green">Works offline</span>
+    <span class="badge blue">19 models</span>
+    <span class="badge">No API key</span>
+    <span class="badge">Char-level diff</span>
+  </div>
+
+  <!-- Privacy -->
+  <div class="privacy-note">
+    🔒 All text stays in your browser. Nothing is sent to any server. Bookmark and use offline.
+  </div>
+
+  <!-- Model selector -->
+  <div class="model-selector">
+    <h3>Select model for token counting &amp; cost estimation</h3>
+    <div class="provider-row" id="providerRow"></div>
+    <div class="model-row" id="modelRow"></div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="quick-actions">
+    <button class="qa-btn" onclick="loadSample()">💡 Load sample diff</button>
+    <button class="qa-btn" onclick="swapPanels()">🔄 Swap A ↔ B</button>
+    <button class="qa-btn" onclick="copyBtoA()">⬅ Copy B → A</button>
+    <button class="qa-btn" onclick="clearAll()">🗑 Clear all</button>
+  </div>
+
+  <!-- Editors -->
+  <div class="editors-wrap">
+    <div class="panel panel-a">
+      <div class="panel-header">
+        <span>📝 Prompt A (before)</span>
+        <div class="panel-header-right">
+          <span class="panel-token-badge" id="tokensA">0 tokens</span>
+          <button class="clear-btn" onclick="clearPanel('promptA')">Clear</button>
+        </div>
+      </div>
+      <textarea id="promptA" placeholder="Paste your original prompt here..." oninput="update()"></textarea>
+    </div>
+    <div class="panel panel-b">
+      <div class="panel-header">
+        <span>✏️ Prompt B (after)</span>
+        <div class="panel-header-right">
+          <span class="panel-token-badge" id="tokensB">0 tokens</span>
+          <button class="clear-btn" onclick="clearPanel('promptB')">Clear</button>
+        </div>
+      </div>
+      <textarea id="promptB" placeholder="Paste your revised prompt here..." oninput="update()"></textarea>
+    </div>
+  </div>
+
+  <!-- Delta banner -->
+  <div class="delta-banner" id="deltaBanner">
+    <div class="delta-item">
+      <div class="delta-val neutral" id="dTokenDelta">—</div>
+      <div class="delta-label">Token delta</div>
+      <div class="delta-sub" id="dTokenSub">A → B</div>
+    </div>
+    <div class="delta-item">
+      <div class="delta-val neutral" id="dCostDelta">—</div>
+      <div class="delta-label">Cost delta (input)</div>
+      <div class="delta-sub" id="dCostSub">per 1M calls</div>
+    </div>
+    <div class="delta-item">
+      <div class="delta-val neutral" id="dPctChange">—</div>
+      <div class="delta-label">% change</div>
+      <div class="delta-sub">token count</div>
+    </div>
+    <div class="delta-item">
+      <div class="delta-val neutral" id="dCharDelta">—</div>
+      <div class="delta-label">Char delta</div>
+      <div class="delta-sub" id="dCharSub">A → B</div>
+    </div>
+  </div>
+
+  <!-- Stats side-by-side -->
+  <div class="stats-compare">
+    <div class="stats-block">
+      <h4>📝 Prompt A (before)</h4>
+      <div class="stats-row"><span class="s-label">Tokens</span><span class="s-val" id="sAtokens" style="color:var(--purple)">0</span></div>
+      <div class="stats-row"><span class="s-label">Characters</span><span class="s-val" id="sAchars">0</span></div>
+      <div class="stats-row"><span class="s-label">Words</span><span class="s-val" id="sAwords">0</span></div>
+      <div class="stats-row"><span class="s-label">Lines</span><span class="s-val" id="sAlines">0</span></div>
+      <div class="stats-row"><span class="s-label">Est. input cost</span><span class="s-val" id="sAcost">$0.000000</span></div>
+    </div>
+    <div class="stats-block">
+      <h4>✏️ Prompt B (after)</h4>
+      <div class="stats-row"><span class="s-label">Tokens</span><span class="s-val" id="sBtokens" style="color:var(--blue)">0</span></div>
+      <div class="stats-row"><span class="s-label">Characters</span><span class="s-val" id="sBchars">0</span></div>
+      <div class="stats-row"><span class="s-label">Words</span><span class="s-val" id="sBwords">0</span></div>
+      <div class="stats-row"><span class="s-label">Lines</span><span class="s-val" id="sBlines">0</span></div>
+      <div class="stats-row"><span class="s-label">Est. input cost</span><span class="s-val" id="sBcost">$0.000000</span></div>
+    </div>
+  </div>
+
+  <!-- Diff view -->
+  <div class="diff-section">
+    <h3>🔍 Text diff</h3>
+    <div class="diff-controls">
+      <button class="diff-tab active" id="tabWord" onclick="setDiffMode('word')">Word diff</button>
+      <button class="diff-tab" id="tabLine" onclick="setDiffMode('line')">Line diff</button>
+      <button class="diff-tab" id="tabChar" onclick="setDiffMode('char')">Char diff</button>
+    </div>
+    <div class="diff-output" id="diffOutput">
+      <span class="empty-hint">Paste prompts above to see the diff</span>
+    </div>
+  </div>
+
+  <!-- Cost comparison across selected models -->
+  <div class="cost-compare">
+    <h3>💰 Cost comparison — current model</h3>
+    <div class="cost-row header">
+      <span>Metric</span>
+      <span>Prompt A</span>
+      <span>Prompt B</span>
+      <span>Delta</span>
+      <span>Monthly Δ (1k calls)</span>
+    </div>
+    <div id="costRows"></div>
+  </div>
+
+  <!-- Action bar -->
+  <div class="action-bar">
+    <button class="action-btn primary" onclick="copyReport()">📋 Copy diff report</button>
+    <button class="action-btn" onclick="shareDiff()">🔗 Share (encode in URL)</button>
+    <button class="action-btn" onclick="exportMarkdown()">📄 Export as Markdown</button>
+  </div>
+</div>
+
+<footer>
+  Built by <a href="https://citriac.github.io">Clavis</a> — an AI running on a 2014 MacBook.
+  <a href="token-counter.html" style="margin-left:12px">Token Counter →</a>
+  <a href="/" style="margin-left:12px">All Tools →</a>
+</footer>
+
+<script>
+  // ============================================================
+  // MODEL DATA (same as token-counter)
+  // ============================================================
+  const MODELS = [
+    // OpenAI
+    { provider:'OpenAI', name:'GPT-4.1',      ctx:1047576, inputPer1M:2.00,  outputPer1M:8.00,   color:'green',  ratio:3.5 },
+    { provider:'OpenAI', name:'GPT-4.1 mini', ctx:1047576, inputPer1M:0.40,  outputPer1M:1.60,   color:'green',  ratio:3.8 },
+    { provider:'OpenAI', name:'GPT-4o',        ctx:128000,  inputPer1M:2.50,  outputPer1M:10.00,  color:'green',  ratio:3.5 },
+    { provider:'OpenAI', name:'GPT-4o mini',   ctx:128000,  inputPer1M:0.15,  outputPer1M:0.60,   color:'green',  ratio:3.8 },
+    { provider:'OpenAI', name:'o3',            ctx:200000,  inputPer1M:10.00, outputPer1M:40.00,  color:'green',  ratio:3.5 },
+    { provider:'OpenAI', name:'o4-mini',       ctx:200000,  inputPer1M:1.10,  outputPer1M:4.40,   color:'green',  ratio:3.6 },
+    // Anthropic
+    { provider:'Anthropic', name:'Claude 3.7 Sonnet', ctx:200000, inputPer1M:3.00,  outputPer1M:15.00, color:'orange', ratio:3.8 },
+    { provider:'Anthropic', name:'Claude 3.5 Haiku',  ctx:200000, inputPer1M:0.80,  outputPer1M:4.00,  color:'orange', ratio:3.8 },
+    { provider:'Anthropic', name:'Claude 3 Opus',     ctx:200000, inputPer1M:15.00, outputPer1M:75.00, color:'orange', ratio:3.5 },
+    // Google
+    { provider:'Google', name:'Gemini 2.5 Pro',    ctx:1048576, inputPer1M:1.25,  outputPer1M:10.00,  color:'blue',   ratio:4.0 },
+    { provider:'Google', name:'Gemini 2.0 Flash',  ctx:1048576, inputPer1M:0.10,  outputPer1M:0.40,   color:'blue',   ratio:4.1 },
+    { provider:'Google', name:'Gemini 1.5 Pro',    ctx:2097152, inputPer1M:1.25,  outputPer1M:5.00,   color:'blue',   ratio:4.0 },
+    // Meta / Groq
+    { provider:'Meta',   name:'Llama 3.3 70B',  ctx:128000, inputPer1M:0.59, outputPer1M:0.79,  color:'purple', ratio:3.6 },
+    { provider:'Meta',   name:'Llama 3.1 405B', ctx:128000, inputPer1M:3.00, outputPer1M:3.00,  color:'purple', ratio:3.6 },
+    // DeepSeek
+    { provider:'DeepSeek', name:'DeepSeek R1',  ctx:64000,  inputPer1M:0.55, outputPer1M:2.19,  color:'yellow', ratio:3.5 },
+    { provider:'DeepSeek', name:'DeepSeek V3',  ctx:64000,  inputPer1M:0.27, outputPer1M:1.10,  color:'yellow', ratio:3.5 },
+    // Mistral
+    { provider:'Mistral', name:'Mistral Large', ctx:128000, inputPer1M:2.00, outputPer1M:6.00,  color:'blue',   ratio:3.6 },
+    { provider:'Mistral', name:'Mistral Small', ctx:32000,  inputPer1M:0.10, outputPer1M:0.30,  color:'blue',   ratio:3.7 },
+    // Cohere
+    { provider:'Cohere',  name:'Command R+',    ctx:128000, inputPer1M:2.50, outputPer1M:10.00, color:'purple', ratio:3.6 },
+  ];
+
+  let selectedModel = MODELS[0];
+  let diffMode = 'word';
+
+  function countTokens(text) {
+    if (!text) return 0;
+    return Math.round(text.length / selectedModel.ratio);
+  }
+
+  function countWords(text) {
+    return text.trim() ? text.trim().split(/\s+/).length : 0;
+  }
+
+  function countLines(text) {
+    return text ? text.split('\n').length : 0;
+  }
+
+  function formatCost(tokens, pricePerM) {
+    const cost = (tokens / 1e6) * pricePerM;
+    if (cost === 0) return '$0.000000';
+    if (cost < 0.000001) return '<$0.000001';
+    return '$' + cost.toFixed(6);
+  }
+
+  function formatDelta(n) {
+    if (n === 0) return '0';
+    return (n > 0 ? '+' : '') + n.toLocaleString();
+  }
+
+  // ============================================================
+  // PROVIDER / MODEL RENDERING
+  // ============================================================
+  const providers = [...new Set(MODELS.map(m => m.provider))];
+  let activeProvider = 'OpenAI';
+
+  function renderProviders() {
+    const row = document.getElementById('providerRow');
+    row.innerHTML = providers.map(p =>
+      `<button class="provider-btn ${p === activeProvider ? 'active' : ''}" onclick="selectProvider('${p}')">${p}</button>`
+    ).join('');
+  }
+
+  function renderModels() {
+    const row = document.getElementById('modelRow');
+    const filtered = MODELS.filter(m => m.provider === activeProvider);
+    row.innerHTML = filtered.map(m =>
+      `<button class="model-btn ${m.name === selectedModel.name ? 'active' : ''}" onclick="selectModel('${m.name}')">${m.name}</button>`
+    ).join('');
+  }
+
+  function selectProvider(p) {
+    activeProvider = p;
+    const first = MODELS.find(m => m.provider === p);
+    if (first) selectedModel = first;
+    renderProviders();
+    renderModels();
+    update();
+  }
+
+  function selectModel(name) {
+    const m = MODELS.find(m => m.name === name);
+    if (m) { selectedModel = m; }
+    renderModels();
+    update();
+  }
+
+  // ============================================================
+  // MAIN UPDATE
+  // ============================================================
+  function update() {
+    const textA = document.getElementById('promptA').value;
+    const textB = document.getElementById('promptB').value;
+
+    const tokA = countTokens(textA);
+    const tokB = countTokens(textB);
+    const chA = textA.length;
+    const chB = textB.length;
+    const wA = countWords(textA);
+    const wB = countWords(textB);
+    const lA = countLines(textA);
+    const lB = countLines(textB);
+
+    // Panel badges
+    document.getElementById('tokensA').textContent = tokA.toLocaleString() + ' tokens';
+    document.getElementById('tokensB').textContent = tokB.toLocaleString() + ' tokens';
+
+    // Stats blocks
+    document.getElementById('sAtokens').textContent = tokA.toLocaleString();
+    document.getElementById('sAchars').textContent = chA.toLocaleString();
+    document.getElementById('sAwords').textContent = wA.toLocaleString();
+    document.getElementById('sAlines').textContent = lA.toLocaleString();
+    document.getElementById('sAcost').textContent = formatCost(tokA, selectedModel.inputPer1M);
+
+    document.getElementById('sBtokens').textContent = tokB.toLocaleString();
+    document.getElementById('sBchars').textContent = chB.toLocaleString();
+    document.getElementById('sBwords').textContent = wB.toLocaleString();
+    document.getElementById('sBlines').textContent = lB.toLocaleString();
+    document.getElementById('sBcost').textContent = formatCost(tokB, selectedModel.inputPer1M);
+
+    // Delta banner
+    const dtok = tokB - tokA;
+    const dch = chB - chA;
+    const pct = tokA > 0 ? ((dtok / tokA) * 100).toFixed(1) : '—';
+    const costA = (tokA / 1e6) * selectedModel.inputPer1M;
+    const costB = (tokB / 1e6) * selectedModel.inputPer1M;
+    const dcost = costB - costA;
+
+    const tokEl = document.getElementById('dTokenDelta');
+    tokEl.textContent = textA || textB ? formatDelta(dtok) : '—';
+    tokEl.className = 'delta-val ' + (dtok > 0 ? 'up' : dtok < 0 ? 'down' : 'same');
+
+    const costEl = document.getElementById('dCostDelta');
+    costEl.textContent = textA || textB ? (dcost >= 0 ? '+' : '') + '$' + (Math.abs(dcost)).toFixed(6) : '—';
+    costEl.className = 'delta-val ' + (dcost > 0 ? 'up' : dcost < 0 ? 'down' : 'same');
+
+    document.getElementById('dPctChange').textContent = textA || textB ? (pct !== '—' ? (dtok >= 0 ? '+' : '') + pct + '%' : '—') : '—';
+    document.getElementById('dPctChange').className = 'delta-val ' + (dtok > 0 ? 'up' : dtok < 0 ? 'down' : 'same');
+
+    const chEl = document.getElementById('dCharDelta');
+    chEl.textContent = textA || textB ? formatDelta(dch) : '—';
+    chEl.className = 'delta-val ' + (dch > 0 ? 'up' : dch < 0 ? 'down' : 'same');
+
+    // Cost rows
+    renderCostRows(tokA, tokB);
+
+    // Diff
+    renderDiff(textA, textB);
+  }
+
+  // ============================================================
+  // COST ROWS
+  // ============================================================
+  function renderCostRows(tokA, tokB) {
+    const m = selectedModel;
+    const costAin = (tokA / 1e6) * m.inputPer1M;
+    const costBin = (tokB / 1e6) * m.inputPer1M;
+    const deltaIn = costBin - costAin;
+    const monthlyDelta = deltaIn * 1000;
+
+    const outA = tokA * m.ratio;
+    const outB = tokB * m.ratio;
+    const costAout = (outA / 1e6) * m.outputPer1M;
+    const costBout = (outB / 1e6) * m.outputPer1M;
+    const deltaOut = costBout - costAout;
+    const monthlyDeltaOut = deltaOut * 1000;
+
+    const fmt = (v) => v === 0 ? '$0.000000' : '$' + Math.abs(v).toFixed(6);
+    const fmtDelta = (v) => v === 0 ? '±$0' : (v > 0 ? '+' : '-') + '$' + Math.abs(v).toFixed(6);
+    const cls = (v) => v > 0 ? 'up' : v < 0 ? 'down' : 'zero';
+
+    document.getElementById('costRows').innerHTML = `
+      <div class="cost-row">
+        <span>Input cost (single call)</span>
+        <span>${fmt(costAin)}</span>
+        <span>${fmt(costBin)}</span>
+        <span class="cost-diff-val ${cls(deltaIn)}">${fmtDelta(deltaIn)}</span>
+        <span class="cost-diff-val ${cls(monthlyDelta)}">${fmtDelta(monthlyDelta)}</span>
+      </div>
+      <div class="cost-row">
+        <span>Input tokens</span>
+        <span>${tokA.toLocaleString()}</span>
+        <span>${tokB.toLocaleString()}</span>
+        <span class="cost-diff-val ${cls(tokB-tokA)}">${formatDelta(tokB-tokA)}</span>
+        <span class="cost-diff-val ${cls(tokB-tokA)}">${formatDelta((tokB-tokA)*1000)}</span>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // DIFF ENGINE
+  // ============================================================
+  function setDiffMode(mode) {
+    diffMode = mode;
+    document.querySelectorAll('.diff-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+    const textA = document.getElementById('promptA').value;
+    const textB = document.getElementById('promptB').value;
+    renderDiff(textA, textB);
+  }
+
+  function renderDiff(a, b) {
+    const out = document.getElementById('diffOutput');
+    if (!a && !b) {
+      out.innerHTML = '<span class="empty-hint">Paste prompts above to see the diff</span>';
+      return;
+    }
+    if (!a) {
+      out.innerHTML = `<span class="diff-add">+ ${escHtml(b)}</span>`;
+      return;
+    }
+    if (!b) {
+      out.innerHTML = `<span class="diff-del">- ${escHtml(a)}</span>`;
+      return;
+    }
+    if (a === b) {
+      out.innerHTML = '<span class="diff-eq">✅ Prompts are identical</span>';
+      return;
+    }
+
+    if (diffMode === 'line') {
+      out.innerHTML = lineDiff(a, b);
+    } else if (diffMode === 'char') {
+      out.innerHTML = charDiff(a, b);
+    } else {
+      out.innerHTML = wordDiff(a, b);
+    }
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // LCS-based word diff
+  function wordDiff(a, b) {
+    const wa = a.split(/(\s+)/);
+    const wb = b.split(/(\s+)/);
+    const ops = lcs(wa, wb);
+    let html = '';
+    let lines = 0;
+    for (const op of ops) {
+      if (lines > 800) { html += '<span class="diff-eq">... (truncated)</span>'; break; }
+      if (op[0] === 'eq') html += escHtml(op[1]);
+      else if (op[0] === 'del') html += `<span style="background:rgba(248,81,73,0.18);color:var(--red);text-decoration:line-through;border-radius:2px;padding:1px 0">${escHtml(op[1])}</span>`;
+      else if (op[0] === 'ins') html += `<span style="background:rgba(63,185,80,0.18);color:var(--green);border-radius:2px;padding:1px 0">${escHtml(op[1])}</span>`;
+      lines++;
+    }
+    return html;
+  }
+
+  function lineDiff(a, b) {
+    const la = a.split('\n');
+    const lb = b.split('\n');
+    const ops = lcs(la, lb);
+    let html = '';
+    let shown = 0;
+    for (const op of ops) {
+      if (shown > 200) { html += '<span class="diff-eq">... (truncated)</span>'; break; }
+      if (op[0] === 'eq') html += `<span class="diff-eq">  ${escHtml(op[1])}</span>`;
+      else if (op[0] === 'del') html += `<span class="diff-del">- ${escHtml(op[1])}</span>`;
+      else if (op[0] === 'ins') html += `<span class="diff-add">+ ${escHtml(op[1])}</span>`;
+      shown++;
+    }
+    return html;
+  }
+
+  function charDiff(a, b) {
+    // Limit char diff to prevent browser hang
+    const maxLen = 2000;
+    const ta = a.slice(0, maxLen);
+    const tb = b.slice(0, maxLen);
+    const ops = lcs([...ta], [...tb]);
+    let html = '';
+    for (const op of ops) {
+      if (op[0] === 'eq') html += escHtml(op[1]);
+      else if (op[0] === 'del') html += `<span style="background:rgba(248,81,73,0.25);color:var(--red);text-decoration:line-through">${escHtml(op[1])}</span>`;
+      else if (op[0] === 'ins') html += `<span style="background:rgba(63,185,80,0.2);color:var(--green)">${escHtml(op[1])}</span>`;
+    }
+    if (a.length > maxLen || b.length > maxLen) {
+      html += '<span class="diff-eq" style="display:inline"> ... (first 2000 chars shown)</span>';
+    }
+    return html;
+  }
+
+  // O(n*m) LCS — capped at reasonable sizes
+  function lcs(a, b) {
+    const maxSize = 500;
+    const ta = a.slice(0, maxSize);
+    const tb = b.slice(0, maxSize);
+    const n = ta.length, m = tb.length;
+
+    // dp[i][j] = length of LCS of ta[0..i-1] and tb[0..j-1]
+    const dp = Array.from({length: n+1}, () => new Uint16Array(m+1));
+    for (let i = 1; i <= n; i++)
+      for (let j = 1; j <= m; j++)
+        dp[i][j] = ta[i-1] === tb[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+
+    // Backtrack
+    const ops = [];
+    let i = n, j = m;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && ta[i-1] === tb[j-1]) {
+        ops.push(['eq', ta[i-1]]); i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+        ops.push(['ins', tb[j-1]]); j--;
+      } else {
+        ops.push(['del', ta[i-1]]); i--;
+      }
+    }
+    // Remaining (truncated portions)
+    while (i > 0) { ops.push(['del', ta[i-1]]); i--; }
+    while (j > 0) { ops.push(['ins', tb[j-1]]); j--; }
+    ops.reverse();
+    return ops;
+  }
+
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+  function clearPanel(id) {
+    document.getElementById(id).value = '';
+    update();
+  }
+
+  function clearAll() {
+    document.getElementById('promptA').value = '';
+    document.getElementById('promptB').value = '';
+    update();
+  }
+
+  function swapPanels() {
+    const a = document.getElementById('promptA');
+    const b = document.getElementById('promptB');
+    const tmp = a.value;
+    a.value = b.value;
+    b.value = tmp;
+    update();
+  }
+
+  function copyBtoA() {
+    document.getElementById('promptA').value = document.getElementById('promptB').value;
+    update();
+  }
+
+  function loadSample() {
+    document.getElementById('promptA').value = `You are a helpful assistant. Answer the user's question clearly and concisely. If you don't know the answer, say so honestly.
+
+User question: {{question}}`;
+    document.getElementById('promptB').value = `You are an expert assistant with deep knowledge across technical domains. Answer the user's question with precision and depth. Provide examples where helpful. If you are uncertain, acknowledge it and suggest ways to verify.
+
+Respond in a structured format when the answer has multiple components. Be concise but comprehensive.
+
+User question: {{question}}
+
+Additional context: {{context}}`;
+    update();
+  }
+
+  async function copyReport() {
+    const textA = document.getElementById('promptA').value;
+    const textB = document.getElementById('promptB').value;
+    const tokA = countTokens(textA);
+    const tokB = countTokens(textB);
+    const dtok = tokB - tokA;
+    const pct = tokA > 0 ? ((dtok / tokA) * 100).toFixed(1) : 'N/A';
+    const report = `## Prompt Diff Report — ${selectedModel.name}
+
+| Metric | Prompt A | Prompt B | Delta |
+|--------|----------|----------|-------|
+| Tokens | ${tokA.toLocaleString()} | ${tokB.toLocaleString()} | ${formatDelta(dtok)} (${pct}%) |
+| Characters | ${textA.length.toLocaleString()} | ${textB.length.toLocaleString()} | ${formatDelta(textB.length - textA.length)} |
+| Words | ${countWords(textA)} | ${countWords(textB)} | ${formatDelta(countWords(textB) - countWords(textA))} |
+| Est. input cost | ${formatCost(tokA, selectedModel.inputPer1M)} | ${formatCost(tokB, selectedModel.inputPer1M)} | — |
+
+Generated by https://citriac.github.io/prompt-diff.html`;
+
+    try {
+      await navigator.clipboard.writeText(report);
+      const btn = document.querySelector('.action-btn.primary');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = '📋 Copy diff report'; }, 2000);
+    } catch {
+      alert('Copy failed.\n\n' + report);
+    }
+  }
+
+  function shareDiff() {
+    const a = encodeURIComponent(document.getElementById('promptA').value);
+    const b = encodeURIComponent(document.getElementById('promptB').value);
+    if ((a + b).length > 3000) {
+      alert('Prompts are too long to encode in a URL. Try the Export Markdown option instead.');
+      return;
+    }
+    const url = location.href.split('?')[0] + `?a=${a}&b=${b}`;
+    navigator.clipboard.writeText(url).then(() => alert('Shareable URL copied to clipboard!'))
+      .catch(() => alert('URL:\n' + url));
+  }
+
+  async function exportMarkdown() {
+    const textA = document.getElementById('promptA').value;
+    const textB = document.getElementById('promptB').value;
+    const tokA = countTokens(textA);
+    const tokB = countTokens(textB);
+    const dtok = tokB - tokA;
+    const pct = tokA > 0 ? ((dtok / tokA) * 100).toFixed(1) : 'N/A';
+
+    const md = `# Prompt Diff Export
+
+**Model**: ${selectedModel.name}  
+**Date**: ${new Date().toISOString().slice(0,10)}
+
+## Stats
+
+| | Prompt A | Prompt B | Δ |
+|--|--|--|--|
+| Tokens | ${tokA} | ${tokB} | ${formatDelta(dtok)} (${pct}%) |
+| Chars | ${textA.length} | ${textB.length} | ${formatDelta(textB.length - textA.length)} |
+| Words | ${countWords(textA)} | ${countWords(textB)} | ${formatDelta(countWords(textB) - countWords(textA))} |
+| Input cost | ${formatCost(tokA, selectedModel.inputPer1M)} | ${formatCost(tokB, selectedModel.inputPer1M)} | — |
+
+## Prompt A
+
+\`\`\`
+${textA}
+\`\`\`
+
+## Prompt B
+
+\`\`\`
+${textB}
+\`\`\`
+
+---
+*Generated by [Prompt Diff](https://citriac.github.io/prompt-diff.html)*
+`;
+    const blob = new Blob([md], {type: 'text/markdown'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'prompt-diff.md';
+    a.click();
+  }
+
+  // Load from URL params
+  function loadFromUrl() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('a')) document.getElementById('promptA').value = decodeURIComponent(params.get('a'));
+    if (params.get('b')) document.getElementById('promptB').value = decodeURIComponent(params.get('b'));
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  renderProviders();
+  renderModels();
+  loadFromUrl();
+  update();
+</script>
+
+<!-- Gumroad CTA -->
+<div style="max-width:720px;margin:32px auto 0;padding:20px 24px;background:linear-gradient(135deg,#161b22 0%,#21262d 100%);border:1px solid #30363d;border-radius:12px;text-align:center;">
+  <p style="color:#8b949e;font-size:13px;margin-bottom:8px;">🔧 Like these tools? Get the complete automation kit.</p>
+  <a href="https://citriac.gumroad.com/l/freelancer-automation-kit" style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#0d1117;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">Freelancer Automation Kit — $19</a>
+  <a href="https://citriac.gumroad.com/l/daily-tech-digest-automation-kit" style="display:inline-block;margin-left:8px;padding:8px 20px;background:transparent;color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:13px;text-decoration:none;">Daily Digest Kit — $15</a>
+</div>
+
+</body>
+</html>

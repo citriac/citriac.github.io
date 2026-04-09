@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>植物小队 🌻 — 胖团专属</title>
+<meta name="robots" content="noindex">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#1a3a1a;
+  display:flex; flex-direction:column; align-items:center;
+  height:100vh; overflow:hidden;
+  font-family:'Segoe UI',system-ui,sans-serif;
+  user-select:none; touch-action:manipulation;
+}
+#header {
+  width:100%; max-width:860px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 12px; flex-shrink:0;
+  background:rgba(0,0,0,0.6);
+  border-bottom:2px solid #4a8a2a;
+}
+#title { color:#ffe066; font-size:17px; font-weight:900; text-shadow:0 0 8px #ffaa00; }
+#stats { display:flex; gap:12px; }
+.stat { color:#fff; font-size:13px; }
+.stat b { color:#ffe066; }
+
+#shop {
+  width:100%; max-width:860px; flex-shrink:0;
+  display:flex; gap:5px; align-items:center;
+  padding:5px 8px;
+  background:rgba(10,30,5,0.95);
+  border-bottom:2px solid #4a8a2a;
+  overflow-x:auto;
+}
+.pcard {
+  display:flex; flex-direction:column; align-items:center;
+  background:rgba(0,0,0,0.45); border:2px solid #555; border-radius:8px;
+  padding:3px 7px; cursor:pointer; min-width:58px; position:relative;
+  transition:border-color .12s, transform .12s;
+}
+.pcard:hover { border-color:#ffe066; transform:scale(1.06); }
+.pcard.sel { border-color:#ffe066; background:rgba(255,220,0,.18); box-shadow:0 0 10px rgba(255,220,0,.35); }
+.pcard.dim { opacity:.38; cursor:not-allowed; }
+.pcard .em { font-size:20px; line-height:1.2; }
+.pcard .nm { font-size:9px; color:#bbb; }
+.pcard .cs { font-size:11px; color:#ffe066; font-weight:700; }
+.pcard .cdbar {
+  position:absolute; bottom:0; left:0; height:3px;
+  background:#5ac; border-radius:0 0 6px 6px;
+  transition:width .08s linear;
+}
+#shovel {
+  margin-left:auto; flex-shrink:0;
+  border:2px solid #884420; border-radius:8px;
+  background:rgba(120,60,10,.45); padding:4px 10px;
+  cursor:pointer; font-size:18px; color:#ffcc88;
+  transition:border-color .12s;
+}
+#nuke {
+  flex-shrink:0;
+  border:2px solid #cc2200; border-radius:8px;
+  background:rgba(180,30,0,.55); padding:4px 10px;
+  cursor:pointer; font-size:18px; color:#fff;
+  transition:border-color .12s; text-align:center;
+}
+#nuke:hover { border-color:#ff8800; background:rgba(255,100,0,.45); }
+#nuke.used { opacity:.32; cursor:not-allowed; }
+
+#wrap {
+  width:100%; max-width:860px; flex:1;
+  position:relative; overflow:hidden;
+  display:flex; align-items:flex-start; justify-content:center;
+}
+canvas { display:block; cursor:crosshair; }
+
+/* overlay */
+#ov {
+  display:none; position:absolute; inset:0;
+  background:rgba(0,0,0,.78); flex-direction:column;
+  align-items:center; justify-content:center; z-index:20;
+  gap:10px;
+}
+#ov.on { display:flex; }
+#ov h2 { font-size:28px; color:#ffe066; }
+#ov p { color:#ccc; font-size:14px; text-align:center; max-width:280px; line-height:1.6; }
+#ov button {
+  background:#4a8a2a; color:#fff; border:none; border-radius:8px;
+  padding:9px 26px; font-size:15px; cursor:pointer; font-weight:700;
+  margin-top:4px;
+}
+#ov button:hover { background:#5aaa3a; }
+
+/* wave toast */
+#toast {
+  display:none; position:absolute;
+  top:38%; left:50%; transform:translateX(-50%);
+  background:rgba(170,50,0,.92); color:#ffe066;
+  font-size:20px; font-weight:900; padding:9px 28px;
+  border-radius:10px; border:2px solid #ff8833;
+  white-space:nowrap; z-index:15;
+  animation:pop .35s ease;
+}
+@keyframes pop { from{transform:translateX(-50%) scale(.4);opacity:0} to{transform:translateX(-50%) scale(1);opacity:1} }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="title">🌻 植物小队</div>
+  <div id="stats">
+    <div class="stat">☀️ <b id="sv">250</b></div>
+    <div class="stat">🌊 <b id="wv">1</b>/5</div>
+    <div class="stat">❤️ <b id="lv">5</b></div>
+  </div>
+</div>
+
+<div id="shop">
+  <div class="pcard sel" data-t="sunflower" data-c="50">
+    <div class="em">🌻</div><div class="nm">向日葵</div><div class="cs">☀50</div>
+    <div class="cdbar" style="width:100%"></div>
+  </div>
+  <div class="pcard" data-t="peashooter" data-c="100">
+    <div class="em">🫛</div><div class="nm">豌豆射手</div><div class="cs">☀100</div>
+    <div class="cdbar" style="width:100%"></div>
+  </div>
+  <div class="pcard" data-t="wallnut" data-c="50">
+    <div class="em">🥜</div><div class="nm">坚果墙</div><div class="cs">☀50</div>
+    <div class="cdbar" style="width:100%"></div>
+  </div>
+  <div class="pcard" data-t="snowpea" data-c="175">
+    <div class="em">❄️</div><div class="nm">寒冰射手</div><div class="cs">☀175</div>
+    <div class="cdbar" style="width:100%"></div>
+  </div>
+  <div class="pcard" data-t="cherry" data-c="150">
+    <div class="em">🍒</div><div class="nm">樱桃炸弹</div><div class="cs">☀150</div>
+    <div class="cdbar" style="width:100%"></div>
+  </div>
+  <div id="shovel" title="铲子">🪣</div>
+  <div id="nuke" title="核弹！一键清屏" onclick="doNuke()">💣<span id="nukelabel" style="font-size:9px;color:#ff8;display:block;line-height:1">核弹x1</span></div>
+</div>
+
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="ov" class="on">
+    <h2 id="ot">🌻 植物小队</h2>
+    <p id="om">帮植物们守住家园！<br>点击格子种植，收集太阳☀️获得阳光</p>
+    <button id="ob">开始游戏 ▶</button>
+  </div>
+  <div id="toast"></div>
+</div>
+
+<script>
+// ── canvas setup ──────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('wrap');
+
+const COLS = 9, ROWS = 5;
+let CELL = 64, CW, CH, GX, GY, GW, GH;
+
+function resize() {
+  const h = document.getElementById('header');
+  const sh = document.getElementById('shop');
+  const hH = h ? h.offsetHeight : 38;
+  const sH = sh ? sh.offsetHeight : 48;
+  const avW = Math.min(860, window.innerWidth);
+  const avH = window.innerHeight - hH - sH - 4;
+  const byW = Math.floor(avW / (COLS + 1));
+  const byH = Math.floor(avH / (ROWS + 1.2));
+  CELL = Math.max(48, Math.min(byW, byH, 76));
+  GW = COLS * CELL; GH = ROWS * CELL;
+  CW = GW + CELL; CH = GH + Math.round(CELL * 0.7);
+  canvas.width = CW; canvas.height = CH;
+  GX = Math.round(CELL * 0.55); GY = Math.round(CELL * 0.25);
+}
+
+// ── constants ─────────────────────────────────────────────────────────
+const COSTS    = { sunflower:50, peashooter:100, wallnut:50, snowpea:175, cherry:150 };
+const HP       = { sunflower:300, peashooter:300, wallnut:1200, snowpea:300, cherry:1 };
+const EMOJI    = { sunflower:'🌻', peashooter:'🫛', wallnut:'🥜', snowpea:'❄️', cherry:'🍒' };
+const CD_MAX   = { sunflower:7500, peashooter:7000, wallnut:11000, snowpea:7500, cherry:20000 };
+
+const Z_TYPES = [
+  { emoji:'🧟', hp:200, spd:3500, dmg:18, reward:10 },   // normal  — 3.5s/格
+  { emoji:'🧟', hp:400, spd:4200, dmg:18, reward:20 },   // roadblock— 4.2s/格
+  { emoji:'🪖', hp:800, spd:5000, dmg:22, reward:30 },   // bucket  — 5s/格
+  { emoji:'🏃', hp:220, spd:2000, dmg:16, reward:15 },   // flag    — 2s/格(快)
+  { emoji:'👷', hp:600, spd:4500, dmg:28, reward:25 },   // miner   — 4.5s/格
+];
+
+// ── state ─────────────────────────────────────────────────────────────
+let sun=250, lives=5, wave=1, running=false, nukeReady=true;
+let grid, plants, zombies, bullets, sunDrops, particles, floats;
+let cds = { sunflower:0, peashooter:0, wallnut:0, snowpea:0, cherry:0 };
+let sunTimer=0, waveTimer=0, spawnQueue=[], spawnTimer=0;
+let selPlant='sunflower', shovelMode=false;
+let hoverRC = null;
+const MAX_WAVES = 5;
+
+function initState() {
+  sun=250; lives=5; wave=1; nukeReady=true;
+  grid = Array.from({length:ROWS}, ()=>Array(COLS).fill(null));
+  plants=[]; zombies=[]; bullets=[]; sunDrops=[]; particles=[]; floats=[];
+  Object.keys(cds).forEach(k=>cds[k]=0);
+  sunTimer=0; waveTimer=0; spawnQueue=[]; spawnTimer=0;
+  const nb=document.getElementById('nuke');
+  if(nb){nb.classList.remove('used');document.getElementById('nukelabel').textContent='核弹x1';}
+  updHUD();
+}
+
+function updHUD() {
+  document.getElementById('sv').textContent = sun;
+  document.getElementById('wv').textContent = wave;
+  document.getElementById('lv').textContent = lives;
+}
+
+// ── helpers ───────────────────────────────────────────────────────────
+const cx = c => GX + c * CELL;
+const cy = r => GY + r * CELL;
+
+function toCell(px, py) {
+  const c = Math.floor((px - GX) / CELL);
+  const r = Math.floor((py - GY) / CELL);
+  return (c>=0&&c<COLS&&r>=0&&r<ROWS) ? {r,c} : null;
+}
+
+// ── plants ────────────────────────────────────────────────────────────
+function placePlant(r, c, type) {
+  const p = {
+    type, r, c, hp:HP[type], maxHp:HP[type],
+    anim:0,
+    sunTimer: type==='sunflower' ? 5000+Math.random()*2000 : Infinity,
+    shootTimer: 0,
+    shootInterval: type==='peashooter' ? 1800 : type==='snowpea' ? 2100 : Infinity,
+  };
+  if (type === 'cherry') {
+    grid[r][c] = p; plants.push(p);
+    setTimeout(() => {
+      doCherry(r, c);
+      plants = plants.filter(x=>x!==p);
+      grid[r][c] = null;
+    }, 80);
+    return;
+  }
+  grid[r][c] = p; plants.push(p);
+}
+
+function doCherry(r, c) {
+  addFX(cx(c)+CELL/2, cy(r)+CELL/2, '💥', 55);
+  addFloat(cx(c)+CELL/2, cy(r), '💥炸！', '#ff8833');
+  zombies.forEach(z => {
+    if (Math.abs(z.row-r) <= 1.5 && z.x >= cx(c-1) && z.x <= cx(c+2))
+      z.hp -= 1200;
+  });
+}
+
+function doNuke() {
+  if (!running || !nukeReady) return;
+  nukeReady = false;
+  const nb = document.getElementById('nuke');
+  if (nb) { nb.classList.add('used'); document.getElementById('nukelabel').textContent='已用'; }
+  // 全屏爆炸特效
+  for (let i=0; i<18; i++) {
+    setTimeout(()=>{
+      addFX(GX + Math.random()*GW, GY + Math.random()*GH, '💥', 65, (Math.random()-.5)*3, (Math.random()-.5)*3, 28);
+    }, i*60);
+  }
+  // 延迟一点再清除僵尸，让爆炸先演出
+  setTimeout(()=>{
+    zombies.forEach(z => z.hp = 0);
+    addFloat(GX+GW/2, GY+GH/2, '☢️ 核弹！BOOM！', '#ff4400');
+  }, 200);
+}
+
+// ── zombies ───────────────────────────────────────────────────────────
+function spawnZ(type) {
+  const t = Z_TYPES[type];
+  zombies.push({
+    ...t, maxHp:t.hp, row:Math.floor(Math.random()*ROWS),
+    x: CW + 30, eating:false, eatTimer:0, frozen:0,
+  });
+}
+
+function buildWave(w) {
+  const q = [];
+  const n = w===1 ? 4 : 4 + w * 3;  // 第一波只有4只，后面递增
+  for (let i=0; i<n; i++) {
+    let type=0;
+    const r=Math.random();
+    if (w>=5 && r<0.12) type=4;
+    else if (w>=4 && r<0.18) type=3;
+    else if (w>=3 && r<0.28) type=2;
+    else if (w>=2 && r<0.42) type=1;
+    q.push({ type, delay: i * Math.max(800, 1800 - w*120) });
+  }
+  return q;
+}
+
+// ── fx ────────────────────────────────────────────────────────────────
+function addFX(x, y, emoji, life, vx=0, vy=-1.4, size=18) {
+  particles.push({ x, y, emoji, life, maxLife:life, vx, vy, size });
+}
+function addFloat(x, y, text, color='#fff') {
+  floats.push({ x, y, text, color, life:65 });
+}
+
+// ── sun drops ─────────────────────────────────────────────────────────
+function dropSun(x, y, val=25) {
+  const ty = GY + Math.random()*GH*0.85 + GH*0.05;
+  sunDrops.push({ x, y:y??GY-20, ty, val, life:260, collected:false });
+}
+
+// ── main loop ─────────────────────────────────────────────────────────
+let last = 0;
+function loop(ts) {
+  if (!running) return;
+  const dt = Math.min(ts - last, 50);
+  last = ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function update(dt) {
+  // cooldowns
+  Object.keys(cds).forEach(k => { if(cds[k]>0) cds[k]=Math.max(0,cds[k]-dt); });
+  updShopUI();
+
+  // ambient sun drop — 每4秒掉一个50阳光
+  sunTimer += dt;
+  if (sunTimer >= 4000) {
+    sunTimer = 0;
+    dropSun(GX + Math.random()*GW, null, 50);
+  }
+
+  // wave spawning
+  if (spawnQueue.length > 0) {
+    spawnTimer += dt;
+    while (spawnQueue.length > 0 && spawnTimer >= spawnQueue[0].delay) {
+      spawnZ(spawnQueue[0].type);
+      spawnQueue.shift();
+    }
+  } else if (zombies.length === 0) {
+    waveTimer += dt;
+    const needed = wave === 1 ? 5000 : 20000;
+    if (waveTimer >= needed) {
+      waveTimer = 0;
+      if (wave < MAX_WAVES) {
+        wave++;
+        updHUD();
+        showToast(`第 ${wave} 波来袭！🧟`);
+        spawnQueue = buildWave(wave);
+        spawnTimer = 0;
+      } else {
+        // victory
+        running = false;
+        showOv('🎉 胜利！', `胖团打赢了所有${MAX_WAVES}波僵尸！太厉害了！`, '再玩一次 🌻');
+      }
+    }
+  }
+
+  // plants
+  plants.forEach(p => {
+    p.anim += dt;
+    if (p.type === 'sunflower') {
+      p.sunTimer -= dt;
+      if (p.sunTimer <= 0) {
+        p.sunTimer = 5000 + Math.random()*2000;  // 5~7秒产一次
+        dropSun(cx(p.c)+CELL/2, cy(p.r)+CELL*0.3, 50);  // 每次产50
+      }
+    }
+    if (p.type === 'peashooter' || p.type === 'snowpea') {
+      const hasZ = zombies.some(z => z.row===p.r && z.x > cx(p.c));
+      if (hasZ) {
+        p.shootTimer += dt;
+        if (p.shootTimer >= p.shootInterval) {
+          p.shootTimer = 0;
+          const snow = p.type==='snowpea';
+          bullets.push({
+            x: cx(p.c)+CELL*0.85, y: cy(p.r)+CELL*0.45,
+            row:p.r, spd:6.5, dmg: snow?22:32,
+            snow, emoji: snow?'🧊':'🟢',
+          });
+        }
+      }
+    }
+  });
+
+  // bullets
+  bullets.forEach(b => {
+    b.x += b.spd;
+    if (!b.hit) {
+      for (const z of zombies) {
+        if (z.row===b.row && !b.hit && b.x >= z.x-CELL*0.35 && b.x <= z.x+CELL*0.35) {
+          b.hit = true;
+          z.hp -= b.dmg;
+          if (b.snow) z.frozen = Math.max(z.frozen, 3200);
+          addFX(b.x, b.y, b.snow?'❄️':'💢', 18, 0, -0.5, 13);
+          break;
+        }
+      }
+    }
+  });
+  bullets = bullets.filter(b => !b.hit && b.x < CW+30);
+
+  // zombies
+  // spd = ms per tile; 普通3.5s/格, 旗帜2s/格(最快)
+  const speed_px_per_ms = spd => CELL / spd;
+  zombies.forEach(z => {
+    if (z.frozen>0) z.frozen -= dt;
+    const eff = z.frozen>0 ? 0.38 : 1;
+    const col = Math.floor((z.x - GX) / CELL);
+    const plantBlocking = col>=0 && col<COLS && grid[z.row][col];
+    if (plantBlocking) {
+      z.eating = true;
+      z.eatTimer += dt;
+      if (z.eatTimer >= 500) {
+        z.eatTimer = 0;
+        plantBlocking.hp -= z.dmg;
+        if (plantBlocking.hp <= 0) {
+          addFX(cx(plantBlocking.c)+CELL/2, cy(plantBlocking.r)+CELL/2, '💨', 28, 0, -1, 20);
+          plants = plants.filter(p => p !== plantBlocking);
+          grid[z.row][col] = null;
+        }
+      }
+    } else {
+      z.eating = false;
+      z.x -= speed_px_per_ms(z.spd) * eff * dt;
+    }
+    if (z.x < GX - 15) {
+      z.dead = true;
+      lives = Math.max(0, lives-1);
+      updHUD();
+      addFloat(GX+30, cy(z.row)+CELL/2, '💀 -1', '#ff4444');
+      if (lives <= 0) {
+        running = false;
+        showOv('💀 失败…', '僵尸冲过来了！再试试，胖团加油！', '再试一次 💪');
+      }
+    }
+    if (z.hp <= 0) {
+      z.dead = true;
+      sun += z.reward; updHUD();
+      addFloat(z.x, cy(z.row), `+${z.reward}☀️`, '#ffe066');
+      addFX(z.x, cy(z.row)+CELL/2, z.emoji, 22, (Math.random()-.5)*2.5, -1.8, 20);
+    }
+  });
+  zombies = zombies.filter(z => !z.dead);
+
+  // sun drops
+  sunDrops.forEach(s => {
+    if (s.y < s.ty) s.y += 1.8;
+    if (!s.collected) s.life -= dt/16;
+  });
+  sunDrops = sunDrops.filter(s => s.life > 0);
+
+  // particles
+  particles.forEach(p => { p.x+=p.vx; p.y+=p.vy; p.life--; });
+  particles = particles.filter(p => p.life>0);
+
+  floats.forEach(f => { f.y -= 0.75; f.life--; });
+  floats = floats.filter(f => f.life>0);
+}
+
+// ── draw ──────────────────────────────────────────────────────────────
+function draw() {
+  ctx.clearRect(0, 0, CW, CH);
+
+  // rows
+  for (let r=0; r<ROWS; r++) {
+    ctx.fillStyle = r%2===0 ? '#3d721e' : '#366218';
+    ctx.fillRect(GX, GY+r*CELL, GW, CELL);
+  }
+  // grid lines
+  ctx.strokeStyle = 'rgba(0,0,0,.14)'; ctx.lineWidth=1;
+  for (let r=0;r<=ROWS;r++) { ctx.beginPath(); ctx.moveTo(GX,GY+r*CELL); ctx.lineTo(GX+GW,GY+r*CELL); ctx.stroke(); }
+  for (let c=0;c<=COLS;c++) { ctx.beginPath(); ctx.moveTo(GX+c*CELL,GY); ctx.lineTo(GX+c*CELL,GY+GH); ctx.stroke(); }
+
+  // hover highlight
+  if (hoverRC) {
+    const {r,c} = hoverRC;
+    ctx.fillStyle = grid[r][c] ? 'rgba(255,40,40,.2)' : 'rgba(255,240,80,.22)';
+    ctx.fillRect(cx(c), cy(r), CELL, CELL);
+  }
+
+  // lawnmowers
+  ctx.font = `${Math.round(CELL*0.52)}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for (let r=0;r<ROWS;r++) ctx.fillText('🚜', GX-CELL*0.3, cy(r)+CELL/2);
+
+  // plants
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  plants.forEach(p => {
+    const x=cx(p.c)+CELL/2, y=cy(p.r)+CELL/2;
+    const bob = Math.sin(p.anim/380)*2;
+    ctx.font = `${Math.round(CELL*.58)}px serif`;
+    ctx.fillText(EMOJI[p.type], x, y+bob);
+    if (p.hp < p.maxHp) drawBar(x-CELL*.38, cy(p.r)+CELL-7, CELL*.76, 5, p.hp/p.maxHp);
+  });
+
+  // bullets
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  bullets.forEach(b => {
+    ctx.font = `${Math.round(CELL*.33)}px serif`;
+    ctx.fillText(b.emoji, b.x, b.y);
+  });
+
+  // zombies
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  zombies.forEach(z => {
+    const wb = z.eating ? Math.sin(Date.now()/90)*3 : Math.sin(Date.now()/230)*1.5;
+    ctx.font = `${Math.round(CELL*.62)}px serif`;
+    if (z.frozen>0) { ctx.save(); ctx.filter='hue-rotate(175deg) brightness(1.25)'; ctx.globalAlpha=.88; }
+    ctx.fillText(z.emoji, z.x, cy(z.row)+CELL/2+wb);
+    if (z.frozen>0) { ctx.restore(); }
+    drawBar(z.x-CELL*.36, cy(z.row)+3, CELL*.72, 5, z.hp/z.maxHp);
+  });
+
+  // sun drops
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  sunDrops.forEach(s => {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, s.life/40);
+    const pulse = 1 + 0.08*Math.sin(Date.now()/200);
+    ctx.font = `${Math.round(CELL*.46*pulse)}px serif`;
+    ctx.fillText('☀️', s.x, s.y);
+    ctx.restore();
+  });
+
+  // particles
+  particles.forEach(p => {
+    ctx.save(); ctx.globalAlpha=p.life/p.maxLife;
+    ctx.font=`${p.size}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.emoji, p.x, p.y); ctx.restore();
+  });
+
+  // floats
+  floats.forEach(f => {
+    ctx.save(); ctx.globalAlpha=f.life/65;
+    ctx.fillStyle=f.color; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(f.text, f.x, f.y); ctx.restore();
+  });
+}
+
+function drawBar(x, y, w, h, ratio) {
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle = ratio>0.5?'#44ee44':ratio>0.25?'#ffcc00':'#ff3333';
+  ctx.fillRect(x,y,w*ratio,h);
+}
+
+// ── shop UI ───────────────────────────────────────────────────────────
+function updShopUI() {
+  document.querySelectorAll('.pcard[data-t]').forEach(card => {
+    const t=card.dataset.t, cost=+card.dataset.c;
+    const cd=cds[t], cdMax=CD_MAX[t];
+    const bar=card.querySelector('.cdbar');
+    if (cd>0) {
+      card.classList.add('dim');
+      bar.style.width=((1-cd/cdMax)*100)+'%';
+      bar.style.background='#4af';
+    } else {
+      bar.style.width='100%'; bar.style.background='#5c4';
+      card.classList.toggle('dim', sun < cost);
+    }
+    card.classList.toggle('sel', !shovelMode && selPlant===t);
+  });
+  document.getElementById('shovel').classList.toggle('sel', shovelMode);
+}
+
+// ── input ─────────────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', e => {
+  const rc=canvas.getBoundingClientRect();
+  const sx=(e.clientX-rc.left)*(CW/rc.width), sy=(e.clientY-rc.top)*(CH/rc.height);
+  hoverRC=toCell(sx,sy);
+  canvas.style.cursor = (hoverRC||sunDrops.some(s=>!s.collected&&Math.hypot(s.x-sx,s.y-sy)<CELL*.45)) ? 'pointer' : 'default';
+});
+canvas.addEventListener('mouseleave', ()=>{ hoverRC=null; });
+
+function handleTap(clientX, clientY) {
+  if (!running) return;
+  const rc=canvas.getBoundingClientRect();
+  const sx=(clientX-rc.left)*(CW/rc.width), sy=(clientY-rc.top)*(CH/rc.height);
+
+  // collect sun
+  const si=sunDrops.findIndex(s=>!s.collected && Math.hypot(s.x-sx,s.y-sy)<CELL*.5);
+  if (si>=0) {
+    const s=sunDrops[si]; s.collected=true; s.life=0;
+    sun+=s.val; updHUD();
+    addFloat(s.x, s.y-10, `+${s.val}☀️`, '#ffe066');
+    return;
+  }
+
+  const cell=toCell(sx,sy); if (!cell) return;
+  const {r,c}=cell;
+
+  if (shovelMode) {
+    if (grid[r][c]) {
+      plants=plants.filter(p=>p!==grid[r][c]);
+      grid[r][c]=null;
+      addFX(cx(c)+CELL/2, cy(r)+CELL/2, '💨', 20, 0, -1, 18);
+    }
+    return;
+  }
+  if (!selPlant) return;
+  if (grid[r][c]) { addFloat(cx(c)+CELL/2, cy(r), '已有植物', '#ffaa44'); return; }
+  if (sun < COSTS[selPlant]) { addFloat(cx(c)+CELL/2, cy(r), '☀️不足！', '#ff8844'); return; }
+  if (cds[selPlant]>0) { addFloat(cx(c)+CELL/2, cy(r), '冷却中', '#88aaff'); return; }
+
+  placePlant(r, c, selPlant);
+  sun -= COSTS[selPlant]; updHUD();
+  cds[selPlant] = CD_MAX[selPlant];
+}
+
+canvas.addEventListener('click', e => handleTap(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  handleTap(e.touches[0].clientX, e.touches[0].clientY);
+}, {passive:false});
+
+document.querySelectorAll('.pcard[data-t]').forEach(card => {
+  card.addEventListener('click', () => {
+    shovelMode=false; selPlant=card.dataset.t; updShopUI();
+  });
+});
+document.getElementById('shovel').addEventListener('click', () => {
+  shovelMode=!shovelMode;
+  if (shovelMode) selPlant=null; else selPlant='sunflower';
+  updShopUI();
+});
+
+// ── overlay helpers ───────────────────────────────────────────────────
+function showOv(t, msg, btn) {
+  document.getElementById('ot').textContent=t;
+  document.getElementById('om').textContent=msg;
+  document.getElementById('ob').textContent=btn;
+  document.getElementById('ov').classList.add('on');
+}
+function showToast(msg) {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.style.display='block';
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display='none', 2600);
+}
+
+document.getElementById('ob').addEventListener('click', startGame);
+
+// ── start ─────────────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('ov').classList.remove('on');
+  resize();
+  initState();
+  spawnQueue = buildWave(1);
+  spawnTimer = 0;
+  showToast('第 1 波来袭！🧟');
+  running = true;
+  last = performance.now();
+  requestAnimationFrame(loop);
+}
+
+// init
+window.addEventListener('resize', () => { if(!running) resize(); });
+resize();
+draw(); // draw empty grid so it doesn't look blank
+</script>
+</body>
+</html>

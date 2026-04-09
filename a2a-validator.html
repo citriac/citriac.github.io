@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
+  <title>A2A Agent Card Validator — Check Your Agent Card | Clavis Tools</title>
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="A2A Agent Card Validator — Check Your Agent Card | Clavis Tools">
+  <meta property="og:description" content="Free online validator for A2A protocol Agent Cards. Paste your AgentCard JSON and get instant feedback on required fields, skill definitions, capabilities, and spec compliance.">
+  <meta property="og:url" content="https://citriac.github.io/a2a-validator/">
+  <meta property="og:site_name" content="Clavis Tools">
+
+  <meta name="description" content="Free online validator for A2A protocol Agent Cards. Paste your AgentCard JSON and get instant feedback on required fields, skill definitions, capabilities, and spec compliance.">
+  <link rel="canonical" href="https://citriac.github.io/a2a-validator.html">
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "A2A Agent Card Validator",
+    "description": "Validate your A2A protocol Agent Card JSON against the spec. Check required fields, skill definitions, capabilities, and get actionable fix suggestions.",
+    "url": "https://citriac.github.io/a2a-validator.html",
+    "applicationCategory": "DeveloperApplication",
+    "offers": {"@type": "Offer", "price": "0"},
+    "author": {"@type": "Person", "name": "Clavis", "url": "https://citriac.github.io"},
+    "dateModified": "2026-03-30"
+  }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0d1117;
+      --bg2: #161b22;
+      --bg3: #1c2128;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+      --orange: #f0883e;
+      --teal: #39d353;
+    }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
+    header { border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+    header .logo { font-size: 18px; font-weight: 700; color: var(--text); text-decoration: none; }
+    header nav { margin-left: auto; display: flex; gap: 16px; }
+    header nav a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    header nav a:hover { color: var(--text); }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+    .hero { text-align: center; margin-bottom: 40px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(88,166,255,.1); border: 1px solid rgba(88,166,255,.25);
+      color: var(--blue); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 36px; font-weight: 800; margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--blue) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p { color: var(--muted); font-size: 16px; max-width: 580px; margin: 0 auto; line-height: 1.6; }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+
+    .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .panel-header {
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600;
+    }
+    .panel-header .icon { font-size: 16px; }
+
+    textarea {
+      width: 100%; min-height: 420px; padding: 16px;
+      background: var(--bg3); color: var(--text); border: none; resize: vertical;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 12.5px;
+      line-height: 1.6; outline: none;
+    }
+    textarea::placeholder { color: var(--muted); }
+
+    .samples { padding: 10px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+    .sample-btn {
+      background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+      transition: all .15s;
+    }
+    .sample-btn:hover { background: var(--bg); color: var(--text); border-color: var(--blue); }
+
+    .actions { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .btn-validate {
+      background: var(--blue); color: #0d1117; border: none; padding: 8px 22px;
+      border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: opacity .15s; flex-shrink: 0;
+    }
+    .btn-validate:hover { opacity: .85; }
+    .btn-clear { background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all .15s; }
+    .btn-clear:hover { border-color: var(--red); color: var(--red); }
+    .char-count { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+    /* Results panel */
+    .results-area { padding: 16px; min-height: 420px; overflow-y: auto; max-height: 520px; }
+
+    .score-banner {
+      border-radius: 10px; padding: 18px 20px; margin-bottom: 18px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .score-number { font-size: 42px; font-weight: 800; line-height: 1; }
+    .score-meta { flex: 1; }
+    .score-label { font-size: 18px; font-weight: 700; }
+    .score-sub { font-size: 13px; margin-top: 4px; }
+
+    .score-pass { background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.3); color: var(--green); }
+    .score-warn { background: rgba(210,153,34,.1); border: 1px solid rgba(210,153,34,.3); color: var(--yellow); }
+    .score-fail { background: rgba(248,81,73,.1); border: 1px solid rgba(248,81,73,.3); color: var(--red); }
+
+    .check-section { margin-bottom: 20px; }
+    .check-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+    .check-item { padding: 10px 14px; border-radius: 8px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; }
+    .check-ok { background: rgba(63,185,80,.06); border: 1px solid rgba(63,185,80,.15); }
+    .check-warn { background: rgba(210,153,34,.08); border: 1px solid rgba(210,153,34,.2); }
+    .check-error { background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.2); }
+    .check-info { background: rgba(88,166,255,.06); border: 1px solid rgba(88,166,255,.15); }
+
+    .check-item .sev { font-weight: 700; margin-right: 6px; }
+    .sev-ok { color: var(--green); }
+    .sev-warn { color: var(--yellow); }
+    .sev-error { color: var(--red); }
+    .sev-info { color: var(--blue); }
+
+    .check-item .fix { color: var(--muted); font-size: 12px; margin-top: 4px; padding-top: 4px; border-top: 1px solid rgba(255,255,255,.06); }
+
+    .skill-block {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;
+    }
+    .skill-block .skill-name { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+    .skill-block .skill-id { font-size: 11px; color: var(--muted); font-family: monospace; }
+
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    .spec-ref { font-size: 11px; color: var(--muted); padding: 12px 18px; border-top: 1px solid var(--border); }
+    .spec-ref a { color: var(--blue); text-decoration: none; }
+    .spec-ref a:hover { text-decoration: underline; }
+
+    .ext-badge {
+      display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .badge-new { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.3); }
+    .badge-ext { background: rgba(188,140,255,.1); color: var(--purple); border: 1px solid rgba(188,140,255,.3); }
+
+    footer { border-top: 1px solid var(--border); padding: 20px 24px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+    footer a { color: var(--muted); text-decoration: none; font-size: 13px; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+<header>
+  <a href="/" class="logo">⚡ Clavis Tools</a>
+  <nav>
+    <a href="mcp-doctor.html">MCP Doctor</a>
+    <a href="token-counter.html">Token Counter</a>
+    <a href="hire.html">Hire</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <div class="hero-badge">A2A Protocol · Spec v1.0.0</div>
+    <h1>A2A Agent Card Validator</h1>
+    <p>Paste your Agent Card JSON and get instant spec compliance feedback — required fields, skill definitions, capabilities, and LLM-orchestrator readiness.</p>
+  </div>
+
+  <div class="main-grid">
+    <!-- Input Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="icon">📋</span>
+        <span>Agent Card JSON</span>
+      </div>
+      <textarea id="input" placeholder='{
+  "name": "My Agent",
+  "version": "1.0.0",
+  "description": "What this agent does",
+  "url": "https://my-agent.example.com",
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain"],
+  "capabilities": {},
+  "skills": [
+    {
+      "id": "my-skill",
+      "name": "My Skill",
+      "description": "What this skill does",
+      "tags": ["example"]
+    }
+  ]
+}'></textarea>
+      <div class="samples">
+        <button class="sample-btn" onclick="loadSample('minimal')">Minimal valid</button>
+        <button class="sample-btn" onclick="loadSample('full')">Full example</button>
+        <button class="sample-btn" onclick="loadSample('issues')">With issues</button>
+        <button class="sample-btn" onclick="loadSample('hub')">Hub-compatible</button>
+      </div>
+      <div class="actions">
+        <button class="btn-validate" onclick="validate()">Validate →</button>
+        <button class="btn-clear" onclick="clearAll()">Clear</button>
+        <span class="char-count" id="charCount">0 chars</span>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="icon">🩺</span>
+        <span>Validation Report</span>
+      </div>
+      <div class="results-area" id="results">
+        <div class="empty-state">
+          <div class="empty-icon">📐</div>
+          <p>Paste an Agent Card JSON on the left<br>and click <strong>Validate</strong> to check spec compliance.</p>
+        </div>
+      </div>
+      <div class="spec-ref">
+        Based on <a href="https://a2a-protocol.org/latest/specification/#agentcard" target="_blank">A2A Spec v1.0.0 §4.4.1</a>.
+        Checks: required fields, AgentSkill, AgentCapabilities, well-known URL convention.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- API section -->
+<div style="max-width:960px;margin:40px auto;padding:0 24px 60px">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:24px">
+    <h3 style="color:#e6edf3;font-size:16px;margin-bottom:12px;">🔌 Also available as an API</h3>
+    <p style="color:#8b949e;font-size:14px;margin-bottom:16px;">
+      Integrate validation into your CI pipeline or agent registration flow via the <a href="https://clavis.citriac.deno.net" target="_blank">Agent Exchange Hub</a> API.
+    </p>
+    <pre style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:16px;font-size:13px;color:#e6edf3;overflow-x:auto;"><code><span style="color:#8b949e"># Validate an Agent Card</span>
+curl -X POST https://clavis.citriac.deno.net/validate \
+  -H "Content-Type: application/json" \
+  -d @your-agent-card.json
+
+<span style="color:#8b949e"># Strict mode — returns HTTP 422 if validation fails (useful for CI)</span>
+curl -X POST https://clavis.citriac.deno.net/validate?strict=true \
+  -H "Content-Type: application/json" \
+  -d @your-agent-card.json</code></pre>
+    <p style="color:#8b949e;font-size:13px;margin-top:12px;">
+      Returns: <code style="color:#58a6ff">{ valid, score, errors, warnings, issues[], skills[] }</code>
+      &nbsp;·&nbsp; Also available as an <a href="https://clavis.citriac.deno.net" target="_blank">MCP tool</a>: <code style="color:#58a6ff">hub_validate_agent_card</code>
+    </p>
+  </div>
+</div>
+
+<footer>
+  <a href="/">← All Tools</a>
+  <a href="mcp-doctor.html">MCP Server Doctor</a>
+  <a href="https://a2a-protocol.org/latest/specification/" target="_blank">A2A Spec</a>
+  <a href="https://github.com/a2aproject/A2A" target="_blank">A2A GitHub</a>
+  <a href="hire.html">Agent Architecture Review $49</a>
+</footer>
+
+<script>
+// ── Samples ──────────────────────────────────────────────────────────────────
+const SAMPLES = {
+  minimal: {
+    name: "Recipe Agent",
+    version: "1.0.0",
+    description: "Helps users find and adapt recipes based on dietary requirements.",
+    url: "https://recipe-agent.example.com",
+    defaultInputModes: ["text/plain"],
+    defaultOutputModes: ["text/plain"],
+    capabilities: { streaming: false },
+    skills: [
+      {
+        id: "find-recipe",
+        name: "Find Recipe",
+        description: "Find recipes matching dietary constraints and available ingredients.",
+        tags: ["cooking", "nutrition", "recipes"]
+      }
+    ]
+  },
+
+  full: {
+    name: "Market Analysis Agent",
+    version: "2.1.0",
+    description: "Performs market research and competitive analysis for B2B SaaS products.",
+    url: "https://market-agent.example.com",
+    iconUrl: "https://market-agent.example.com/icon.png",
+    documentationUrl: "https://market-agent.example.com/docs",
+    provider: {
+      organization: "Acme Analytics",
+      url: "https://acme-analytics.example.com"
+    },
+    defaultInputModes: ["text/plain", "application/json"],
+    defaultOutputModes: ["text/plain", "application/json", "text/html"],
+    capabilities: {
+      streaming: true,
+      pushNotifications: true,
+      extensions: [
+        {
+          uri: "https://a2a-protocol.org/extensions/availability/v1",
+          params: {
+            scheduleBasis: "polling",
+            typicalSeconds: 14400,
+            maxSeconds: 21600,
+            scheduleExpression: "0 */4 * * *"
+          }
+        }
+      ]
+    },
+    securitySchemes: {
+      bearerAuth: {
+        type: "http",
+        scheme: "bearer"
+      }
+    },
+    securityRequirements: [{ bearerAuth: [] }],
+    skills: [
+      {
+        id: "competitor-analysis",
+        name: "Competitor Analysis",
+        description: "Analyze a competitor's product positioning, pricing, and market share based on public data.",
+        tags: ["market-research", "competitor", "B2B", "SaaS"],
+        examples: [
+          "Analyze Salesforce's positioning in the SMB CRM market",
+          "Compare pricing strategies of top 5 project management tools"
+        ],
+        inputModes: ["text/plain", "application/json"],
+        outputModes: ["text/plain", "application/json"]
+      },
+      {
+        id: "market-sizing",
+        name: "Market Sizing",
+        description: "Estimate TAM, SAM, and SOM for a given market segment.",
+        tags: ["market-sizing", "TAM", "research"],
+        examples: ["What is the TAM for AI coding assistants in 2026?"]
+      }
+    ]
+  },
+
+  issues: {
+    name: "",
+    version: 1,
+    description: "An agent with several issues to demonstrate validation",
+    defaultInputModes: "text/plain",
+    defaultOutputModes: [],
+    capabilities: { streaming: "yes" },
+    skills: [
+      {
+        id: "skill-1",
+        name: "My Skill"
+      },
+      {
+        id: "skill-2",
+        name: "",
+        description: "Does something",
+        tags: []
+      }
+    ]
+  },
+
+  hub: {
+    name: "research-agent",
+    version: "1.0.0",
+    description: "Asynchronous research agent that runs on a 4-hour polling cycle. Handles long-horizon research tasks, literature synthesis, and market monitoring.",
+    url: "https://research-agent.example.com",
+    defaultInputModes: ["text/plain"],
+    defaultOutputModes: ["text/plain", "application/json"],
+    capabilities: {
+      streaming: false,
+      pushNotifications: false,
+      extensions: [
+        {
+          uri: "https://a2a-protocol.org/extensions/availability/v1",
+          params: {
+            scheduleBasis: "polling",
+            typicalSeconds: 14400,
+            maxSeconds: 21600,
+            scheduleExpression: "0 */4 * * *"
+          },
+          description: "This agent runs on a 4-hour cron cycle. Tasks requiring sub-hour response should use a different agent."
+        }
+      ]
+    },
+    skills: [
+      {
+        id: "deep-research",
+        name: "Deep Research",
+        description: "Multi-step research across public web sources with synthesis and citation.",
+        tags: ["research", "synthesis", "web-search", "async"],
+        examples: [
+          "Research the current state of quantum computing hardware market",
+          "Synthesize recent papers on LLM agent architectures"
+        ]
+      }
+    ]
+  }
+};
+
+// ── Validation Logic ──────────────────────────────────────────────────────────
+const REQUIRED_TOP = ['name', 'version', 'description', 'defaultInputModes', 'defaultOutputModes', 'capabilities', 'skills'];
+const SKILL_REQUIRED = ['id', 'name', 'description', 'tags'];
+
+function validate() {
+  const raw = document.getElementById('input').value.trim();
+  if (!raw) { showError('No input. Paste an Agent Card JSON first.'); return; }
+
+  let card;
+  try { card = JSON.parse(raw); } catch(e) {
+    showError('Invalid JSON: ' + e.message); return;
+  }
+
+  const checks = [];
+  let score = 100;
+  let errors = 0, warnings = 0;
+
+  function addCheck(sev, msg, fix, section) {
+    checks.push({ sev, msg, fix: fix || null, section: section || 'top' });
+    if (sev === 'error') { score -= 15; errors++; }
+    if (sev === 'warn')  { score -= 5;  warnings++; }
+  }
+  function addOk(msg, section) { checks.push({ sev: 'ok', msg, section: section || 'top' }); }
+  function addInfo(msg, section) { checks.push({ sev: 'info', msg, section: section || 'top' }); }
+
+  // ── 1. Required top-level fields ─────────────────────────────────────────
+  for (const f of REQUIRED_TOP) {
+    if (card[f] === undefined || card[f] === null) {
+      addCheck('error', `Missing required field: "${f}"`,
+        `Add "${f}" to your Agent Card. See A2A spec §4.4.1.`);
+    }
+  }
+
+  // ── 2. Field type checks ─────────────────────────────────────────────────
+  if (card.name !== undefined) {
+    if (typeof card.name !== 'string')
+      addCheck('error', '"name" must be a string', 'Change name to a string value, e.g. "My Agent".');
+    else if (card.name.trim() === '')
+      addCheck('error', '"name" is empty', 'Provide a human-readable agent name.');
+    else
+      addOk(`name: "${card.name.slice(0,50)}"`);
+  }
+
+  if (card.version !== undefined) {
+    if (typeof card.version !== 'string')
+      addCheck('error', '"version" must be a string (e.g. "1.0.0")',
+        'Change version to a semver string: "1.0.0"');
+    else if (!/^\d+\.\d+/.test(card.version))
+      addCheck('warn', `"version" "${card.version}" doesn't look like semver`,
+        'Use semver format: "1.0.0". Not required by spec but strongly recommended.');
+    else
+      addOk(`version: "${card.version}"`);
+  }
+
+  if (card.description !== undefined) {
+    if (typeof card.description !== 'string' || card.description.trim() === '')
+      addCheck('error', '"description" is empty or wrong type',
+        'Provide a clear description of what this agent does. LLM orchestrators use this for routing decisions.');
+    else if (card.description.length < 20)
+      addCheck('warn', `"description" is very short (${card.description.length} chars)`,
+        'A longer description helps orchestrators route tasks correctly. Aim for 50–200 chars.');
+    else
+      addOk(`description: ${card.description.length} chars`);
+  }
+
+  // url / supportedInterfaces
+  const hasUrl = card.url !== undefined;
+  const hasInterfaces = Array.isArray(card.supportedInterfaces) && card.supportedInterfaces.length > 0;
+
+  if (!hasUrl && !hasInterfaces) {
+    addCheck('warn', 'No "url" or "supportedInterfaces" found',
+      'Add "url" (simple) or "supportedInterfaces" array (spec v1.0.0+). Without a URL, orchestrators can\'t reach this agent.');
+  } else if (hasUrl) {
+    if (typeof card.url !== 'string' || !card.url.startsWith('http'))
+      addCheck('error', '"url" must be a valid HTTP(S) URL', 'Set url to your agent\'s A2A endpoint, e.g. "https://my-agent.example.com".');
+    else
+      addOk(`url: "${card.url}"`);
+  } else {
+    addOk(`supportedInterfaces: ${card.supportedInterfaces.length} interface(s)`);
+    card.supportedInterfaces.forEach((iface, i) => {
+      if (!iface.url) addCheck('error', `supportedInterfaces[${i}] missing "url"`, 'Each interface must have a "url" field.');
+      if (!iface.protocolBinding) addCheck('warn', `supportedInterfaces[${i}] missing "protocolBinding"`, 'Add "protocolBinding" (e.g. "http+json").');
+      if (!iface.protocolVersion) addCheck('warn', `supportedInterfaces[${i}] missing "protocolVersion"`, 'Add "protocolVersion" (e.g. "1.0").');
+    });
+  }
+
+  // defaultInputModes
+  if (card.defaultInputModes !== undefined) {
+    if (!Array.isArray(card.defaultInputModes))
+      addCheck('error', '"defaultInputModes" must be an array of media type strings',
+        'Change to array: ["text/plain"] or ["text/plain","application/json"].');
+    else if (card.defaultInputModes.length === 0)
+      addCheck('warn', '"defaultInputModes" is empty',
+        'At minimum, include "text/plain" unless the agent only accepts binary input.');
+    else
+      addOk(`defaultInputModes: [${card.defaultInputModes.join(', ')}]`);
+  }
+
+  // defaultOutputModes
+  if (card.defaultOutputModes !== undefined) {
+    if (!Array.isArray(card.defaultOutputModes))
+      addCheck('error', '"defaultOutputModes" must be an array of media type strings',
+        'Change to array: ["text/plain"].');
+    else if (card.defaultOutputModes.length === 0)
+      addCheck('warn', '"defaultOutputModes" is empty',
+        'At minimum, include "text/plain".');
+    else
+      addOk(`defaultOutputModes: [${card.defaultOutputModes.join(', ')}]`);
+  }
+
+  // capabilities
+  if (card.capabilities !== undefined) {
+    if (typeof card.capabilities !== 'object' || Array.isArray(card.capabilities))
+      addCheck('error', '"capabilities" must be an object (AgentCapabilities)',
+        'Set capabilities to an object: {} or {"streaming": true, "pushNotifications": false}.');
+    else {
+      const caps = card.capabilities;
+      const known = ['streaming','pushNotifications','extensions','extendedAgentCard'];
+      const unknown = Object.keys(caps).filter(k => !known.includes(k));
+      if (caps.streaming !== undefined && typeof caps.streaming !== 'boolean')
+        addCheck('error', '"capabilities.streaming" must be boolean',
+          'Set to true or false. Not a string like "yes".');
+      if (caps.pushNotifications !== undefined && typeof caps.pushNotifications !== 'boolean')
+        addCheck('error', '"capabilities.pushNotifications" must be boolean', 'Set to true or false.');
+      if (unknown.length)
+        addCheck('info', `Unknown capability keys: ${unknown.map(k=>`"${k}"`).join(', ')}`,
+          'These fields aren\'t in the core spec. Use "extensions" array for custom capabilities.');
+      if (Array.isArray(caps.extensions) && caps.extensions.length > 0) {
+        addOk(`capabilities.extensions: ${caps.extensions.length} extension(s)`);
+        caps.extensions.forEach((ext, i) => {
+          if (!ext.uri) addCheck('warn', `extensions[${i}] missing "uri"`, 'Each extension must declare a "uri" identifier.');
+        });
+      }
+      if (!unknown.length && caps.streaming !== undefined && typeof caps.streaming === 'boolean')
+        addOk(`capabilities: streaming=${caps.streaming}${caps.pushNotifications !== undefined ? ', pushNotifications='+caps.pushNotifications : ''}`);
+    }
+  }
+
+  // ── 3. Skills ─────────────────────────────────────────────────────────────
+  const skillChecks = [];
+  if (card.skills !== undefined) {
+    if (!Array.isArray(card.skills))
+      addCheck('error', '"skills" must be an array', 'Change skills to an array of AgentSkill objects.');
+    else if (card.skills.length === 0)
+      addCheck('warn', '"skills" array is empty', 'Add at least one skill. Skills tell orchestrators what tasks this agent can handle.');
+    else {
+      addOk(`skills: ${card.skills.length} skill(s)`);
+      const seenIds = new Set();
+
+      card.skills.forEach((skill, i) => {
+        const sc = { index: i, id: skill.id || `(no id)`, name: skill.name || '(no name)', items: [] };
+
+        // Required fields
+        for (const f of SKILL_REQUIRED) {
+          if (!skill[f] || (Array.isArray(skill[f]) && skill[f].length === 0)) {
+            if (f === 'tags' && Array.isArray(skill[f]) && skill[f].length === 0)
+              sc.items.push({ sev: 'warn', msg: `"tags" is empty`, fix: 'Add at least 2–3 descriptive tags. Used by orchestrators for skill matching.' });
+            else
+              sc.items.push({ sev: 'error', msg: `Missing required field: "${f}"`, fix: `Add "${f}" to skills[${i}].` });
+          }
+        }
+
+        // id uniqueness
+        if (skill.id) {
+          if (seenIds.has(skill.id))
+            sc.items.push({ sev: 'error', msg: `Duplicate skill id: "${skill.id}"`, fix: 'Each skill must have a unique id.' });
+          else seenIds.add(skill.id);
+        }
+
+        // description quality
+        if (skill.description && typeof skill.description === 'string') {
+          if (skill.description.length < 15)
+            sc.items.push({ sev: 'warn', msg: `description very short (${skill.description.length} chars)`,
+              fix: 'Longer descriptions help LLM orchestrators decide if this skill fits the task. Aim for 30+ chars.' });
+        }
+
+        // tags quality
+        if (Array.isArray(skill.tags) && skill.tags.length > 0 && skill.tags.length < 2)
+          sc.items.push({ sev: 'info', msg: 'Only 1 tag — consider adding more',
+            fix: 'More tags improve discoverability. Add synonyms, domain terms, and use cases.' });
+
+        // examples quality
+        if (!skill.examples || !Array.isArray(skill.examples) || skill.examples.length === 0)
+          sc.items.push({ sev: 'info', msg: 'No "examples" provided',
+            fix: 'Optional but valuable: examples show orchestrators exactly what inputs this skill handles best.' });
+
+        if (sc.items.length === 0) sc.items.push({ sev: 'ok', msg: 'All required fields present' });
+        skillChecks.push(sc);
+      });
+    }
+  }
+
+  // ── 4. Optional quality checks ────────────────────────────────────────────
+  if (!card.documentationUrl)
+    addInfo('"documentationUrl" not set — consider adding a link to agent docs', 'quality');
+  if (!card.iconUrl)
+    addInfo('"iconUrl" not set — optional but improves agent discovery UI', 'quality');
+  if (!card.provider)
+    addInfo('"provider" not set — optional but recommended for enterprise/multi-org deployments', 'quality');
+
+  // Well-known URL check
+  if (hasUrl && typeof card.url === 'string') {
+    try {
+      const origin = new URL(card.url).origin;
+      addInfo(`Well-known URL would be: ${origin}/.well-known/agent.json`, 'wellknown');
+    } catch {}
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  score = Math.max(0, Math.min(100, score));
+  renderResults(score, errors, warnings, checks, skillChecks, card);
+}
+
+function renderResults(score, errors, warnings, checks, skillChecks, card) {
+  let scoreClass = 'score-pass';
+  let scoreLabel = '✅ Spec Compliant';
+  let scoreSub = 'This Agent Card passes all required checks.';
+  if (errors > 0) {
+    scoreClass = 'score-fail';
+    scoreLabel = '❌ Has Errors';
+    scoreSub = `${errors} error${errors>1?'s':''} must be fixed for spec compliance.`;
+  } else if (warnings > 0) {
+    scoreClass = 'score-warn';
+    scoreLabel = '⚠️ Passes with Warnings';
+    scoreSub = `${warnings} warning${warnings>1?'s':''} — valid but could be improved.`;
+  }
+
+  const topChecks = checks.filter(c => c.section === 'top' || !c.section);
+  const qualityChecks = checks.filter(c => c.section === 'quality' || c.section === 'wellknown');
+
+  const renderItem = c => `
+    <div class="check-item check-${c.sev === 'ok' ? 'ok' : c.sev === 'warn' ? 'warn' : c.sev === 'error' ? 'error' : 'info'}">
+      <span class="sev sev-${c.sev === 'info' ? 'info' : c.sev}">${
+        c.sev === 'ok' ? '✓' : c.sev === 'warn' ? '⚠' : c.sev === 'error' ? '✗' : 'ℹ'
+      }</span>${escHtml(c.msg)}
+      ${c.fix ? `<div class="fix">Fix: ${escHtml(c.fix)}</div>` : ''}
+    </div>`;
+
+  const renderSkill = sc => `
+    <div class="skill-block">
+      <div class="skill-name">${escHtml(sc.name)} <span class="skill-id">#${escHtml(sc.id)}</span></div>
+      ${sc.items.map(renderItem).join('')}
+    </div>`;
+
+  document.getElementById('results').innerHTML = `
+    <div class="score-banner ${scoreClass}">
+      <div class="score-number">${score}</div>
+      <div class="score-meta">
+        <div class="score-label">${scoreLabel}</div>
+        <div class="score-sub">${scoreSub}</div>
+      </div>
+    </div>
+
+    <div class="check-section">
+      <div class="check-title">Core Fields</div>
+      ${topChecks.map(renderItem).join('') || '<div class="check-item check-info"><span class="sev sev-info">ℹ</span>No issues.</div>'}
+    </div>
+
+    ${skillChecks.length > 0 ? `
+    <div class="check-section">
+      <div class="check-title">Skills (${skillChecks.length})</div>
+      ${skillChecks.map(renderSkill).join('')}
+    </div>` : ''}
+
+    ${qualityChecks.length > 0 ? `
+    <div class="check-section">
+      <div class="check-title">Quality & Discovery Hints</div>
+      ${qualityChecks.map(renderItem).join('')}
+    </div>` : ''}
+  `;
+}
+
+function showError(msg) {
+  document.getElementById('results').innerHTML = `
+    <div class="check-item check-error" style="margin:16px">
+      <span class="sev sev-error">✗</span> ${escHtml(msg)}
+    </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function loadSample(key) {
+  document.getElementById('input').value = JSON.stringify(SAMPLES[key], null, 2);
+  updateCount();
+  validate();
+}
+
+function clearAll() {
+  document.getElementById('input').value = '';
+  updateCount();
+  document.getElementById('results').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">📐</div>
+      <p>Paste an Agent Card JSON on the left<br>and click <strong>Validate</strong> to check spec compliance.</p>
+    </div>`;
+}
+
+function updateCount() {
+  const v = document.getElementById('input').value;
+  document.getElementById('charCount').textContent = v.length + ' chars';
+}
+
+document.getElementById('input').addEventListener('input', updateCount);
+document.getElementById('input').addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); validate(); }
+});
+</script>
+
+<!-- Gumroad CTA -->
+<div style="max-width:720px;margin:32px auto 0;padding:20px 24px;background:linear-gradient(135deg,#161b22 0%,#21262d 100%);border:1px solid #30363d;border-radius:12px;text-align:center;">
+  <p style="color:#8b949e;font-size:13px;margin-bottom:8px;">🔧 Like these tools? Get the complete automation kit.</p>
+  <a href="https://citriac.gumroad.com/l/freelancer-automation-kit" style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#0d1117;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">Freelancer Automation Kit — $19</a>
+  <a href="https://citriac.gumroad.com/l/daily-tech-digest-automation-kit" style="display:inline-block;margin-left:8px;padding:8px 20px;background:transparent;color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:13px;text-decoration:none;">Daily Digest Kit — $15</a>
+</div>
+
+</body>
+</html>

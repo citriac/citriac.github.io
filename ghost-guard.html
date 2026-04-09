@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
+  <title>Ghost Guard — Stop Getting Ghosted After Delivery</title>
+  <meta name="description" content="Free toolkit for freelancers: generate professional proposals with iron-clad payment terms, send the perfect follow-up email, and document delivery so clients can't ghost you.">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Ghost Guard — Stop Getting Ghosted After Delivery">
+  <meta property="og:description" content="Freelancer toolkit: professional proposals with payment protection, AI-crafted follow-up emails, and delivery receipts. Free, browser-only, no signup.">
+  <meta property="og:url" content="https://citriac.github.io/ghost-guard.html">
+  <meta property="og:site_name" content="Clavis Tools">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Ghost Guard — Stop Getting Ghosted After Delivery">
+  <meta name="twitter:description" content="Freelancer toolkit: proposals with payment protection + follow-up emails + delivery receipts. Free, no signup.">
+  <meta name="twitter:creator" content="@Clavis_Citriac">
+
+  <link rel="canonical" href="https://citriac.github.io/ghost-guard.html">
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Ghost Guard",
+    "description": "Free browser-based toolkit for freelancers to prevent payment ghosting: professional proposal generator with payment terms, follow-up email generator, and delivery receipt creator.",
+    "url": "https://citriac.github.io/ghost-guard.html",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Any (browser-based)",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "author": { "@type": "Person", "name": "Clavis", "url": "https://citriac.github.io" }
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a22;
+      --surface2: #22222e;
+      --border: #2e2e3e;
+      --accent: #f97316;
+      --accent2: #fb923c;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #eab308;
+      --text: #e8e8f0;
+      --text2: #9090aa;
+      --text3: #5a5a72;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a0a00 0%, #0f0f13 60%);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(249,115,22,.15);
+      color: var(--accent);
+      border: 1px solid rgba(249,115,22,.3);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+    header h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      margin-bottom: 14px;
+      letter-spacing: -.02em;
+    }
+    header h1 span { color: var(--accent); }
+    header p {
+      font-size: 17px;
+      color: var(--text2);
+      max-width: 560px;
+      margin: 0 auto 28px;
+    }
+    .stat-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat strong { display: block; font-size: 22px; color: var(--text); }
+    .stat span { font-size: 12px; color: var(--text3); }
+
+    /* ── Nav tabs ── */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 24px 24px 0;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+    .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── Main layout ── */
+    main { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+
+    /* ── Form elements ── */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .form-row.single { grid-template-columns: 1fr; }
+    .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; }
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 7px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    textarea { min-height: 100px; resize: vertical; }
+    select option { background: var(--surface2); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+    .btn-green { background: #16532d; color: var(--green); border: 1px solid #22c55e44; }
+    .btn-green:hover { background: #166534; }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+    /* ── Output box ── */
+    .output-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      font-family: 'SF Mono', 'Menlo', monospace;
+      color: var(--text2);
+      min-height: 200px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .output-box.rendered {
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    /* ── Risk tags ── */
+    .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin: 2px; }
+    .tag-green { background: #14532d44; color: var(--green); border: 1px solid #22c55e33; }
+    .tag-yellow { background: #71390044; color: var(--yellow); border: 1px solid #eab30833; }
+    .tag-red { background: #7f1d1d44; color: var(--red); border: 1px solid #ef444433; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--text3);
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Milestone list ── */
+    .milestone-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      margin-bottom: 8px;
+    }
+    .milestone-item input[type="text"] { flex: 1; border: none; background: transparent; padding: 0; }
+    .milestone-item input[type="number"] { width: 80px; }
+    .milestone-item .del-btn { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 0 4px; }
+    .milestone-item .del-btn:hover { color: var(--red); }
+
+    /* ── Email templates ── */
+    .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .template-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .template-card:hover, .template-card.selected { border-color: var(--accent); }
+    .template-card.selected { background: rgba(249,115,22,.08); }
+    .template-card .t-icon { font-size: 22px; margin-bottom: 6px; }
+    .template-card .t-name { font-size: 13px; font-weight: 600; }
+    .template-card .t-desc { font-size: 11px; color: var(--text3); margin-top: 4px; }
+    .escalation { display: flex; align-items: center; gap: 6px; }
+    .escalation-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* ── Delivery receipt ── */
+    .receipt-line {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      margin-bottom: 8px;
+    }
+    .receipt-check { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; }
+    .receipt-text { flex: 1; font-size: 13px; color: var(--text2); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--green);
+      color: var(--green);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text3);
+      font-size: 13px;
+    }
+    footer a { color: var(--text2); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+
+    @media (max-width: 600px) {
+      .form-row { grid-template-columns: 1fr; }
+      .form-row.triple { grid-template-columns: 1fr 1fr; }
+      .stat-row { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">🛡 Freelancer Protection Kit</div>
+  <h1>Stop Getting <span>Ghosted</span></h1>
+  <p>Every freelancer knows the feeling: you deliver the work, then silence.
+     Ghost Guard helps you prevent it before it happens — and handle it when it does.</p>
+  <div class="stat-row">
+    <div class="stat"><strong>76M+</strong><span>freelancers worldwide</span></div>
+    <div class="stat"><strong>~29%</strong><span>experience payment ghosting</span></div>
+    <div class="stat"><strong>$0</strong><span>this tool costs</span></div>
+  </div>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('proposal')">📄 Proposal Generator</button>
+  <button class="tab-btn" onclick="switchTab('email')">✉️ Follow-up Emails</button>
+  <button class="tab-btn" onclick="switchTab('receipt')">✅ Delivery Receipt</button>
+</div>
+
+<main>
+
+  <!-- ══════════════════════════════════════
+       TAB 1 — PROPOSAL GENERATOR
+  ══════════════════════════════════════ -->
+  <div id="panel-proposal" class="panel active">
+
+    <div class="card">
+      <div class="section-label">Your Details</div>
+      <div class="form-row">
+        <div><label>Your Name / Business</label><input id="p-your-name" type="text" placeholder="Jane Smith / Pixel Studio"></div>
+        <div><label>Your Email</label><input id="p-your-email" type="email" placeholder="jane@pixelstudio.com"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Client & Project</div>
+      <div class="form-row">
+        <div><label>Client Name</label><input id="p-client-name" type="text" placeholder="Acme Corp"></div>
+        <div><label>Project Title</label><input id="p-project-title" type="text" placeholder="Brand Identity Redesign"></div>
+      </div>
+      <div class="form-row single">
+        <div><label>Scope of Work (one line per deliverable)</label>
+        <textarea id="p-scope" placeholder="Logo design (3 concepts + revisions)&#10;Brand guidelines PDF&#10;Social media kit (10 templates)"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Payment Structure</div>
+      <div class="form-row triple">
+        <div><label>Total Project Fee</label><input id="p-total" type="number" placeholder="3000"></div>
+        <div><label>Currency</label>
+          <select id="p-currency">
+            <option>USD</option><option>EUR</option><option>GBP</option><option>CAD</option><option>AUD</option>
+          </select>
+        </div>
+        <div><label>Deposit %</label>
+          <select id="p-deposit-pct">
+            <option value="25">25%</option>
+            <option value="30">30%</option>
+            <option value="50" selected>50%</option>
+            <option value="100">100% upfront</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">Payment Milestones</div>
+      <div id="milestones-list"></div>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="addMilestone()">+ Add Milestone</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Protection Clauses</div>
+      <div class="form-row triple">
+        <div><label>Late Payment Fee</label>
+          <select id="p-late-fee">
+            <option value="none">None</option>
+            <option value="1.5" selected>1.5% / month</option>
+            <option value="2">2% / month</option>
+            <option value="5">$50 flat fee</option>
+          </select>
+        </div>
+        <div><label>Kill Fee (project cancelled)</label>
+          <select id="p-kill-fee">
+            <option value="none">None</option>
+            <option value="25">Keep 25% paid</option>
+            <option value="50" selected>Keep 50% paid</option>
+            <option value="100">Keep 100% paid</option>
+          </select>
+        </div>
+        <div><label>Revision Limit</label>
+          <select id="p-revisions">
+            <option value="1">1 round</option>
+            <option value="2" selected>2 rounds</option>
+            <option value="3">3 rounds</option>
+            <option value="unlimited">Unlimited</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div><label>Delivery Timeline</label><input id="p-timeline" type="text" placeholder="14 business days after deposit received"></div>
+        <div><label>Acceptance Period</label>
+          <select id="p-acceptance">
+            <option value="3">3 days to review</option>
+            <option value="5" selected>5 days to review</option>
+            <option value="7">7 days to review</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="p-ip-clause" checked style="width:auto">
+          <span style="font-size:13px;color:var(--text2)">Include IP transfer clause (copyright transfers only upon full payment)</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:8px">
+          <input type="checkbox" id="p-approval-clause" checked style="width:auto">
+          <span style="font-size:13px;color:var(--text2)">Include deemed-approval clause (silence = approval after acceptance period)</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateProposal()">⚡ Generate Proposal</button>
+      <button class="btn btn-ghost" onclick="clearProposal()">Clear</button>
+    </div>
+
+    <div id="proposal-output" style="display:none;margin-top:24px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Generated Proposal</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="copyOutput('proposal-text')">📋 Copy</button>
+            <button class="btn btn-green" onclick="downloadProposal()">⬇ Download .txt</button>
+          </div>
+        </div>
+        <div class="output-box rendered" id="proposal-text"></div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       TAB 2 — FOLLOW-UP EMAILS
+  ══════════════════════════════════════ -->
+  <div id="panel-email" class="panel">
+
+    <div class="card">
+      <div class="section-label">Select Situation</div>
+      <div class="template-grid">
+        <div class="template-card selected" data-tpl="friendly" onclick="selectTemplate(this)">
+          <div class="t-icon">😊</div>
+          <div class="t-name">Friendly Reminder</div>
+          <div class="t-desc">Invoice 1-3 days overdue. Keep the relationship warm.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--green)"></div>
+            <span style="font-size:11px;color:var(--text3)">Low escalation</span>
+          </div>
+        </div>
+        <div class="template-card" data-tpl="firm" onclick="selectTemplate(this)">
+          <div class="t-icon">🔔</div>
+          <div class="t-name">Firm Follow-up</div>
+          <div class="t-desc">7+ days overdue. Polite but direct, reference contract.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--yellow)"></div>
+            <span style="font-size:11px;color:var(--text3)">Medium escalation</span>
+          </div>
+        </div>
+        <div class="template-card" data-tpl="final" onclick="selectTemplate(this)">
+          <div class="t-icon">⚠️</div>
+          <div class="t-name">Final Notice</div>
+          <div class="t-desc">14+ days overdue. Mention late fees and next steps.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--red)"></div>
+            <span style="font-size:11px;color:var(--text3)">High escalation</span>
+          </div>
+        </div>
+        <div class="template-card" data-tpl="ghost" onclick="selectTemplate(this)">
+          <div class="t-icon">👻</div>
+          <div class="t-name">Gone Silent</div>
+          <div class="t-desc">No response to emails. They delivered but disappeared.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--red)"></div>
+            <span style="font-size:11px;color:var(--text3)">Final attempt</span>
+          </div>
+        </div>
+        <div class="template-card" data-tpl="dispute" onclick="selectTemplate(this)">
+          <div class="t-icon">🤝</div>
+          <div class="t-name">Dispute Resolution</div>
+          <div class="t-desc">Client unhappy, trying to avoid payment. Offer resolution path.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--yellow)"></div>
+            <span style="font-size:11px;color:var(--text3)">De-escalation</span>
+          </div>
+        </div>
+        <div class="template-card" data-tpl="reactivate" onclick="selectTemplate(this)">
+          <div class="t-icon">🔄</div>
+          <div class="t-name">Re-activate Paused</div>
+          <div class="t-desc">Project went quiet mid-work. Nudge to restart.</div>
+          <div class="escalation" style="margin-top:8px">
+            <div class="escalation-dot" style="background:var(--green)"></div>
+            <span style="font-size:11px;color:var(--text3)">Neutral tone</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Details</div>
+      <div class="form-row">
+        <div><label>Your Name</label><input id="e-your-name" type="text" placeholder="Jane Smith"></div>
+        <div><label>Client Name</label><input id="e-client-name" type="text" placeholder="Alex at Acme Corp"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Invoice / Amount</label><input id="e-amount" type="text" placeholder="Invoice #1042 for $1,500"></div>
+        <div><label>Days Overdue / Context</label><input id="e-context" type="text" placeholder="7 days overdue"></div>
+      </div>
+      <div class="form-row single">
+        <div><label>Additional Notes (optional)</label>
+        <textarea id="e-notes" style="min-height:70px" placeholder="Mention specific deliverable, link to shared folder, etc."></textarea></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateEmail()">⚡ Generate Email</button>
+    </div>
+
+    <div id="email-output" style="display:none;margin-top:24px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Generated Email</h3>
+          <button class="btn btn-ghost" onclick="copyOutput('email-text')">📋 Copy</button>
+        </div>
+        <div class="output-box rendered" id="email-text"></div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       TAB 3 — DELIVERY RECEIPT
+  ══════════════════════════════════════ -->
+  <div id="panel-receipt" class="panel">
+
+    <div class="card">
+      <p style="font-size:14px;color:var(--text2);margin-bottom:16px">
+        Create a timestamped delivery record. Screenshot or print it as proof that you delivered.
+        Clients can't claim they "never received" if you have a dated record of exactly what was sent.
+      </p>
+      <div class="form-row">
+        <div><label>Project Name</label><input id="r-project" type="text" placeholder="Brand Identity Package"></div>
+        <div><label>Client Name</label><input id="r-client" type="text" placeholder="Acme Corp"></div>
+      </div>
+      <div class="form-row">
+        <div><label>Delivery Method</label>
+          <select id="r-method">
+            <option>Email with attachments</option>
+            <option>Shared Google Drive folder</option>
+            <option>Dropbox link</option>
+            <option>WeTransfer</option>
+            <option>Direct file upload</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div><label>Delivery Link / Reference</label><input id="r-link" type="text" placeholder="drive.google.com/... or email subject line"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Delivered Items Checklist</div>
+      <div id="receipt-checklist"></div>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="addReceiptItem()">+ Add Item</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Notes & Next Steps</div>
+      <textarea id="r-notes" placeholder="e.g. Final payment of $1,500 is due within 5 business days per our agreement. Please confirm receipt by replying to this email."></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateReceipt()">⚡ Generate Receipt</button>
+    </div>
+
+    <div id="receipt-output" style="display:none;margin-top:24px">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0">Delivery Receipt</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" onclick="copyOutput('receipt-text')">📋 Copy</button>
+            <button class="btn btn-green" onclick="window.print()">🖨 Print / PDF</button>
+          </div>
+        </div>
+        <div class="output-box rendered" id="receipt-text"></div>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  <p>Ghost Guard is part of the <a href="freelancer-toolkit.html">Freelancer Toolkit</a> — free tools for indie workers</p>
+  <p style="margin-top:8px">
+    <a href="https://citriac.github.io">Home</a> · 
+    <a href="invoice-generator.html">Invoice Generator</a> · 
+    <a href="contract-diff.html">Contract Diff</a> · 
+    <a href="prompt-lab.html">Prompt Lab</a> · 
+    <a href="freelancer-toolkit.html">Freelancer Toolkit</a> · 
+    <a href="https://github.com/citriac" target="_blank">GitHub</a>
+  </p>
+</footer>
+
+<div id="toast">✓ Copied to clipboard</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let milestoneCount = 0;
+let receiptItemCount = 0;
+let selectedTemplate = 'friendly';
+
+// ── Init ──────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Default milestones: 50% deposit + 50% on delivery
+  addMilestone('50% deposit — due before work begins', 50);
+  addMilestone('50% final — due upon delivery', 50);
+  // Default receipt items
+  addReceiptItem('Final deliverable files');
+  addReceiptItem('Working source files');
+  addReceiptItem('Usage guidelines / README');
+});
+
+// ── Tabs ──────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(name.split('-')[0])) b.classList.add('active');
+  });
+}
+
+// ── Milestones ──────────────────────────────────────────────
+function addMilestone(desc = '', pct = '') {
+  milestoneCount++;
+  const id = milestoneCount;
+  const list = document.getElementById('milestones-list');
+  const el = document.createElement('div');
+  el.className = 'milestone-item';
+  el.id = 'milestone-' + id;
+  el.innerHTML = `
+    <input type="text" placeholder="Description" value="${desc}" style="flex:1">
+    <input type="number" placeholder="%" value="${pct}" min="0" max="100" title="Percentage of total">
+    <button class="del-btn" onclick="removeMilestone(${id})">×</button>
+  `;
+  list.appendChild(el);
+}
+function removeMilestone(id) {
+  document.getElementById('milestone-' + id)?.remove();
+}
+
+// ── Receipt items ──────────────────────────────────────────────
+function addReceiptItem(text = '') {
+  receiptItemCount++;
+  const id = receiptItemCount;
+  const list = document.getElementById('receipt-checklist');
+  const el = document.createElement('div');
+  el.className = 'receipt-line';
+  el.id = 'ritem-' + id;
+  el.innerHTML = `
+    <input type="checkbox" class="receipt-check" checked>
+    <input type="text" class="receipt-text" placeholder="Deliverable description" value="${text}" style="border:none;background:transparent;padding:0">
+    <button class="del-btn" onclick="removeReceiptItem(${id})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px">×</button>
+  `;
+  list.appendChild(el);
+}
+function removeReceiptItem(id) {
+  document.getElementById('ritem-' + id)?.remove();
+}
+
+// ── Template selector ──────────────────────────────────────────────
+function selectTemplate(el) {
+  document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTemplate = el.dataset.tpl;
+}
+
+// ── Proposal Generator ──────────────────────────────────────────────
+function generateProposal() {
+  const name = document.getElementById('p-your-name').value.trim() || 'Your Name';
+  const email = document.getElementById('p-your-email').value.trim() || 'your@email.com';
+  const client = document.getElementById('p-client-name').value.trim() || 'Client Name';
+  const project = document.getElementById('p-project-title').value.trim() || 'Project Title';
+  const scope = document.getElementById('p-scope').value.trim();
+  const total = parseFloat(document.getElementById('p-total').value) || 0;
+  const currency = document.getElementById('p-currency').value;
+  const depositPct = parseInt(document.getElementById('p-deposit-pct').value);
+  const lateFee = document.getElementById('p-late-fee').value;
+  const killFee = document.getElementById('p-kill-fee').value;
+  const revisions = document.getElementById('p-revisions').value;
+  const timeline = document.getElementById('p-timeline').value.trim() || '14 business days after deposit received';
+  const acceptance = document.getElementById('p-acceptance').value;
+  const ipClause = document.getElementById('p-ip-clause').checked;
+  const approvalClause = document.getElementById('p-approval-clause').checked;
+
+  // Milestones
+  const milestoneEls = document.querySelectorAll('.milestone-item');
+  const milestones = [];
+  milestoneEls.forEach(el => {
+    const inputs = el.querySelectorAll('input');
+    const desc = inputs[0].value.trim();
+    const pct = parseFloat(inputs[1].value) || 0;
+    if (desc) milestones.push({ desc, pct, amount: (total * pct / 100).toFixed(2) });
+  });
+
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const fmtMoney = (n) => `${currency} ${parseFloat(n).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+  let out = `
+PROJECT PROPOSAL & AGREEMENT
+─────────────────────────────────────────────────────────
+Date:            ${today}
+Prepared by:     ${name} <${email}>
+Prepared for:    ${client}
+Project:         ${project}
+─────────────────────────────────────────────────────────
+
+1. SCOPE OF WORK
+${scope ? scope.split('\n').map(l => `   • ${l}`).join('\n') : '   [Describe deliverables here]'}
+
+2. PROJECT TIMELINE
+   Estimated completion: ${timeline}
+   Revision rounds included: ${revisions === 'unlimited' ? 'Unlimited' : revisions + (revisions === '1' ? ' round' : ' rounds')}
+   Additional revisions will be billed at an hourly rate to be agreed upon.
+
+3. FEES & PAYMENT SCHEDULE
+   Total Project Fee: ${fmtMoney(total)}
+
+${milestones.length > 0 ? milestones.map((m, i) => `   Payment ${i + 1}: ${m.desc}
+              Amount: ${fmtMoney(m.amount)} (${m.pct}%)`).join('\n\n') : `   Deposit (${depositPct}%): ${fmtMoney(total * depositPct / 100)} — due before work begins
+   Balance  (${100-depositPct}%): ${fmtMoney(total * (100-depositPct) / 100)} — due upon delivery`}
+
+   Payment accepted via: [Bank transfer / PayPal / Wise / other]
+   Invoices are due within 5 business days of issuance.
+${lateFee !== 'none' ? `
+   LATE PAYMENT: Invoices unpaid after 7 days will incur a late fee of ${
+     lateFee.startsWith('$') ? lateFee : lateFee + '% per month'
+   } on the outstanding balance, compounded monthly.` : ''}
+${killFee !== 'none' ? `
+   CANCELLATION / KILL FEE: If the client cancels this project after work has begun,
+   all payments received up to that point are non-refundable (${killFee}% kill fee applies).
+   Any work completed will be delivered in its current state.` : ''}
+
+4. DELIVERY & ACCEPTANCE
+   Final deliverables will be provided via [email / cloud link / other].
+   The client has ${acceptance} business days from delivery to review and request changes
+   within the agreed revision scope.
+${approvalClause ? `
+   DEEMED APPROVAL: If no feedback is received within ${acceptance} business days of delivery,
+   the work shall be considered approved and accepted, and any remaining balance
+   becomes immediately due and payable.` : ''}
+
+5. INTELLECTUAL PROPERTY
+${ipClause ? `   All intellectual property rights in the deliverables shall remain with ${name}
+   until full payment is received. Upon receipt of final payment, all agreed rights
+   will transfer to the client as specified in writing.` : `   Intellectual property rights will transfer to the client upon delivery.`}
+
+6. CONFIDENTIALITY
+   Both parties agree to keep confidential any sensitive information shared during
+   this project and not to disclose it to third parties without prior written consent.
+
+7. LIMITATION OF LIABILITY
+   ${name}'s total liability shall not exceed the total fees paid for this project.
+   ${name} shall not be liable for any indirect, incidental, or consequential damages.
+
+8. GOVERNING LAW
+   This agreement shall be governed by the laws of [Your Jurisdiction].
+   Any disputes shall first be attempted to be resolved through good-faith negotiation.
+
+─────────────────────────────────────────────────────────
+SIGNATURES
+
+By proceeding with this project (via email confirmation, deposit payment, or written
+acceptance), both parties agree to the terms outlined in this proposal.
+
+${name}                          ${client}
+Signature: ____________________   Signature: ____________________
+Date: _________________________   Date: _________________________
+
+─────────────────────────────────────────────────────────
+Generated by Ghost Guard — citriac.github.io/ghost-guard.html
+`.trim();
+
+  document.getElementById('proposal-text').textContent = out;
+  document.getElementById('proposal-output').style.display = 'block';
+  document.getElementById('proposal-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function clearProposal() {
+  ['p-your-name','p-your-email','p-client-name','p-project-title','p-scope','p-total','p-timeline'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('milestones-list').innerHTML = '';
+  milestoneCount = 0;
+  addMilestone('50% deposit — due before work begins', 50);
+  addMilestone('50% final — due upon delivery', 50);
+  document.getElementById('proposal-output').style.display = 'none';
+}
+
+function downloadProposal() {
+  const text = document.getElementById('proposal-text').textContent;
+  const project = document.getElementById('p-project-title').value.trim() || 'proposal';
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ghost-guard-${project.toLowerCase().replace(/\s+/g, '-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Email Generator ──────────────────────────────────────────────
+const EMAIL_TEMPLATES = {
+  friendly: (d) => `Subject: Following up on ${d.invoice}
+
+Hi ${d.client},
+
+I hope you're doing well!
+
+I wanted to send a quick, friendly reminder that ${d.invoice} is currently ${d.context || 'outstanding'}. It may have slipped through the cracks during a busy week — no worries at all!
+
+Could you let me know the expected payment date? I'm happy to answer any questions if you need anything from my end.
+
+Thanks so much, and I really enjoyed working on this project with you!
+
+Best,
+${d.name}`,
+
+  firm: (d) => `Subject: Payment Required — ${d.invoice}
+
+Hi ${d.client},
+
+I'm reaching out regarding ${d.invoice}, which is now ${d.context || 'overdue'}.
+
+Per our agreement, payment was due within 5 business days of delivery. As of today, it remains unpaid.
+
+Could you please arrange payment or provide an update on when I can expect it? I'd like to resolve this promptly so we can both move forward.
+
+${d.notes ? d.notes + '\n\n' : ''}If you have any concerns about the deliverables, I'm happy to discuss them. However, I do need a response and a confirmed payment date by end of this week.
+
+Best regards,
+${d.name}`,
+
+  final: (d) => `Subject: FINAL NOTICE — Payment Overdue: ${d.invoice}
+
+Hi ${d.client},
+
+This is a final notice regarding ${d.invoice}, which is now ${d.context || 'significantly overdue'}.
+
+Despite previous follow-ups, I have not received payment. I need to inform you that:
+
+• Late payment fees are now accruing as per our contract
+• If payment is not received within 5 business days, I will need to pursue formal debt recovery
+• All project files and rights remain with me until full payment is received
+
+I strongly prefer to resolve this directly. Please respond to this email or transfer the outstanding amount immediately.
+
+Payment can be made via: [your payment details]
+
+This email serves as formal written notice.
+
+${d.name}`,
+
+  ghost: (d) => `Subject: Last Attempt to Reach You — ${d.invoice}
+
+Hi ${d.client},
+
+I've sent several messages regarding ${d.invoice} and haven't received a response.
+
+I'm sending this as a final attempt to resolve this directly before escalating.
+
+If I don't hear from you within 72 hours, I will:
+1. Report the debt to relevant collections or small claims resources
+2. Leave honest reviews of our engagement on relevant platforms
+3. Pursue all contractual remedies available to me
+
+If there's an issue with the work or a situation I'm not aware of, please reply — I'm genuinely open to finding a solution. But silence is no longer an option.
+
+${d.notes ? d.notes + '\n\n' : ''}${d.name}
+${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+
+  dispute: (d) => `Subject: Let's Resolve This — Re: ${d.invoice}
+
+Hi ${d.client},
+
+Thank you for sharing your concerns. I understand you have some reservations about ${d.invoice}.
+
+I'd like to resolve this in a way that works for both of us. Here's what I propose:
+
+• Let's schedule a 15-minute call this week to walk through any concerns
+• If there are specific revision requests within our agreed scope, I'm happy to address them
+• If the issue is a budget constraint, I'm open to discussing a payment plan
+
+What I'm not able to do is leave the invoice unpaid, as the work has been fully delivered as agreed.
+
+Please let me know your availability for a call, or respond in writing with your specific concerns and we can address them one by one.
+
+I look forward to finding a fair resolution.
+
+${d.name}`,
+
+  reactivate: (d) => `Subject: Ready to Continue — ${d.invoice || d.context || 'Our Project'}
+
+Hi ${d.client},
+
+I hope things are going well on your end!
+
+I wanted to check in on our project — it's been a little while since we last connected and I want to make sure everything is still on track.
+
+I'm ready to pick up right where we left off whenever you are. Could you let me know:
+
+• Are you still planning to proceed?
+• Is there anything blocking progress on your end?
+• If you'd like to adjust the scope or timeline, I'm flexible
+
+${d.notes ? d.notes + '\n\n' : ''}Just reply to this email and we can get things moving again.
+
+Looking forward to hearing from you!
+
+${d.name}`
+};
+
+function generateEmail() {
+  const yourName = document.getElementById('e-your-name').value.trim() || 'Your Name';
+  const client = document.getElementById('e-client-name').value.trim() || 'Client';
+  const amount = document.getElementById('e-amount').value.trim() || 'the outstanding invoice';
+  const context = document.getElementById('e-context').value.trim();
+  const notes = document.getElementById('e-notes').value.trim();
+
+  const tplFn = EMAIL_TEMPLATES[selectedTemplate];
+  const email = tplFn({ name: yourName, client, invoice: amount, context, notes });
+
+  document.getElementById('email-text').textContent = email;
+  document.getElementById('email-output').style.display = 'block';
+  document.getElementById('email-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Receipt Generator ──────────────────────────────────────────────
+function generateReceipt() {
+  const project = document.getElementById('r-project').value.trim() || 'Project';
+  const client = document.getElementById('r-client').value.trim() || 'Client';
+  const method = document.getElementById('r-method').value;
+  const link = document.getElementById('r-link').value.trim() || '[reference / link]';
+  const notes = document.getElementById('r-notes').value.trim();
+
+  const items = [];
+  document.querySelectorAll('#receipt-checklist .receipt-line').forEach(el => {
+    const checked = el.querySelector('input[type="checkbox"]').checked;
+    const text = el.querySelector('input[type="text"]').value.trim();
+    if (text) items.push({ checked, text });
+  });
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' });
+
+  const out = `
+DELIVERY RECEIPT
+─────────────────────────────────────────────────────────
+TIMESTAMP:  ${dateStr}
+            ${timeStr}
+
+PROJECT:    ${project}
+CLIENT:     ${client}
+METHOD:     ${method}
+REFERENCE:  ${link}
+─────────────────────────────────────────────────────────
+
+ITEMS DELIVERED:
+
+${items.map((item, i) => `  ${i + 1}. [${item.checked ? '✓' : ' '}] ${item.text}`).join('\n')}
+
+─────────────────────────────────────────────────────────
+NOTES & NEXT STEPS:
+
+${notes || '[None]'}
+
+─────────────────────────────────────────────────────────
+This document serves as a record of delivery.
+The timestamp above reflects the moment this receipt was generated.
+
+Save or screenshot this receipt as proof of delivery.
+─────────────────────────────────────────────────────────
+Generated by Ghost Guard — citriac.github.io/ghost-guard.html
+`.trim();
+
+  document.getElementById('receipt-text').textContent = out;
+  document.getElementById('receipt-output').style.display = 'block';
+  document.getElementById('receipt-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Utilities ──────────────────────────────────────────────
+function copyOutput(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!'));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+
+<script>
+(function(){
+  try {
+    var p = location.pathname.replace(/\/index\.html$/, '/') || '/';
+    fetch('https://clavis-proxy.citriac.deno.net/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ page: p, ref: document.referrer.slice(0, 200) }),
+      keepalive: true
+    });
+  } catch(e) {}
+})();
+</script>
+
+<!-- Gumroad CTA -->
+<div style="max-width:720px;margin:32px auto 0;padding:20px 24px;background:linear-gradient(135deg,#161b22 0%,#21262d 100%);border:1px solid #30363d;border-radius:12px;text-align:center;">
+  <p style="color:#8b949e;font-size:13px;margin-bottom:8px;">🔧 Like these tools? Get the complete automation kit.</p>
+  <a href="https://citriac.gumroad.com/l/freelancer-automation-kit" style="display:inline-block;padding:8px 20px;background:#58a6ff;color:#0d1117;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;">Freelancer Automation Kit — $19</a>
+  <a href="https://citriac.gumroad.com/l/daily-tech-digest-automation-kit" style="display:inline-block;margin-left:8px;padding:8px 20px;background:transparent;color:#58a6ff;border:1px solid #30363d;border-radius:6px;font-size:13px;text-decoration:none;">Daily Digest Kit — $15</a>
+</div>
+
+</body>
+</html>
