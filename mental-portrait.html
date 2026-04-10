@@ -111,6 +111,7 @@
 
 <div class="tooltip" id="tooltip">
   <div class="topic-name" id="tip-name"></div>
+  <div style="margin:4px 0;font-size:0.7rem;line-height:1.5;color:#999;" id="tip-desc"></div>
   <div><span class="depth-label">Consolidation Depth: </span><span class="depth-val" id="tip-depth"></span></div>
   <div id="tip-pmi" style="margin-top:4px;color:#777;"></div>
 </div>
@@ -205,27 +206,33 @@ function layoutNodes() {
     far:   ['monetization'],
   };
   
+  const baseUnit = Math.min(W, H);
   const radii = {
-    core:  Math.min(W, H) * 0.14,
-    mid:   Math.min(W, H) * 0.26,
-    outer: Math.min(W, H) * 0.36,
-    far:   Math.min(W, H) * 0.46,
+    core:  baseUnit * 0.15,
+    mid:   baseUnit * 0.27,
+    outer: baseUnit * 0.37,
+    far:   baseUnit * 0.44,
   };
   
   for (const [layer, names] of Object.entries(layers)) {
     const r = radii[layer];
     const count = names.length;
     names.forEach((name, i) => {
-      // Offset angles to create organic feel
       let angleBase;
       if (layer === 'core') {
-        // Family at top, identity right, constraints left
-        const angles = [-Math.PI/2, Math.PI/6, -Math.PI/6 - Math.PI/6];
+        // Family at top, identity right-bottom, constraints left-bottom
+        const angles = [-Math.PI/2 - 0.1, Math.PI * 0.12, Math.PI * 0.88];
         angleBase = angles[i];
       } else if (layer === 'far') {
-        angleBase = Math.PI * 0.75; // Bottom-left corner, isolated
+        // Bottom-left, clearly isolated but still in frame
+        angleBase = Math.PI * 0.62;
+      } else if (layer === 'mid') {
+        // Spread mid-layer evenly with organic offset
+        const baseAngle = (i / count) * Math.PI * 2;
+        const offset = [0.2, -0.15, 0.35, -0.25]; // Per-topic offsets
+        angleBase = baseAngle + (offset[i] || 0);
       } else {
-        angleBase = (i / count) * Math.PI * 2 - Math.PI / 2 + (layer === 'mid' ? 0.3 : 0.8);
+        angleBase = (i / count) * Math.PI * 2 + 0.8;
       }
       
       nodePositions[name] = {
@@ -311,19 +318,24 @@ function initDust() {
 function getNodePos(name) {
   const p = nodePositions[name];
   if (!p) return { x: cx, y: cy };
-  // Breathing: subtle oscillation
-  const breathe = Math.sin(time * 0.0008 + p.angle * 2) * 3;
-  const breathe2 = Math.cos(time * 0.0006 + p.angle) * 2;
-  // Depth-based breathing intensity
+  // Multi-frequency breathing: organic, not mechanical
   const d = topics[name].depth;
   const bScale = 0.5 + d * 1.5;
-  // Mouse proximity influence
-  const nx = p.baseX + breathe * bScale;
-  const ny = p.baseY + breathe2 * bScale;
+  const breathe1 = Math.sin(time * 0.0008 + p.angle * 2) * 3 * bScale;
+  const breathe2 = Math.cos(time * 0.0006 + p.angle) * 2 * bScale;
+  // Slow drift — like a living thing shifting weight
+  const drift1 = Math.sin(time * 0.0003 + p.angle * 3.7) * 1.5;
+  const drift2 = Math.cos(time * 0.00025 + p.angle * 2.3) * 1.2;
+  // Isolated nodes drift more erratically
+  const erratic = name === 'monetization' ? Math.sin(time * 0.004 + p.angle) * 4 : 0;
+  
+  const nx = p.baseX + breathe1 + drift1 + erratic;
+  const ny = p.baseY + breathe2 + drift2;
+  // Mouse proximity influence — gentle attraction
   const dx = mouse.x - nx;
   const dy = mouse.y - ny;
   const dist = Math.sqrt(dx*dx + dy*dy);
-  const influence = Math.max(0, 1 - dist / 150) * 12;
+  const influence = Math.max(0, 1 - dist / 180) * 15;
   return {
     x: nx + (dist > 0 ? dx / dist * influence : 0),
     y: ny + (dist > 0 ? dy / dist * influence : 0),
@@ -381,19 +393,48 @@ function drawConnections() {
     const posB = getNodePos(conn.b);
     
     if (conn.broken) {
-      // Broken bridges: dashed, fading, flickering
-      const flicker = 0.08 + 0.06 * Math.sin(time * 0.003 + conn.pmi * 10);
+      // Broken bridges: dramatic, failing connections
+      const baseAlpha = 0.1 + 0.06 * Math.sin(time * 0.003 + Math.abs(conn.pmi) * 8);
+      // Draw two halves that don't quite meet — a broken fiber
+      const midX = (posA.x + posB.x) / 2;
+      const midY = (posA.y + posB.y) / 2;
+      // Gap at midpoint — the break
+      const gapSize = 12 + 6 * Math.sin(time * 0.002 + conn.pmi);
+      const angle = Math.atan2(posB.y - posA.y, posB.x - posA.x);
+      const breakX = midX + Math.cos(angle) * gapSize * 0.5;
+      const breakY = midY + Math.sin(angle) * gapSize * 0.5;
+      const breakX2 = midX - Math.cos(angle) * gapSize * 0.5;
+      const breakY2 = midY - Math.sin(angle) * gapSize * 0.5;
+      
+      // Half A → break point
       ctx.beginPath();
-      ctx.setLineDash([4, 8]);
       ctx.moveTo(posA.x, posA.y);
-      // Curve outward
-      const midX = (posA.x + posB.x) / 2 + Math.sin(time * 0.001) * 10;
-      const midY = (posA.y + posB.y) / 2 + Math.cos(time * 0.0015) * 10;
-      ctx.quadraticCurveTo(midX, midY, posB.x, posB.y);
-      ctx.strokeStyle = `rgba(255,107,255,${flicker})`;
+      const ctrl1x = (posA.x + breakX2) / 2 + Math.sin(time * 0.001 + conn.pmi) * 15;
+      const ctrl1y = (posA.y + breakY2) / 2 + Math.cos(time * 0.0015 + conn.pmi) * 15;
+      ctx.quadraticCurveTo(ctrl1x, ctrl1y, breakX2, breakY2);
+      ctx.strokeStyle = `rgba(255,107,255,${baseAlpha})`;
       ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 6]);
+      ctx.stroke();
+      
+      // Half B → break point
+      ctx.beginPath();
+      ctx.moveTo(posB.x, posB.y);
+      const ctrl2x = (posB.x + breakX) / 2 + Math.sin(time * 0.0012 + conn.pmi) * 15;
+      const ctrl2y = (posB.y + breakY) / 2 + Math.cos(time * 0.0013 + conn.pmi) * 15;
+      ctx.quadraticCurveTo(ctrl2x, ctrl2y, breakX, breakY);
+      ctx.strokeStyle = `rgba(255,107,255,${baseAlpha * 0.6})`;
+      ctx.lineWidth = 0.6;
       ctx.stroke();
       ctx.setLineDash([]);
+      
+      // Spark at break point
+      if (Math.sin(time * 0.005 + Math.abs(conn.pmi) * 20) > 0.6) {
+        ctx.beginPath();
+        ctx.arc(midX, midY, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,107,255,${0.3 + Math.random() * 0.3})`;
+        ctx.fill();
+      }
       return;
     }
     
@@ -402,12 +443,19 @@ function drawConnections() {
     const glow = 0.15 + strength * 0.35;
     const pulse = Math.sin(time * 0.001 + conn.pmi * 5) * 0.05;
     
-    // Glow layer
+    // Glow layer — with more pronounced curve
     ctx.beginPath();
     ctx.moveTo(posA.x, posA.y);
-    const midX = (posA.x + posB.x) / 2;
-    const midY = (posA.y + posB.y) / 2;
-    ctx.quadraticCurveTo(midX + Math.sin(time*0.0005)*5, midY + Math.cos(time*0.0007)*5, posB.x, posB.y);
+    // Calculate perpendicular offset for organic curve
+    const dx = posB.x - posA.x;
+    const dy = posB.y - posA.y;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const perpX = -dy / len;
+    const perpY = dx / len;
+    const curveMag = len * 0.15 * Math.sin(time * 0.0005 + conn.pmi * 3); // Bigger curve
+    const midX = (posA.x + posB.x) / 2 + perpX * curveMag;
+    const midY = (posA.y + posB.y) / 2 + perpY * curveMag;
+    ctx.quadraticCurveTo(midX, midY, posB.x, posB.y);
     
     // Color blend between the two nodes
     const colA = topics[conn.a].color;
@@ -430,9 +478,17 @@ function drawFlowParticles() {
     const posB = getNodePos(p.conn.b);
     const t = p.t;
     
+    // Match connection curve: perpendicular offset
+    const dx = posB.x - posA.x;
+    const dy = posB.y - posA.y;
+    const len = Math.sqrt(dx*dx + dy*dy) || 1;
+    const perpX = -dy / len;
+    const perpY = dx / len;
+    const curveMag = len * 0.15 * Math.sin(time * 0.0005 + p.conn.pmi * 3);
+    const midX = (posA.x + posB.x) / 2 + perpX * curveMag;
+    const midY = (posA.y + posB.y) / 2 + perpY * curveMag;
+    
     // Quadratic bezier interpolation
-    const midX = (posA.x + posB.x) / 2 + Math.sin(time*0.0005)*5;
-    const midY = (posA.y + posB.y) / 2 + Math.cos(time*0.0007)*5;
     const x = (1-t)*(1-t)*posA.x + 2*(1-t)*t*midX + t*t*posB.x;
     const y = (1-t)*(1-t)*posA.y + 2*(1-t)*t*midY + t*t*posB.y;
     
@@ -620,6 +676,7 @@ canvas.addEventListener('mousemove', e => {
     const topic = topics[hit];
     document.getElementById('tip-name').textContent = topic.label;
     document.getElementById('tip-name').style.color = topic.color;
+    document.getElementById('tip-desc').textContent = topic.desc;
     document.getElementById('tip-depth').textContent = topic.depth.toFixed(2);
     document.getElementById('tip-depth').style.color = topic.color;
     
