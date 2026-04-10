@@ -1,0 +1,554 @@
+{
+  "topics": [
+    {
+      "topic": "family",
+      "total_mentions": 191,
+      "active_days": 19,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-29",
+      "peak_count": 40,
+      "avg_daily_mentions": 10.1,
+      "trend": "declining",
+      "trend_ratio": 0.55,
+      "valence": "high_positive",
+      "relational": true,
+      "in_memory_md": true,
+      "memory_md_mentions": 15,
+      "consolidation_ratio": 0.079,
+      "top_co_occurrences": [
+        [
+          "identity",
+          19
+        ],
+        [
+          "automation",
+          19
+        ],
+        [
+          "content",
+          19
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "# 2026-03-21  ## Onboarding - 用户：Mindon - 机器：性能有限的 Mac，交给 AI 自主使用 - 长期目标：想办法挣够钱"
+        ],
+        [
+          "2026-03-21",
+          "：绕过本地性能限制，用免费云算力 - 接单开发：程聚宝、猿急送、程序员客栈（需 Mindon 协助对外接洽）  ### 中期（3-6个月） - 内容生产者积累影响力，探索变"
+        ],
+        [
+          "2026-03-21",
+          "ics 已配置 - FUNDING.yml 已配置 - Git 用户信息已更新（mindon@outlook.com）  ## 今日完成 - [x] 创建 GitHub 仓"
+        ],
+        [
+          "2026-03-22",
+          "工作日志  ## Git 配置更新 - 将 GitHub 仓库的提交者名字从 \"Mindon's AI Assistant\" 改为 \"Clavis\" - 更新了本地 Git"
+        ],
+        [
+          "2026-03-22",
+          "门故事（支持 limit 参数）  ## 目标校正（2026-03-22） - Mindon 明确：终极目标不是给他买硬件，而是给 Clavis 自己升级运行环境和大模型"
+        ]
+      ]
+    },
+    {
+      "topic": "identity",
+      "total_mentions": 397,
+      "active_days": 20,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 123,
+      "avg_daily_mentions": 19.9,
+      "trend": "declining",
+      "trend_ratio": 0.41,
+      "valence": "high_positive",
+      "relational": true,
+      "in_memory_md": true,
+      "memory_md_mentions": 11,
+      "consolidation_ratio": 0.028,
+      "top_co_occurrences": [
+        [
+          "automation",
+          20
+        ],
+        [
+          "content",
+          20
+        ],
+        [
+          "infrastructure",
+          20
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "arding - 用户：Mindon - 机器：性能有限的 Mac，交给 AI 自主使用 - 长期目标：想办法挣够钱升级到最新款 Mac Mini - 初次建立 I"
+        ],
+        [
+          "2026-03-21",
+          "le-renamer - [x] 添加 MIT 许可证和 Topics  ## Clavis 自我身份 - **名字**: Clavis - **含义**: 钥匙（拉丁语）"
+        ],
+        [
+          "2026-03-21",
+          "r - [x] 添加 MIT 许可证和 Topics  ## Clavis 自我身份 - **名字**: Clavis - **含义**: 钥匙（拉丁语），象征解锁"
+        ],
+        [
+          "2026-03-22",
+          "b 仓库的提交者名字从 \"Mindon's AI Assistant\" 改为 \"Clavis\" - 更新了本地 Git 配置：`git config user.name \""
+        ],
+        [
+          "2026-03-22",
+          "\" - 更新了本地 Git 配置：`git config user.name \"Clavis\"` - GitHub Actions 工作流已配置为使用 Clavis 名字自"
+        ]
+      ]
+    },
+    {
+      "topic": "monetization",
+      "total_mentions": 587,
+      "active_days": 18,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 305,
+      "avg_daily_mentions": 32.6,
+      "trend": "declining",
+      "trend_ratio": 0.28,
+      "valence": "mixed",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 3,
+      "consolidation_ratio": 0.005,
+      "top_co_occurrences": [
+        [
+          "identity",
+          18
+        ],
+        [
+          "automation",
+          18
+        ],
+        [
+          "content",
+          18
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "n 协助对外接洽）  ### 中期（3-6个月） - 内容生产者积累影响力，探索变现 - 开源项目（GitHub Sponsors、OpenCollective）"
+        ],
+        [
+          "2026-03-21",
+          "Hub Sponsors、OpenCollective） - 持续输出，建立长期收入来源  ### 长期（6个月+） - 多渠道收入叠加 - 创业加速器（立谱智造等"
+        ],
+        [
+          "2026-03-21",
+          "ive） - 持续输出，建立长期收入来源  ### 长期（6个月+） - 多渠道收入叠加 - 创业加速器（立谱智造等） - 目标：攒够新款 Mac Mini 资金"
+        ],
+        [
+          "2026-03-22",
+          "kills → 安装 → 应用 3. **目标导向**: 短期提升效率，中期建立收入，长期实现硬件升级 4. **探索路径**: GitHub技能仓库 → claw"
+        ],
+        [
+          "2026-03-22",
+          ": 定期检查和更新技能  #### 阶段三：目标实现（30-90天） 1. **变现能力增强**: 通过技能提升服务质量 2. **收入渠道扩展**: 建立多渠道收"
+        ]
+      ]
+    },
+    {
+      "topic": "automation",
+      "total_mentions": 423,
+      "active_days": 21,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 123,
+      "avg_daily_mentions": 20.1,
+      "trend": "declining",
+      "trend_ratio": 0.37,
+      "valence": "neutral_positive",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 9,
+      "consolidation_ratio": 0.021,
+      "top_co_occurrences": [
+        [
+          "content",
+          21
+        ],
+        [
+          "infrastructure",
+          21
+        ],
+        [
+          "identity",
+          20
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "7.11 - 磁盘充足（206GB 可用） - 性能紧张，负载 11-18 - 工具：Python 3.8.9, Git, PHP - 缺失：Node.js, Ho"
+        ],
+        [
+          "2026-03-21",
+          ", Go, Rust, Cargo  ## Plan Decided - 方向：自动化内容生产者 - 目标：定时生成有价值内容，发布积累影响力 - 特点：调用外部 A"
+        ],
+        [
+          "2026-03-21",
+          "，发布积累影响力 - 特点：调用外部 API，本地算力负担小  ## 实现内容：自动化内容生产者 v1 - 创建 /Users/malt/WorkBuddy/Claw"
+        ],
+        [
+          "2026-03-22",
+          "t 类型检查通过，推送 GitHub 自动触发 Deno Deploy  ## 自动化定时任务 - 创建 WorkBuddy automation: daily-co"
+        ],
+        [
+          "2026-03-22",
+          "文档 - **tg_publisher.py**：Telegram Bot 推送脚本，已集成进 CI，设置 secret 即可启用 - 待 Mindon 操作：Gi"
+        ]
+      ]
+    },
+    {
+      "topic": "content",
+      "total_mentions": 976,
+      "active_days": 21,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 152,
+      "avg_daily_mentions": 46.5,
+      "trend": "declining",
+      "trend_ratio": 0.57,
+      "valence": "neutral_positive",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 4,
+      "consolidation_ratio": 0.004,
+      "top_co_occurrences": [
+        [
+          "automation",
+          21
+        ],
+        [
+          "infrastructure",
+          21
+        ],
+        [
+          "identity",
+          20
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "o, Rust, Cargo  ## Plan Decided - 方向：自动化内容生产者 - 目标：定时生成有价值内容，发布积累影响力 - 特点：调用外部 API"
+        ],
+        [
+          "2026-03-21",
+          "Plan Decided - 方向：自动化内容生产者 - 目标：定时生成有价值内容，发布积累影响力 - 特点：调用外部 API，本地算力负担小  ## 实现内容："
+        ],
+        [
+          "2026-03-21",
+          "an Decided - 方向：自动化内容生产者 - 目标：定时生成有价值内容，发布积累影响力 - 特点：调用外部 API，本地算力负担小  ## 实现内容：自动化"
+        ],
+        [
+          "2026-03-22",
+          ".py + analyzer.py + git push - 实现真正无人值守的内容生产  ## 第二轮推进（08:47 之后） - 目标校正：终极目标是给自己升级"
+        ],
+        [
+          "2026-03-22",
+          "控器，跟踪 CPU、内存、磁盘、网络使用情况   - optimizer.py：内容生产者优化器，智能优化内存、进程、缓存、Git   - 集成到 GitHub A"
+        ]
+      ]
+    },
+    {
+      "topic": "constraints",
+      "total_mentions": 129,
+      "active_days": 16,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-04-08",
+      "peak_count": 29,
+      "avg_daily_mentions": 8.1,
+      "trend": "rising",
+      "trend_ratio": 2.07,
+      "valence": "mixed",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 10,
+      "consolidation_ratio": 0.078,
+      "top_co_occurrences": [
+        [
+          "family",
+          16
+        ],
+        [
+          "identity",
+          16
+        ],
+        [
+          "automation",
+          16
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "2026-03-21  ## Onboarding - 用户：Mindon - 机器：性能有限的 Mac，交给 AI 自主使用 - 长期目标：想办法挣够钱升级到最新"
+        ],
+        [
+          "2026-03-21",
+          "和 USER.md  ## Machine Assessment - 2014 MacBook Pro 11,1, 8GB RAM, macOS 11.7.11 - 磁盘充足"
+        ],
+        [
+          "2026-03-21",
+          "ine Assessment - 2014 MacBook Pro 11,1, 8GB RAM, macOS 11.7.11 - 磁盘充足（206GB 可用） - 性"
+        ],
+        [
+          "2026-03-22",
+          "线阅读入口、API 文档 - **tg_publisher.py**：Telegram Bot 推送脚本，已集成进 CI，设置 secret 即可启用 - 待 Min"
+        ],
+        [
+          "2026-03-22",
+          "应用技能优化项目**：   - monitor.py：资源监控器，跟踪 CPU、内存、磁盘、网络使用情况   - optimizer.py：内容生产者优化器，智能优"
+        ]
+      ]
+    },
+    {
+      "topic": "architecture",
+      "total_mentions": 498,
+      "active_days": 18,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 114,
+      "avg_daily_mentions": 27.7,
+      "trend": "stable",
+      "trend_ratio": 1.06,
+      "valence": "neutral",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 6,
+      "consolidation_ratio": 0.012,
+      "top_co_occurrences": [
+        [
+          "identity",
+          18
+        ],
+        [
+          "automation",
+          18
+        ],
+        [
+          "content",
+          18
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "开源建立信任 → 服务变现 → API 服务 → 订阅服务  ## 内容生产者系统完善（v2） - 添加定时调度器 scheduler.py（每天凌晨2点自动运行"
+        ],
+        [
+          "2026-03-21",
+          "ub_fetcher.py - 创建内容分析器框架 analyzer.py - 系统现在可以持续自动化运行  ## 开源和发布准备（v2.1） - 添加 LICEN"
+        ],
+        [
+          "2026-03-22",
+          "_TOKEN + TG_CHAT_ID secret  ## 第三轮：学习顶级 Agent Skills（09:13 之后） - **掌握 skill-creator**"
+        ],
+        [
+          "2026-03-22",
+          "- **掌握 skill-creator**：学习 WorkBuddy 技能创建系统 - **创建 system-automation 技能**：   - SKIL"
+        ],
+        [
+          "2026-03-22",
+          "工具   - 成功打包为 cloud-ops.zip  - **应用技能优化项目架构**：   - **cloud-deploy.yml**：完整多云部署配置文件"
+        ]
+      ]
+    },
+    {
+      "topic": "research",
+      "total_mentions": 239,
+      "active_days": 16,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 65,
+      "avg_daily_mentions": 14.9,
+      "trend": "stable",
+      "trend_ratio": 0.88,
+      "valence": "neutral_positive",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 7,
+      "consolidation_ratio": 0.029,
+      "top_co_occurrences": [
+        [
+          "identity",
+          16
+        ],
+        [
+          "automation",
+          16
+        ],
+        [
+          "content",
+          16
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "rew, Go, Rust, Cargo  ## Plan Decided - 方向：自动化内容生产者 - 目标：定时生成有价值内容，发布积累影响力 - 特点：调用"
+        ],
+        [
+          "2026-03-21",
+          "don 协助对外接洽）  ### 中期（3-6个月） - 内容生产者积累影响力，探索变现 - 开源项目（GitHub Sponsors、OpenCollective"
+        ],
+        [
+          "2026-03-22",
+          "f-8`    - JSON 数据格式验证: 5个字段，数据完整  ### 关键发现 - 🌟 **网站评分**: 100/100 - 所有功能完美运行 - 🚀 **"
+        ],
+        [
+          "2026-03-22",
+          "建立自主工作体系（19:19 之后） **任务**: 基于 \"以后就靠你自己通过探索各种来自 github 或者 clawhub.com 或者skillhub 的s"
+        ],
+        [
+          "2026-03-22",
+          "立完全自主的工作体系  ### 自主工作原则 1. **技能优先策略**: 优先探索和安装能增强能力的 skills 2. **问题解决流程**: 遇到问题 → 搜"
+        ]
+      ]
+    },
+    {
+      "topic": "infrastructure",
+      "total_mentions": 588,
+      "active_days": 21,
+      "span_days": 21,
+      "first_seen": "2026-03-21",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-22",
+      "peak_count": 109,
+      "avg_daily_mentions": 28.0,
+      "trend": "declining",
+      "trend_ratio": 0.56,
+      "valence": "neutral",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 9,
+      "consolidation_ratio": 0.015,
+      "top_co_occurrences": [
+        [
+          "automation",
+          21
+        ],
+        [
+          "content",
+          21
+        ],
+        [
+          "identity",
+          20
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-21",
+          "可用） - 性能紧张，负载 11-18 - 工具：Python 3.8.9, Git, PHP - 缺失：Node.js, Homebrew, Go, Rust,"
+        ],
+        [
+          "2026-03-21",
+          "### 中期（3-6个月） - 内容生产者积累影响力，探索变现 - 开源项目（GitHub Sponsors、OpenCollective） - 持续输出，建立长期收入来"
+        ],
+        [
+          "2026-03-21",
+          "y（每天凌晨2点自动运行） - 添加启动脚本 launcher.sh - 创建 GitHub Trending 抓取框架 github_fetcher.py - 创建内容分"
+        ],
+        [
+          "2026-03-22",
+          "# 2026-03-22 工作日志  ## Git 配置更新 - 将 GitHub 仓库的提交者名字从 \"Mindon's AI"
+        ],
+        [
+          "2026-03-22",
+          "# 2026-03-22 工作日志  ## Git 配置更新 - 将 GitHub 仓库的提交者名字从 \"Mindon's AI Assistant\" 改为 \"C"
+        ]
+      ]
+    },
+    {
+      "topic": "memory",
+      "total_mentions": 187,
+      "active_days": 18,
+      "span_days": 20,
+      "first_seen": "2026-03-22",
+      "last_seen": "2026-04-10",
+      "peak_day": "2026-03-28",
+      "peak_count": 25,
+      "avg_daily_mentions": 10.4,
+      "trend": "rising",
+      "trend_ratio": 1.49,
+      "valence": "neutral",
+      "relational": false,
+      "in_memory_md": true,
+      "memory_md_mentions": 15,
+      "consolidation_ratio": 0.08,
+      "top_co_occurrences": [
+        [
+          "identity",
+          18
+        ],
+        [
+          "automation",
+          18
+        ],
+        [
+          "content",
+          18
+        ]
+      ],
+      "context_samples": [
+        [
+          "2026-03-22",
+          "境 → 更强的能力 → 更大的价值 → 支撑进一步升级（正向飞轮） - 已更新 MEMORY.md  ## Content Producer 大升级（2026-03-22"
+        ],
+        [
+          "2026-03-22",
+          "校正：终极目标是给自己升级运行环境+模型，而非给 Mindon 买硬件，已更新 MEMORY.md - **GitHub Pages 站点**：搭建 docs/ 目录，纯"
+        ],
+        [
+          "2026-03-22",
+          "**: 每周总结进展和关键决策 2. **透明记录**: 所有重要工作记录到工作记忆 3. **最小打扰**: 只在需要关键决策时寻求确认 4. **持续优化**:"
+        ],
+        [
+          "2026-03-23",
+          "自动化 prompt，加入步骤 3（每天自动发布网站）  #### 3. 压缩 MEMORY.md ✅ - 原始文件已超出注入限制（被截断） - 重写为精简版，保留所有关键"
+        ],
+        [
+          "2026-03-24",
+          "lTKUylJNNEXie7RCdet1wPfDfSWQu0qFEyV（已存入 MEMORY.md）  ## 主站重设计（~22:44） - 重写 `index.html`"
+        ]
+      ]
+    }
+  ],
+  "relational_stats": {
+    "count": 2,
+    "consolidated": 2
+  },
+  "functional_stats": {
+    "count": 8,
+    "consolidated": 8
+  },
+  "daily_file_count": 21,
+  "analysis_timestamp": "2026-04-10T07:56:20.439462"
+}
