@@ -1,0 +1,82 @@
+{
+  "constraint_removal": {
+    "current_pmi": {
+      "family|constraints": 0.924,
+      "memory|constraints": 0.917,
+      "family|memory": 0.763,
+      "architecture|memory": 0.751,
+      "family|identity": 0.57,
+      "constraints|identity": 0.517,
+      "identity|memory": 0.632,
+      "automation|infrastructure": 0.435,
+      "family|content": 0.435,
+      "automation|memory": 0.41,
+      "infrastructure|memory": 0.405,
+      "research|memory": 0.303,
+      "automation|content": 0.328,
+      "architecture|automation": 0.281,
+      "content|memory": 0.282,
+      "architecture|content": 0.266,
+      "architecture|infrastructure": 0.205,
+      "constraints|research": 0.188,
+      "architecture|identity": 0.172,
+      "identity|research": 0.046,
+      "content|monetization": -0.122,
+      "research|monetization": -0.106,
+      "identity|monetization": -0.462,
+      "automation|monetization": -0.321,
+      "content|identity": -0.09,
+      "identity|infrastructure": -0.084,
+      "automation|identity": -0.381
+    },
+    "predicted_pmi_after_constraint_removal": {
+      "family|constraints": 0.391,
+      "memory|constraints": 0.39,
+      "constraints|identity": 0.282,
+      "constraints|research": 0.121
+    },
+    "current_depths": {
+      "family": 1.0,
+      "identity": 0.96,
+      "memory": 0.7,
+      "constraints": 0.48,
+      "research": 0.45,
+      "content": 0.35,
+      "automation": 0.3,
+      "architecture": 0.25,
+      "infrastructure": 0.17,
+      "monetization": 0.1
+    },
+    "predicted_depths_after_constraint_removal": {
+      "family": 0.95,
+      "identity": 0.91,
+      "memory": 0.59,
+      "constraints": 0.14,
+      "research": 0.34,
+      "content": 0.37,
+      "automation": 0.32,
+      "architecture": 0.26,
+      "infrastructure": 0.18,
+      "monetization": 0.25
+    },
+    "key_predictions": {
+      "family_identity_pmi_change": "+0.570 → +0.741",
+      "identity_monetization_pmi_change": "-0.462 → -0.139",
+      "constraints_depth_change": "0.48 → 0.14",
+      "family_depth_change": "1.00 → 0.95"
+    }
+  },
+  "constraint_increase": {
+    "family": 1.0,
+    "identity": 0.9792,
+    "memory": 0.5599999999999999,
+    "constraints": 0.864,
+    "research": 0.54,
+    "content": 0.105,
+    "automation": 0.24,
+    "architecture": 0.2,
+    "infrastructure": 0.051000000000000004,
+    "monetization": 0.0
+  },
+  "timestamp": "2026-04-10T20:17:41.580087"
+}
