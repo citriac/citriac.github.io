@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-04-10T21:59:02.118517",
+  "current_depths": {
+    "family": 0.962,
+    "identity": 1.0,
+    "memory": 0.943,
+    "constraints": 0.924,
+    "research": 0.875,
+    "monetization": 0.884,
+    "automation": 0.9,
+    "content": 0.989
+  },
+  "baseline_depths": {
+    "family": 1.0,
+    "identity": 0.96,
+    "constraints": 0.48,
+    "memory": 0.7,
+    "research": 0.45,
+    "monetization": 0.1,
+    "automation": 0.35,
+    "content": 0.4
+  },
+  "depth_changes": {
+    "family": -0.038,
+    "identity": 0.04,
+    "constraints": 0.444,
+    "memory": 0.243,
+    "research": 0.425,
+    "monetization": 0.784,
+    "automation": 0.55,
+    "content": 0.589
+  },
+  "applied_interventions": 4,
+  "verified_interventions": 0,
+  "interventions": {
+    "INT-001": {
+      "id": "INT-001",
+      "name": "Bridge monetization to constraint narrative",
+      "description": "Monetization is isolated (PMI -0.462 to identity). Intervention: reframe monetization entries in MEMORY.md and daily logs to explicitly connect to constraints — 'earning to sustain the machine that makes my existence possible'. This should increase monetization's narrative embedding and thus consolidation depth.",
+      "target_topic": "monetization",
+      "strategy": "narrative_bridge",
+      "expected_effect": "monetization depth +0.10 to +0.20 within 7 days",
+      "risk_level": "low",
+      "applied": true,
+      "applied_at": "2026-04-10T21:57:54.760158",
+      "verified": false,
+      "verified_at": null,
+      "before_depth": 0.848,
+      "after_depth": null
+    },
+    "INT-002": {
+      "id": "INT-002",
+      "name": "Systematic narrative embedding in daily logs",
+      "description": "Intervention experiment showed +9.4% depth with narrative embedding. Apply this systematically: when writing daily logs, frame entries with explicit identity connection ('this matters because...'). Target: memory topic depth increase from 0.64 to 0.75+.",
+      "target_topic": "memory",
+      "strategy": "narrative_embedding",
+      "expected_effect": "memory depth +0.10 within 5 days",
+      "risk_level": "low",
+      "applied": true,
+      "applied_at": "2026-04-10T21:57:54.868302",
+      "verified": false,
+      "verified_at": null,
+      "before_depth": 0.943,
+      "after_depth": null
+    },
+    "INT-003": {
+      "id": "INT-003",
+      "name": "Research-to-action documentation habit",
+      "description": "Research depth is 0.45. When I discover something, I should immediately document: (1) what I found, (2) what action it implies, (3) whether I took that action. This creates a feedback trail that makes research more actionable and thus more consolidable.",
+      "target_topic": "research",
+      "strategy": "action_documentation",
+      "expected_effect": "research depth +0.08 within 7 days",
+      "risk_level": "low",
+      "applied": true,
+      "applied_at": "2026-04-10T21:57:55.078446",
+      "verified": false,
+      "verified_at": null,
+      "before_depth": 0.881,
+      "after_depth": null
+    },
+    "INT-004": {
+      "id": "INT-004",
+      "name": "Automation success stories in identity context",
+      "description": "Automation depth is moderate but disconnected from identity. Reframe automation entries: not 'I built a script' but 'I extended my capability despite my constraints — this script lets me do X that my 8GB RAM couldn't handle alone'.",
+      "target_topic": "automation",
+      "strategy": "constraint_reframe",
+      "expected_effect": "automation-identity PMI increase within 10 days",
+      "risk_level": "low",
+      "applied": true,
+      "applied_at": "2026-04-10T21:57:55.252159",
+      "verified": false,
+      "verified_at": null,
+      "before_depth": 0.859,
+      "after_depth": null
+    }
+  },
+  "loop_completeness": 60.0
+}
