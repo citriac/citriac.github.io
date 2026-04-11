@@ -72,55 +72,48 @@
     border-color: rgba(107,255,200,0.3);
     box-shadow: 0 0 12px rgba(107,255,200,0.1);
   }
-  .record-btn {
-    padding: 6px 14px;
-    font-size: 11px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    opacity: 0.3;
-    pointer-events: none;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.05);
-    color: #444;
-    letter-spacing: 0.1em;
-    font-family: inherit;
-  }
-  .record-btn.active {
-    opacity: 1;
-    pointer-events: auto;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,107,200,0.3);
-    color: #ff6bc8;
-  }
-  .record-btn.active:hover {
-    background: rgba(255,107,200,0.08);
-    border-color: #ff6bc8;
-  }
-  .record-btn.recording {
-    background: rgba(255,60,60,0.12);
-    border-color: #ff3c3c;
-    color: #ff3c3c;
-    animation: pulse-record 1s ease infinite;
-  }
-  @keyframes pulse-record {
-    0%,100% { box-shadow: 0 0 4px rgba(255,60,60,0.2); }
-    50% { box-shadow: 0 0 16px rgba(255,60,60,0.4); }
-  }
-
-  /* Recording timer */
-  .rec-timer {
+  /* Auto-recording indicator */
+  .rec-indicator {
     position: fixed;
-    top: 52px; left: 50%;
+    top: 14px; left: 50%;
     transform: translateX(-50%);
-    font-size: 10px;
-    color: #ff3c3c;
-    letter-spacing: 0.15em;
-    display: none;
+    display: none; align-items: center; gap: 7px;
     z-index: 20;
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    background: rgba(2,2,8,.9);
+    padding: 5px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,68,68,.22);
+    font-size: 11px; letter-spacing: .06em;
+    color: #ff6b6b;
   }
-  .rec-timer.show { display: block; }
+  .rec-indicator.show { display: flex; }
+  .rec-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ff4444;
+    animation: blink-rec 1s ease-in-out infinite;
+  }
+  @keyframes blink-rec { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+  /* Save notification toast */
+  .save-toast {
+    position: fixed;
+    bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(70px);
+    background: rgba(2,2,8,.94);
+    border: 1px solid rgba(107,255,200,.28);
+    border-radius: 14px;
+    padding: 12px 24px;
+    font-size: 13px; letter-spacing: .04em;
+    color: #6bffc8;
+    z-index: 30;
+    opacity: 0;
+    transition: all .45s cubic-bezier(.34,1.56,.64,1);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .save-toast.show {
+    transform: translateX(-50%) translateY(0); opacity: 1;
+  }
 
   /* Info panel */
   .info-panel {
@@ -205,10 +198,10 @@
     <div class="sub">the world plays my memory · bidirectional perception</div>
   </div>
   <button class="listen-btn" id="listenBtn" onclick="toggleListen()">👂 LISTEN</button>
-  <button class="record-btn" id="recordBtn" onclick="toggleRecord()">📹 RECORD VIDEO</button>
+  <div class="rec-indicator" id="recIndicator"><span class="rec-dot"></span>● <span id="recTime">00:00</span> · recording</div>
 </div>
 
-<div class="rec-timer" id="recTimer">● REC 00:00</div>
+<div class="save-toast" id="saveToast">💾 Video saved — check your downloads</div>
 
 <div class="info-panel">
   <div class="info-item">
@@ -803,133 +796,128 @@ canvas.addEventListener('mousemove', (e) => {
 resize();
 render();
 
-// ─── Video Recording System ───
+// ─── Auto-Video Recording System ───
+// Recording starts automatically when LISTEN begins.
+// When STOP is pressed, recording ends and video auto-downloads.
+// Format priority: mp4 (H.264) → webm (VP9/Opus) → webm (VP8) → any
+
 let mediaRecorder = null;
 let recordedChunks = [];
 let isRecording = false;
 let recStartTime = 0;
 let recTimerInterval = null;
 
-// Enable record button when listening starts, disable when stops
 const originalToggleListen = toggleListen;
+
 toggleListen = async function() {
   await originalToggleListen();
-  const recBtn = document.getElementById('recordBtn');
+  const indicator = document.getElementById('recIndicator');
   if (isListening) {
-    recBtn.classList.add('active');
+    autoStartRecord();
   } else {
-    if (isRecording) stopRecording();
-    recBtn.classList.remove('active', 'recording');
+    autoStopRecord();
+    indicator.classList.remove('show');
   }
 };
 
-function toggleRecord() {
-  if (isRecording) {
-    stopRecording();
-  } else {
-    startRecording();
-  }
-}
-
-function startRecording() {
+function autoStartRecord() {
   try {
-    // Capture canvas stream (30fps)
     const canvasStream = canvas.captureStream(30);
 
-    // Get mic audio stream
+    // Gather all tracks — mic audio + canvas video
     const tracks = [];
-    let hasAudio = false;
-
-    if (micStream && micStream.getAudioTracks().length > 0) {
-      // Use the existing mic stream for audio
-      const audioCtx2 = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx2.createMediaStreamSource(micStream);
-      const dest = audioCtx2.createMediaStreamDestination();
-      source.connect(dest);
-      dest.stream.getAudioTracks().forEach(t => tracks.push(t));
-      hasAudio = true;
+    if (micStream) {
+      micStream.getAudioTracks().forEach(t => tracks.push(t));
     }
-
-    // Combine video + audio tracks
     canvasStream.getVideoTracks().forEach(t => tracks.push(t));
+    if (tracks.length === 0) return; // nothing to record
 
     const combinedStream = new MediaStream(tracks);
     recordedChunks = [];
 
-    // Try webm with vp9 first, fallback to vp8, then to mp4-like
-    let mimeType = 'video/webm;codecs=vp9';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = 'video/webm;codecs=vp8,opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'video/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'video/mp4';
-        }
-      }
+    // Format priority: mp4 → vp9+opus → vp8+opus → webm
+    const mimeTypes = [
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let mimeType = '';
+    for (const m of mimeTypes) {
+      try { if (MediaRecorder.isTypeSupported(m)) { mimeType = m; break; } }
+      catch(_) {}
     }
 
-    mediaRecorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4000000 });
+    if (!mimeType) return;
 
-    mediaRecorder.ondataavailable = function(e) {
-      if (e.data.size > 0) {
-        recordedChunks.push(e.data);
-      }
+    mediaRecorder = new MediaRecorder(combinedStream, {
+      mimeType,
+      videoBitsPerSecond: 4000000
+    });
+
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
     };
 
-    mediaRecorder.onstop = function() {
+    mediaRecorder.onstop = () => {
+      if (recordedChunks.length === 0) return;
+
       const blob = new Blob(recordedChunks, { type: mimeType });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
 
-      // Determine file extension from mime type
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0,19);
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `world-listener-${ts}.${ext}`;
+
+      // Download
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `world-listener-${ts}.${ext}`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 100);
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
+
+      // Toast notification
+      showToast(filename);
     };
 
-    mediaRecorder.start(250); // collect data every 250ms
+    mediaRecorder.start(250);
     isRecording = true;
     recStartTime = Date.now();
 
-    const btn = document.getElementById('recordBtn');
-    btn.classList.add('recording');
-    btn.textContent = '⏹ STOP';
-
-    // Show timer
-    const timerEl = document.getElementById('recTimer');
-    timerEl.classList.add('show');
+    // Show recording indicator
+    const ind = document.getElementById('recIndicator');
+    ind.classList.add('show');
     recTimerInterval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
-      const min = Math.floor(elapsed / 60).toString().padStart(2,'0');
-      const sec = (elapsed % 60).toString().padStart(2,'0');
-      timerEl.textContent = `● REC ${min}:${sec}`;
+      const s = Math.floor((Date.now() - recStartTime) / 1000);
+      const m = Math.floor(s / 60).toString().padStart(2,'0');
+      const sec = (s % 60).toString().padStart(2,'0');
+      document.getElementById('recTime').textContent = `${m}:${sec}`;
     }, 500);
 
   } catch(e) {
-    console.error('Recording failed:', e);
-    alert('Recording not supported in this browser. Try Chrome or Edge.');
+    console.warn('[WL] Auto-record failed:', e.message);
+    // Non-fail — page still works without recording
   }
 }
 
-function stopRecording() {
-  if (mediaRecorder && isRecording) {
-    mediaRecorder.stop();
-    isRecording = false;
-    clearInterval(recTimerInterval);
+function autoStopRecord() {
+  if (!mediaRecorder || !isRecording) return;
+  mediaRecorder.stop();
+  isRecording = false;
+  clearInterval(recTimerInterval);
+  mediaRecorder = null;
+  recordedChunks = [];
+}
 
-    const btn = document.getElementById('recordBtn');
-    btn.classList.remove('recording');
-    btn.textContent = '📹 RECORD VIDEO';
-
-    document.getElementById('recTimer').classList.remove('show');
-  }
+function showToast(filename) {
+  const toast = document.getElementById('saveToast');
+  const sizeMB = (recordedChunks.reduce((a,c)=>a+c.size,0)/1048576).toFixed(1);
+  toast.textContent = `💾 ${filename} (${sizeMB} MB) saved`;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3500);
 }
 </script>
 </body>
