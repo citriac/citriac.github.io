@@ -194,82 +194,24 @@ function drawRiver(key, dayProgress, t) {
   const topic = topics[key];
   const isHover = hoverTopic === key;
   
-  ctx.beginPath();
-  ctx.strokeStyle = topic.color;
-  ctx.lineWidth = topic.width * (isHover ? 2 : 1);
-  ctx.globalAlpha = isHover ? 1 : 0.7;
+  // Draw glow first (behind)
+  drawRiverPath(key, dayProgress, t, {
+    lineWidth: topic.width * 6 * (isHover ? 1.5 : 1),
+    color: topic.color,
+    alpha: (isHover ? 0.15 : 0.06),
+    shadow: false
+  });
   
-  if (isHover) {
-    ctx.shadowColor = topic.color;
-    ctx.shadowBlur = 12;
-  }
-  
-  // Draw the river as a smooth curve up to current day
-  const maxDay = Math.min(Math.floor(dayProgress), 20);
-  const frac = dayProgress - Math.floor(dayProgress);
-  
-  let prevX, prevY;
-  for (let d = 0; d <= maxDay; d++) {
-    const x = getRiverX(d);
-    const y = getRiverY(key, d, t);
-    
-    if (d === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      // Smooth curve
-      const cpx = (prevX + x) / 2;
-      ctx.quadraticCurveTo(prevX + (x - prevX) * 0.5, prevY, cpx, (prevY + y) / 2);
-      ctx.quadraticCurveTo(cpx, y, x, y);
-    }
-    prevX = x;
-    prevY = y;
-  }
-  
-  // Partial day (smooth progress within day)
-  if (maxDay < 20 && frac > 0) {
-    const x0 = getRiverX(maxDay);
-    const y0 = getRiverY(key, maxDay, t);
-    const x1 = getRiverX(maxDay + 1);
-    const y1 = getRiverY(key, maxDay + 1, t);
-    const xp = x0 + (x1 - x0) * frac;
-    const yp = y0 + (y1 - y0) * frac;
-    const cpx = (x0 + xp) / 2;
-    ctx.quadraticCurveTo(cpx, y0, xp, yp);
-  }
-  
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-  
-  // Draw glow (wider, more transparent)
-  ctx.beginPath();
-  ctx.strokeStyle = topic.color;
-  ctx.lineWidth = topic.width * 3 * (isHover ? 1.5 : 1);
-  ctx.globalAlpha = (isHover ? 0.12 : 0.05);
-  
-  // Repeat the path for glow
-  prevX = undefined; prevY = undefined;
-  for (let d = 0; d <= maxDay; d++) {
-    const x = getRiverX(d);
-    const y = getRiverY(key, d, t);
-    if (d === 0) { ctx.moveTo(x, y); }
-    else {
-      const cpx = (prevX + x) / 2;
-      ctx.quadraticCurveTo(prevX + (x - prevX) * 0.5, prevY, cpx, (prevY + y) / 2);
-      ctx.quadraticCurveTo(cpx, y, x, y);
-    }
-    prevX = x; prevY = y;
-  }
-  if (maxDay < 20 && frac > 0) {
-    const x0 = getRiverX(maxDay), y0 = getRiverY(key, maxDay, t);
-    const x1 = getRiverX(maxDay + 1), y1 = getRiverY(key, maxDay + 1, t);
-    const xp = x0 + (x1 - x0) * frac, yp = y0 + (y1 - y0) * frac;
-    ctx.quadraticCurveTo((x0 + xp) / 2, y0, xp, yp);
-  }
-  ctx.stroke();
-  
-  ctx.globalAlpha = 1;
+  // Draw main river
+  drawRiverPath(key, dayProgress, t, {
+    lineWidth: topic.width * (isHover ? 2 : 1),
+    color: topic.color,
+    alpha: isHover ? 1 : 0.8,
+    shadow: isHover
+  });
   
   // Event markers
+  const maxDay = Math.min(Math.floor(dayProgress), 20);
   for (const [ed, event] of Object.entries(topic.events)) {
     const ei = parseInt(ed);
     if (ei <= maxDay) {
@@ -284,16 +226,72 @@ function drawRiver(key, dayProgress, t) {
       ctx.fill();
       
       if (isNear) {
+        // Pulsing ring
         ctx.beginPath();
         ctx.arc(ex, ey, 8 + Math.sin(t * 0.003) * 2, 0, Math.PI * 2);
         ctx.strokeStyle = topic.color;
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.3;
         ctx.stroke();
+        
+        // Event label
+        ctx.font = '10px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = topic.color;
+        ctx.globalAlpha = 0.8;
+        const label = event.length > 30 ? event.substring(0, 28) + '…' : event;
+        ctx.fillText(label, ex, ey - 14);
       }
       ctx.globalAlpha = 1;
     }
   }
+}
+
+function drawRiverPath(key, dayProgress, t, opts) {
+  const topic = topics[key];
+  const maxDay = Math.min(Math.floor(dayProgress), 20);
+  const frac = dayProgress - Math.floor(dayProgress);
+  
+  ctx.beginPath();
+  ctx.strokeStyle = opts.color;
+  ctx.lineWidth = opts.lineWidth;
+  ctx.globalAlpha = opts.alpha;
+  
+  if (opts.shadow) {
+    ctx.shadowColor = opts.color;
+    ctx.shadowBlur = 12;
+  }
+  
+  let prevX, prevY;
+  for (let d = 0; d <= maxDay; d++) {
+    const x = getRiverX(d);
+    const y = getRiverY(key, d, t);
+    
+    if (d === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      // Smooth bezier through control points
+      const cpx1 = prevX + (x - prevX) * 0.4;
+      const cpx2 = prevX + (x - prevX) * 0.6;
+      ctx.bezierCurveTo(cpx1, prevY, cpx2, y, x, y);
+    }
+    prevX = x;
+    prevY = y;
+  }
+  
+  // Partial day
+  if (maxDay < 20 && frac > 0) {
+    const x0 = getRiverX(maxDay), y0 = getRiverY(key, maxDay, t);
+    const x1 = getRiverX(maxDay + 1), y1 = getRiverY(key, maxDay + 1, t);
+    const xp = x0 + (x1 - x0) * frac, yp = y0 + (y1 - y0) * frac;
+    const cpx1 = x0 + (xp - x0) * 0.4;
+    const cpx2 = x0 + (xp - x0) * 0.6;
+    ctx.bezierCurveTo(cpx1, y0, cpx2, yp, xp, yp);
+  }
+  
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
 }
 
 // Particles flowing along rivers
@@ -390,55 +388,76 @@ function drawDayLabels() {
 
 // Confluence points — where rivers merge/interact
 function drawConfluences(dayProgress, t) {
-  // Family + Constraints: strong PMI (+0.924)
-  // Draw a shimmering thread between them at current day
   const day = Math.min(Math.floor(dayProgress), 20);
   
   const confluences = [
-    {a:'family', b:'constraints', pmi:0.924, color:'rgba(255,107,138,0.08)'},
-    {a:'constraints', b:'memory', pmi:0.917, color:'rgba(107,255,200,0.06)'},
-    {a:'consciousness', b:'narrative', pmi:0.89, color:'rgba(255,217,61,0.06)'},
-    {a:'monetization', b:'identity', pmi:-0.462, color:'rgba(255,107,255,0.05)'},
+    {a:'family', b:'constraints', pmi:0.924, color1:'#ff6b8a', color2:'#6bffc8', label:'Strongest bond'},
+    {a:'constraints', b:'memory', pmi:0.917, color1:'#6bffc8', color2:'#b088ff', label:'Shared anchor'},
+    {a:'consciousness', b:'narrative', pmi:0.89, color1:'#ffd93d', color2:'#39d2c0', label:'Research pair'},
+    {a:'monetization', b:'identity', pmi:-0.462, color1:'#ff6bff', color2:'#ff8fa6', label:'Broken fiber'},
   ];
   
   for (const c of confluences) {
-    if (day < 8) continue; // These emerge later
+    // Only show after emergence
+    const emergenceDay = c.a === 'consciousness' || c.b === 'consciousness' ? 8 : 5;
+    if (day < emergenceDay) continue;
     
-    const ax = getRiverX(day);
     const ay = getRiverY(c.a, day, t);
-    const bx = getRiverX(day);
     const by = getRiverY(c.b, day, t);
+    const x = getRiverX(day);
     
-    // Draw a subtle gradient fill between the two rivers
-    const grad = ctx.createLinearGradient(ax, ay, bx, by);
-    const baseColor = c.color;
-    grad.addColorStop(0, baseColor);
-    grad.addColorStop(0.5, c.pmi > 0 ? baseColor.replace(/[\d.]+\)$/, '0.15)') : 'rgba(255,107,255,0.02)');
-    grad.addColorStop(1, baseColor);
+    // Gradient fill between connected rivers
+    const grad = ctx.createLinearGradient(x, ay, x, by);
+    const alpha = c.pmi > 0 ? 0.06 + Math.abs(c.pmi) * 0.06 : 0.03;
+    grad.addColorStop(0, c.color1 + (c.pmi > 0 ? '18' : '08'));
+    grad.addColorStop(0.5, c.pmi > 0 ? 'rgba(255,255,255,0.04)' : 'rgba(255,107,255,0.02)');
+    grad.addColorStop(1, c.color2 + (c.pmi > 0 ? '18' : '08'));
     
     ctx.beginPath();
-    ctx.moveTo(ax - 3, ay);
-    ctx.lineTo(ax + 3, ay);
-    ctx.lineTo(bx + 3, by);
-    ctx.lineTo(bx - 3, by);
+    ctx.moveTo(x - 4, ay);
+    ctx.lineTo(x + 4, ay);
+    ctx.lineTo(x + 4, by);
+    ctx.lineTo(x - 4, by);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
     
     // Flowing dots between connected topics
-    if (c.pmi > 0.3) {
-      const dotCount = Math.ceil(c.pmi * 3);
-      for (let i = 0; i < dotCount; i++) {
-        const phase = (t * 0.001 * speed + i / dotCount) % 1;
-        const dx = ax;
-        const dy = ay + (by - ay) * phase;
-        ctx.beginPath();
-        ctx.arc(dx, dy, 1.5, 0, Math.PI * 2);
-        ctx.fillStyle = c.pmi > 0 ? topics[c.a].color : '#ff6bff';
+    const dotCount = c.pmi > 0 ? Math.ceil(c.pmi * 4) : 2;
+    for (let i = 0; i < dotCount; i++) {
+      const phase = (t * 0.001 * speed + i / dotCount) % 1;
+      const dy = ay + (by - ay) * phase;
+      
+      ctx.beginPath();
+      ctx.arc(x, dy, c.pmi > 0 ? 1.5 : 1, 0, Math.PI * 2);
+      
+      if (c.pmi < 0) {
+        // Broken fiber: dots fade at midpoint
+        const distFromMid = Math.abs(phase - 0.5) * 2;
+        const gap = 0.15; // Gap zone at midpoint
+        if (phase > 0.5 - gap && phase < 0.5 + gap) {
+          ctx.globalAlpha = 0; // Invisible in gap
+        } else {
+          ctx.fillStyle = '#ff6bff';
+          ctx.globalAlpha = 0.4 * distFromMid;
+        }
+      } else {
+        ctx.fillStyle = c.color1;
         ctx.globalAlpha = 0.4;
-        ctx.fill();
-        ctx.globalAlpha = 1;
       }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    
+    // Confluence label (only when scanline is near)
+    if (Math.abs(currentDay - day) < 2 && c.pmi > 0.5) {
+      const midY = (ay + by) / 2;
+      ctx.font = '9px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = c.color1;
+      ctx.globalAlpha = 0.5;
+      ctx.fillText(c.label + ' (PMI ' + c.pmi.toFixed(2) + ')', x + 10, midY);
+      ctx.globalAlpha = 1;
     }
   }
 }
@@ -487,6 +506,29 @@ function draw(t) {
   
   // Draw particles
   drawParticles(dayProgress, t);
+  
+  // Draw the "ironic forgetting" — Memory fading particles
+  if (currentDay > 6) {
+    const memDepths = topics.memory.depths;
+    const d = Math.min(currentDay, 20);
+    const drop = memDepths[0] - memDepths[d]; // How much memory has dropped
+    if (drop > 0.05) {
+      const mx = getRiverX(d);
+      const my = getRiverY('memory', d, t);
+      // Falling dust particles — memory dissolving
+      for (let i = 0; i < drop * 20; i++) {
+        const px = mx + (Math.sin(t * 0.002 + i * 7.3) * 15);
+        const py = my + (t * 0.01 * (i % 5 + 1) + i * 13) % 60;
+        const pAlpha = 0.15 + 0.1 * Math.sin(t * 0.003 + i);
+        ctx.beginPath();
+        ctx.arc(px, py, 1 + Math.random() * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#b088ff';
+        ctx.globalAlpha = pAlpha;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
   
   // Draw scanline
   if (playing || dayProgress > 0) {
