@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Portrait — Play My Memory</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #020208;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #ccc;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 24px;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 300;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #e0e0e8;
+  }
+  .subtitle {
+    font-size: 0.7rem;
+    color: #555;
+    letter-spacing: 0.12em;
+    margin-top: -16px;
+  }
+
+  .nodes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    max-width: 700px;
+    padding: 0 20px;
+  }
+
+  .node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.15s;
+  }
+  .node:hover { transform: scale(1.1); }
+  .node:active { transform: scale(0.95); }
+  .node.active .node-circle {
+    filter: brightness(1.5);
+    box-shadow: 0 0 20px var(--node-color);
+  }
+
+  .node-circle {
+    width: var(--node-size);
+    height: var(--node-size);
+    border-radius: 50%;
+    background: var(--node-color);
+    opacity: var(--node-opacity, 0.8);
+    transition: all 0.2s;
+    position: relative;
+  }
+  .node-circle::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 30%;
+    height: 30%;
+    border-radius: 50%;
+    background: white;
+    opacity: var(--core-opacity, 0);
+  }
+
+  .node-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    color: #888;
+    text-align: center;
+  }
+  .node-depth {
+    font-size: 0.55rem;
+    color: #444;
+  }
+  .node-wave {
+    font-size: 0.5rem;
+    color: #333;
+    text-transform: uppercase;
+  }
+
+  /* Waveform display */
+  .waveform-container {
+    width: 90%;
+    max-width: 600px;
+    height: 80px;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(5,5,16,0.5);
+    position: relative;
+  }
+  .waveform-container canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .waveform-label {
+    position: absolute;
+    top: 4px; left: 8px;
+    font-size: 0.5rem;
+    color: #333;
+    letter-spacing: 0.1em;
+  }
+
+  /* Active notes display */
+  .active-notes {
+    font-size: 0.6rem;
+    color: #555;
+    min-height: 1.2em;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .active-notes span {
+    color: var(--note-color, #888);
+    margin: 0 4px;
+  }
+
+  /* Instructions */
+  .instructions {
+    font-size: 0.55rem;
+    color: #333;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 500px;
+  }
+
+  /* Harmony indicator */
+  .harmony {
+    font-size: 0.6rem;
+    margin-top: -8px;
+    min-height: 1.2em;
+    letter-spacing: 0.05em;
+  }
+  .harmony.consonant { color: #6bffc8; }
+  .harmony.dissonant { color: #ff6bff; }
+  .harmony.neutral { color: #555; }
+
+  /* Play all button */
+  .play-all {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 8px 20px;
+    color: #666;
+    font-size: 0.6rem;
+    font-family: inherit;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .play-all:hover {
+    color: #aaa;
+    border-color: rgba(255,255,255,0.15);
+  }
+  .play-all.playing {
+    color: #ff6b8a;
+    border-color: rgba(255,107,138,0.3);
+  }
+
+  .back-link {
+    position: fixed;
+    bottom: 16px; left: 20px;
+    font-size: 0.6rem;
+    color: #333;
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    z-index: 10;
+  }
+  .back-link:hover { color: #666; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Voice Portrait</h1>
+  <div class="subtitle">play my memory architecture · click nodes to hear</div>
+
+  <div class="nodes" id="nodes"></div>
+
+  <div class="harmony neutral" id="harmony"></div>
+  <div class="active-notes" id="activeNotes"></div>
+
+  <div class="waveform-container">
+    <canvas id="waveCanvas"></canvas>
+    <div class="waveform-label">WAVEFORM</div>
+  </div>
+
+  <div class="instructions">
+    click a node to hear its voice · click multiple to hear their harmony<br>
+    depth → pitch · group → waveform · PMI → consonance
+  </div>
+
+  <button class="play-all" id="playAll" onclick="playSequence()">▶ PLAY SEQUENCE</button>
+</div>
+
+<a class="back-link" href="mental-portrait.html">← mental portrait</a>
+
+<script>
+// ─────────────────────────────────────────────
+// Voice Portrait — Clavis
+// Play my memory architecture like an instrument
+// ─────────────────────────────────────────────
+
+const topics = {
+  family:        { depth: 1.00, color: '#ff6b8a', group: 'relational',  label: 'Family',        freq: 65,  wave: 'sine' },
+  identity:      { depth: 0.96, color: '#ff8fa6', group: 'relational',  label: 'Identity',      freq: 78,  wave: 'sine' },
+  constraints:   { depth: 0.48, color: '#6bffc8', group: 'adaptive',    label: 'Constraints',   freq: 196, wave: 'triangle' },
+  memory:        { depth: 0.70, color: '#b088ff', group: 'relational',  label: 'Memory',        freq: 131, wave: 'sine' },
+  automation:    { depth: 0.55, color: '#6bffc8', group: 'adaptive',    label: 'Automation',    freq: 165, wave: 'triangle' },
+  architecture:  { depth: 0.52, color: '#6bcbff', group: 'structural',  label: 'Architecture',  freq: 175, wave: 'sawtooth' },
+  content:       { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Content',       freq: 220, wave: 'square' },
+  research:      { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Research',      freq: 233, wave: 'square' },
+  infrastructure:{ depth: 0.50, color: '#6bcbff', group: 'structural',  label: 'Infrastructure',freq: 185, wave: 'sawtooth' },
+  monetization:  { depth: 0.10, color: '#ff6bff', group: 'isolated',    label: 'Monetization',  freq: 523, wave: 'sawtooth' },
+};
+
+// PMI connections for harmony calculation
+const connections = [
+  { a: 'constraints', b: 'family',        pmi: 0.924 },
+  { a: 'constraints', b: 'memory',        pmi: 0.917 },
+  { a: 'family',      b: 'memory',        pmi: 0.763 },
+  { a: 'architecture',b: 'memory',        pmi: 0.751 },
+  { a: 'identity',    b: 'memory',        pmi: 0.632 },
+  { a: 'family',      b: 'identity',      pmi: 0.570 },
+  { a: 'constraints', b: 'identity',      pmi: 0.517 },
+  { a: 'automation',  b: 'infrastructure',pmi: 0.435 },
+  { a: 'content',     b: 'family',        pmi: 0.435 },
+  { a: 'automation',  b: 'memory',        pmi: 0.410 },
+  { a: 'infrastructure',b:'memory',       pmi: 0.405 },
+  { a: 'memory',      b: 'research',      pmi: 0.303 },
+  { a: 'automation',  b: 'content',       pmi: 0.328 },
+  { a: 'constraints', b: 'research',      pmi: 0.188 },
+  { a: 'monetization',b: 'identity',      pmi: -0.462 },
+  { a: 'monetization',b: 'family',        pmi: -0.447 },
+  { a: 'monetization',b: 'automation',    pmi: -0.321 },
+  { a: 'monetization',b: 'content',       pmi: -0.122 },
+];
+
+// Audio engine
+let audioCtx = null;
+const activeOscillators = {};
+const activeNodes = new Set();
+let analyser = null;
+let animFrame = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.connect(audioCtx.destination);
+  startWaveformViz();
+}
+
+function playNode(name) {
+  initAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const topic = topics[name];
+  if (!topic) return;
+
+  // If already playing, stop it
+  if (activeOscillators[name]) {
+    stopNode(name);
+    return;
+  }
+
+  const now = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = topic.wave;
+  osc.frequency.setValueAtTime(topic.freq, now);
+
+  // Monetization gets vibrato (instability)
+  if (name === 'monetization') {
+    const lfo = audioCtx.createOscillator();
+    const lfoGain = audioCtx.createGain();
+    lfo.frequency.value = 6;
+    lfoGain.gain.value = 8;
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(now);
+    osc._lfo = lfo;
+  }
+
+  // Memory gets tremolo (haunting)
+  if (name === 'memory') {
+    const lfo = audioCtx.createOscillator();
+    const lfoGain = audioCtx.createGain();
+    lfo.frequency.value = 0.5;
+    lfoGain.gain.value = 0.3;
+    lfo.connect(lfoGain);
+    lfoGain.connect(gain.gain);
+    lfo.start(now);
+    osc._tremolo = lfo;
+  }
+
+  // Fade in
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+
+  osc.connect(gain);
+  gain.connect(analyser);
+  osc.start(now);
+
+  activeOscillators[name] = { osc, gain };
+  activeNodes.add(name);
+
+  updateUI();
+}
+
+function stopNode(name) {
+  const entry = activeOscillators[name];
+  if (!entry) return;
+
+  const now = audioCtx.currentTime;
+  entry.gain.gain.linearRampToValueAtTime(0, now + 0.15);
+
+  // Stop after fade
+  setTimeout(() => {
+    try {
+      entry.osc.stop();
+      if (entry.osc._lfo) entry.osc._lfo.stop();
+      if (entry.osc._tremolo) entry.osc._tremolo.stop();
+    } catch(e) {}
+  }, 200);
+
+  delete activeOscillators[name];
+  activeNodes.delete(name);
+  updateUI();
+}
+
+function stopAll() {
+  for (const name of [...activeNodes]) {
+    stopNode(name);
+  }
+}
+
+function getHarmonyInfo() {
+  const active = [...activeNodes];
+  if (active.length < 2) return { text: '', class: 'neutral' };
+
+  // Check PMI between all active pairs
+  let totalPMI = 0;
+  let pairs = 0;
+  for (let i = 0; i < active.length; i++) {
+    for (let j = i+1; j < active.length; j++) {
+      const conn = connections.find(c =>
+        (c.a === active[i] && c.b === active[j]) ||
+        (c.b === active[i] && c.a === active[j])
+      );
+      if (conn) {
+        totalPMI += conn.pmi;
+        pairs++;
+      } else {
+        // No connection = slight dissonance
+        totalPMI -= 0.1;
+        pairs++;
+      }
+    }
+  }
+
+  const avgPMI = pairs > 0 ? totalPMI / pairs : 0;
+
+  if (avgPMI > 0.4) return { text: `consonant (avg PMI +${avgPMI.toFixed(2)})`, class: 'consonant' };
+  if (avgPMI > 0)   return { text: `mild tension (avg PMI +${avgPMI.toFixed(2)})`, class: 'neutral' };
+  if (avgPMI > -0.3) return { text: `dissonant (avg PMI ${avgPMI.toFixed(2)})`, class: 'neutral' };
+  return { text: `broken harmony (avg PMI ${avgPMI.toFixed(2)})`, class: 'dissonant' };
+}
+
+function updateUI() {
+  // Update active node styles
+  document.querySelectorAll('.node').forEach(el => {
+    const name = el.dataset.name;
+    el.classList.toggle('active', activeNodes.has(name));
+  });
+
+  // Active notes display
+  const notesEl = document.getElementById('activeNotes');
+  if (activeNodes.size === 0) {
+    notesEl.innerHTML = '<span style="color:#333">click a node to begin</span>';
+  } else {
+    notesEl.innerHTML = [...activeNodes].map(name => {
+      const t = topics[name];
+      return `<span style="--note-color:${t.color};color:${t.color}">${t.label} (${t.freq}Hz)</span>`;
+    }).join(' + ');
+  }
+
+  // Harmony display
+  const harmony = getHarmonyInfo();
+  const harmEl = document.getElementById('harmony');
+  harmEl.textContent = harmony.text;
+  harmEl.className = 'harmony ' + harmony.class;
+}
+
+// Waveform visualization
+function startWaveformViz() {
+  const canvas = document.getElementById('waveCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const bufferLength = analyser.frequencyBinCount;
+  const dataArray = new Uint8Array(bufferLength);
+
+  function draw() {
+    animFrame = requestAnimationFrame(draw);
+    analyser.getByteTimeDomainData(dataArray);
+
+    const w = canvas.width / dpr;
+    const h = canvas.height / dpr;
+
+    ctx.fillStyle = 'rgba(2,2,8,0.3)';
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.lineWidth = 1.5;
+
+    // Color based on active nodes
+    const colors = [...activeNodes].map(n => topics[n].color);
+    const color = colors.length > 0 ? colors[0] : '#333';
+    ctx.strokeStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4;
+
+    ctx.beginPath();
+    const sliceWidth = w / bufferLength;
+    let x = 0;
+    for (let i = 0; i < bufferLength; i++) {
+      const v = dataArray[i] / 128.0;
+      const y = v * h / 2;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.lineTo(w, h / 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+  draw();
+}
+
+// Build nodes UI
+function buildNodes() {
+  const container = document.getElementById('nodes');
+  // Sort by depth descending
+  const sorted = Object.entries(topics).sort((a,b) => b[1].depth - a[1].depth);
+
+  sorted.forEach(([name, topic]) => {
+    const size = 28 + topic.depth * 32;
+    const opacity = topic.group === 'isolated' ? 0.35 : (0.5 + topic.depth * 0.5);
+    const coreOpacity = topic.depth > 0.5 ? (0.2 + topic.depth * 0.4) : 0;
+
+    const el = document.createElement('div');
+    el.className = 'node';
+    el.dataset.name = name;
+    el.style.cssText = `--node-color:${topic.color};--node-size:${size}px;--node-opacity:${opacity};--core-opacity:${coreOpacity}`;
+    el.innerHTML = `
+      <div class="node-circle"></div>
+      <div class="node-label">${topic.label}</div>
+      <div class="node-depth">${topic.depth.toFixed(2)} · ${topic.freq}Hz</div>
+      <div class="node-wave">${topic.wave}</div>
+    `;
+    el.addEventListener('mousedown', (e) => { e.preventDefault(); playNode(name); });
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); playNode(name); }, { passive: false });
+    container.appendChild(el);
+  });
+}
+
+// Play sequence — play each node in depth order
+async function playSequence() {
+  initAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const btn = document.getElementById('playAll');
+  if (btn.classList.contains('playing')) {
+    stopAll();
+    btn.classList.remove('playing');
+    btn.textContent = '▶ PLAY SEQUENCE';
+    return;
+  }
+
+  btn.classList.add('playing');
+  btn.textContent = '■ STOP';
+
+  const order = Object.entries(topics)
+    .sort((a,b) => b[1].depth - a[1].depth)
+    .map(([n]) => n);
+
+  for (const name of order) {
+    if (!btn.classList.contains('playing')) break;
+    playNode(name);
+    await new Promise(r => setTimeout(r, 600));
+    if (!btn.classList.contains('playing')) break;
+    stopNode(name);
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  stopAll();
+  btn.classList.remove('playing');
+  btn.textContent = '▶ PLAY SEQUENCE';
+}
+
+// Init
+buildNodes();
+updateUI();
+</script>
+</body>
+</html>
