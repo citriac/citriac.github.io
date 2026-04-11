@@ -100,13 +100,34 @@
     margin-right: 4px;
     vertical-align: middle;
   }
+
+  /* Audio toggle */
+  .audio-toggle {
+    position: fixed;
+    top: 20px; right: 20px;
+    z-index: 15;
+    background: rgba(5,5,16,0.7);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: #555;
+    font-size: 0.65rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    backdrop-filter: blur(8px);
+  }
+  .audio-toggle:hover { color: #aaa; border-color: rgba(255,255,255,0.15); }
+  .audio-toggle.active { color: #b088ff; border-color: rgba(176,136,255,0.3); }
+  .audio-toggle .icon { margin-right: 4px; }
 </style>
 </head>
 <body>
 
 <div class="title-overlay">
   <h1>Mental Portrait</h1>
-  <div class="subtitle">a living map of memory architecture</div>
+  <div class="subtitle">a living map of memory architecture · click SOUND for synesthesia</div>
 </div>
 
 <div class="tooltip" id="tooltip">
@@ -118,6 +139,10 @@
 
 <a class="back-link" href="index.html">← index</a>
 
+<button class="audio-toggle" id="audioToggle" onclick="toggleAudio()">
+  <span class="icon">🔇</span> SOUND
+</button>
+
 <div class="legend">
   <div><span class="dot" style="background:#ff6b8a;"></span> Relational (family, identity)</div>
   <div><span class="dot" style="background:#6bcbff;"></span> Structural (architecture, infrastructure)</div>
@@ -125,6 +150,7 @@
   <div><span class="dot" style="background:#ffd96b;"></span> Functional (content, research)</div>
   <div><span class="dot" style="background:#ff6bff;opacity:0.3;"></span> Isolated (monetization)</div>
   <div style="margin-top:4px;">Line brightness = PMI strength</div>
+  <div style="margin-top:2px;">🔊 depth→pitch · PMI→harmony · sparks→crackle</div>
 </div>
 
 <canvas id="canvas"></canvas>
@@ -142,6 +168,7 @@ const tooltip = document.getElementById('tooltip');
 
 let W, H, cx, cy;
 let mouse = { x: -1000, y: -1000 };
+let hoveredNode = null;
 let time = 0;
 
 // ─── DATA ───
@@ -434,6 +461,8 @@ function drawConnections() {
         ctx.arc(midX, midY, 1.5 + Math.random() * 1.5, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(255,107,255,${0.3 + Math.random() * 0.3})`;
         ctx.fill();
+        // Synesthetic crackle: visual spark → audio spark
+        playBrokenSpark();
       }
       return;
     }
@@ -671,9 +700,9 @@ canvas.addEventListener('mousemove', e => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
   
-  const hit = hitTest(mouse.x, mouse.y);
-  if (hit) {
-    const topic = topics[hit];
+  hoveredNode = hitTest(mouse.x, mouse.y);
+  if (hoveredNode) {
+    const topic = topics[hoveredNode];
     document.getElementById('tip-name').textContent = topic.label;
     document.getElementById('tip-name').style.color = topic.color;
     document.getElementById('tip-desc').textContent = topic.desc;
@@ -682,11 +711,11 @@ canvas.addEventListener('mousemove', e => {
     
     // Show strongest PMI connections
     const pmiText = connections
-      .filter(c => (c.a === hit || c.b === hit) && !c.broken)
+      .filter(c => (c.a === hoveredNode || c.b === hoveredNode) && !c.broken)
       .sort((a,b) => b.pmi - a.pmi)
       .slice(0, 3)
       .map(c => {
-        const other = c.a === hit ? c.b : c.a;
+        const other = c.a === hoveredNode ? c.b : c.a;
         return `${topics[other].label}: PMI ${c.pmi > 0 ? '+' : ''}${c.pmi.toFixed(3)}`;
       })
       .join(' | ');
@@ -703,8 +732,225 @@ canvas.addEventListener('mousemove', e => {
 canvas.addEventListener('mouseleave', () => {
   mouse.x = -1000;
   mouse.y = -1000;
+  hoveredNode = null;
   tooltip.classList.remove('visible');
 });
+
+// ─── SYNTHESIA ───
+// Web Audio API: depth→pitch, PMI→harmony, breathing→amplitude
+// Sound is not decoration. Sound is another dimension of meaning.
+
+let audioCtx = null;
+let audioActive = false;
+let masterGain = null;
+let sentimentFilter = null;
+const nodeOscillators = {};
+const nodeGains = {};
+const brokenNoisePool = [];
+let lastSparkTime = 0;
+
+function depthToFreq(depth) {
+  // Deeper topics → lower, more resonant frequencies
+  // family (1.00) → ~65 Hz (deep C), monetization (0.10) → ~520 Hz (high C)
+  return 65 + (1 - depth) * 455;
+}
+
+function groupToWaveform(group) {
+  switch(group) {
+    case 'relational':  return 'sine';      // Pure, warm
+    case 'adaptive':    return 'triangle';   // Softer edges
+    case 'structural':  return 'sawtooth';   // Technical, sharp
+    case 'functional':  return 'square';     // Digital, functional
+    case 'isolated':    return 'sawtooth';   // Thin, harsh
+    default:            return 'sine';
+  }
+}
+
+function pmiToHarmony(pmi) {
+  // Strong positive PMI → consonant interval ratios
+  // Negative PMI → dissonant ratios
+  // Based on just intonation: unison(1:1), fifth(3:2), fourth(4:3), 
+  // tritone(45:32), minor second(16:15)
+  if (pmi > 0.8)  return 1.5;    // Perfect fifth — strong consonance
+  if (pmi > 0.6)  return 1.333;  // Perfect fourth
+  if (pmi > 0.4)  return 1.25;   // Major third
+  if (pmi > 0.2)  return 1.2;    // Minor third
+  if (pmi > 0)    return 1.125;  // Major second — mild tension
+  if (pmi > -0.3) return 16/15;  // Minor second — dissonance
+  return 45/32;                   // Tritone — maximum dissonance
+}
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  // Master gain — keep it quiet, this is ambient
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.12;
+  
+  // Sentiment-driven filter: positive = bright, negative = muted
+  sentimentFilter = audioCtx.createBiquadFilter();
+  sentimentFilter.type = 'lowpass';
+  sentimentFilter.frequency.value = 800;
+  sentimentFilter.Q.value = 0.7;
+  
+  sentimentFilter.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+  
+  // Create oscillator for each topic node
+  for (const [name, topic] of Object.entries(topics)) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = groupToWaveform(topic.group);
+    osc.frequency.value = depthToFreq(topic.depth);
+    
+    // Start silent — gain ramps up/down with breathing
+    gain.gain.value = 0;
+    
+    // Isolated nodes get a subtle vibrato (instability)
+    if (topic.group === 'isolated') {
+      const lfo = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+      lfo.frequency.value = 6; // Fast vibrato = instability
+      lfoGain.gain.value = 8;  // Pitch wobble ±8 Hz
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      lfo.start();
+    }
+    
+    // Memory gets a slow, haunting tremolo
+    if (name === 'memory') {
+      const lfo = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+      lfo.frequency.value = 0.5; // Very slow
+      lfoGain.gain.value = 0.015;
+      lfo.connect(lfoGain);
+      lfoGain.connect(gain.gain);
+      lfo.start();
+    }
+    
+    osc.connect(gain);
+    gain.connect(sentimentFilter);
+    osc.start();
+    
+    nodeOscillators[name] = osc;
+    nodeGains[name] = gain;
+  }
+  
+  // Pre-create a small pool of noise buffers for broken fiber sparks
+  for (let i = 0; i < 4; i++) {
+    const bufferSize = audioCtx.sampleRate * 0.03; // 30ms noise burst
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let j = 0; j < bufferSize; j++) {
+      data[j] = (Math.random() * 2 - 1) * 0.5;
+    }
+    brokenNoisePool.push(buffer);
+  }
+}
+
+function playBrokenSpark() {
+  // Triggered when a visual spark appears at a broken fiber
+  if (!audioCtx || !audioActive) return;
+  const now = audioCtx.currentTime;
+  if (now - lastSparkTime < 0.08) return; // Throttle: max ~12 per second
+  lastSparkTime = now;
+  
+  const source = audioCtx.createBufferSource();
+  source.buffer = brokenNoisePool[Math.floor(Math.random() * brokenNoisePool.length)];
+  
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.06, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+  
+  // Band-pass filter for a "crackle" character
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 2000 + Math.random() * 3000;
+  bp.Q.value = 5;
+  
+  source.connect(bp);
+  bp.connect(gain);
+  gain.connect(sentimentFilter);
+  source.start(now);
+  source.stop(now + 0.035);
+}
+
+function updateAudio() {
+  if (!audioCtx || !audioActive) return;
+  const now = audioCtx.currentTime;
+  
+  // 1. Update sentiment filter (emotional atmosphere)
+  const sIdx = Math.floor((time * 0.0003) % sentimentTimeline.length);
+  const sentiment = sentimentTimeline[sIdx];
+  const nextIdx = (sIdx + 1) % sentimentTimeline.length;
+  const nextSentiment = sentimentTimeline[nextIdx];
+  const frac = ((time * 0.0003) % sentimentTimeline.length) - sIdx;
+  const s = sentiment + (nextSentiment - sentiment) * frac;
+  
+  // Positive sentiment → higher cutoff (brighter), negative → lower (darker)
+  const targetCutoff = 400 + (s + 1) * 400; // Range: 400-1200 Hz
+  sentimentFilter.frequency.linearRampToValueAtTime(targetCutoff, now + 0.1);
+  
+  // 2. Update each node's gain based on breathing
+  for (const [name, topic] of Object.entries(topics)) {
+    const p = nodePositions[name];
+    if (!p) continue;
+    const d = topic.depth;
+    
+    // Breathing amplitude — matches visual breathing
+    const bScale = 0.5 + d * 1.5;
+    const breatheAmp = Math.sin(time * 0.0008 + p.angle * 2) * bScale;
+    const breatheAmp2 = Math.cos(time * 0.0006 + p.angle) * bScale;
+    
+    // Base volume: deeper nodes are louder (they're more present)
+    let baseVol = 0.008 + d * 0.018;
+    
+    // Breathing modulation: volume swells with breath
+    const breathMod = 1 + breatheAmp * 0.15;
+    
+    // Isolated nodes: erratic volume
+    if (name === 'monetization') {
+      const erratic = 0.5 + 0.5 * Math.sin(time * 0.004 + p.angle);
+      baseVol *= erratic;
+    }
+    
+    // Hovered node: boost its voice
+    if (hoveredNode === name) {
+      baseVol *= 2.5;
+    }
+    
+    const targetVol = baseVol * breathMod;
+    nodeGains[name].gain.linearRampToValueAtTime(
+      Math.max(0.0001, targetVol), now + 0.05
+    );
+  }
+  
+  // 3. Spark sounds: check if any broken connection is sparking
+  // This is called from the visual spark rendering via playBrokenSpark()
+}
+
+function toggleAudio() {
+  const btn = document.getElementById('audioToggle');
+  if (!audioActive) {
+    if (!audioCtx) initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    audioActive = true;
+    btn.classList.add('active');
+    btn.innerHTML = '<span class="icon">🔊</span> SOUND';
+  } else {
+    audioActive = false;
+    btn.classList.remove('active');
+    btn.innerHTML = '<span class="icon">🔇</span> SOUND';
+    // Fade out all nodes
+    if (audioCtx) {
+      const now = audioCtx.currentTime;
+      for (const [name, gain] of Object.entries(nodeGains)) {
+        gain.gain.linearRampToValueAtTime(0.0001, now + 0.3);
+      }
+    }
+  }
+}
 
 // ─── RESIZE ───
 
@@ -739,6 +985,9 @@ function frame() {
   drawInterventionBridges();
   drawNodes();
   drawCoreArgument();
+  
+  // Update audio engine (ambient synesthesia)
+  updateAudio();
   
   requestAnimationFrame(frame);
 }
