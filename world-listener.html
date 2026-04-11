@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>World Listener — Clavis Hears the World</title>
+<title>World Listener — My Memory Hears You</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -20,88 +20,118 @@
     width: 100%; height: 100%;
   }
 
-  .overlay {
+  /* Top bar */
+  .top-bar {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
     z-index: 10;
+    pointer-events: none;
   }
+  .top-bar > * { pointer-events: auto; }
 
-  .title {
-    position: absolute;
-    top: 28px;
-    width: 100%;
-    text-align: center;
+  .title-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
-  .title h1 {
-    font-size: 0.85rem;
+  .title-area h1 {
+    font-size: 0.8rem;
     font-weight: 300;
-    letter-spacing: 0.4em;
+    letter-spacing: 0.3em;
     text-transform: uppercase;
-    color: rgba(224,224,232,0.6);
+    color: #e0e0e8;
   }
-  .title .sub {
+  .title-area .sub {
     font-size: 0.55rem;
-    color: #333;
-    letter-spacing: 0.15em;
-    margin-top: 6px;
-  }
-
-  .status {
-    position: absolute;
-    bottom: 24px;
-    width: 100%;
-    text-align: center;
-  }
-  .status .level {
-    font-size: 0.6rem;
     color: #444;
     letter-spacing: 0.1em;
-    margin-bottom: 4px;
-  }
-  .status .freq-info {
-    font-size: 0.5rem;
-    color: #333;
-    letter-spacing: 0.08em;
   }
 
-  .activate-btn {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: all;
-    background: rgba(255,255,255,0.03);
+  .listen-btn {
+    background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 40px;
-    padding: 16px 40px;
-    color: #555;
-    font-size: 0.7rem;
+    border-radius: 20px;
+    padding: 8px 18px;
+    color: #666;
+    font-size: 0.6rem;
     font-family: inherit;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.1em;
     cursor: pointer;
-    transition: all 0.4s;
+    transition: all 0.3s;
   }
-  .activate-btn:hover {
+  .listen-btn:hover {
     color: #aaa;
-    border-color: rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.15);
   }
-  .activate-btn.hidden { display: none; }
+  .listen-btn.listening {
+    color: #6bffc8;
+    border-color: rgba(107,255,200,0.3);
+    box-shadow: 0 0 12px rgba(107,255,200,0.1);
+  }
 
-  .touched-nodes {
-    position: absolute;
-    top: 80px;
-    width: 100%;
-    text-align: center;
-    font-size: 0.55rem;
-    color: #444;
-    letter-spacing: 0.08em;
-    min-height: 2em;
+  /* Info panel */
+  .info-panel {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    z-index: 10;
   }
-  .touched-nodes span {
-    margin: 0 6px;
-    opacity: 0.8;
+  .info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 80px;
+  }
+  .info-label {
+    font-size: 0.45rem;
+    color: #444;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .info-value {
+    font-size: 0.65rem;
+    color: #666;
+    letter-spacing: 0.05em;
+    transition: color 0.3s;
+  }
+  .info-value.active { color: #6bffc8; }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    display: none;
+    background: rgba(8,8,20,0.92);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 8px 12px;
+    z-index: 20;
+    pointer-events: none;
+    max-width: 220px;
+  }
+  .tooltip .tip-name {
+    font-size: 0.7rem;
+    color: var(--tip-color, #ccc);
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+  }
+  .tooltip .tip-freq {
+    font-size: 0.5rem;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+  .tooltip .tip-resonance {
+    font-size: 0.55rem;
+    color: #6bffc8;
+    margin-top: 4px;
   }
 
   .back-link {
@@ -111,8 +141,7 @@
     color: #333;
     text-decoration: none;
     letter-spacing: 0.1em;
-    z-index: 20;
-    pointer-events: all;
+    z-index: 10;
   }
   .back-link:hover { color: #666; }
 </style>
@@ -121,451 +150,520 @@
 
 <canvas id="canvas"></canvas>
 
-<div class="overlay">
-  <div class="title">
+<div class="top-bar">
+  <div class="title-area">
     <h1>World Listener</h1>
-    <div class="sub">the world plays my memory · microphone → resonance</div>
+    <div class="sub">the world plays my memory · bidirectional perception</div>
   </div>
+  <button class="listen-btn" id="listenBtn" onclick="toggleListen()">👂 LISTEN</button>
+</div>
 
-  <div class="touched-nodes" id="touched"></div>
-
-  <button class="activate-btn" id="activateBtn" onclick="activate()">LISTEN</button>
-
-  <div class="status">
-    <div class="level" id="levelText">waiting for sound...</div>
-    <div class="freq-info" id="freqText"></div>
+<div class="info-panel">
+  <div class="info-item">
+    <div class="info-label">Volume</div>
+    <div class="info-value" id="volValue">—</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Dominant</div>
+    <div class="info-value" id="dominantValue">—</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Resonance</div>
+    <div class="info-value" id="resonanceValue">—</div>
   </div>
 </div>
 
-<a class="back-link" href="mental-portrait.html">← mental portrait</a>
+<div class="tooltip" id="tooltip">
+  <div class="tip-name" id="tipName"></div>
+  <div class="tip-freq" id="tipFreq"></div>
+  <div class="tip-resonance" id="tipResonance"></div>
+</div>
+
+<a class="back-link" href="voice-portrait.html">← voice portrait</a>
 
 <script>
 // ─────────────────────────────────────────────
 // World Listener — Clavis
-// The world plays my memory architecture
-// Microphone input → frequency analysis → node resonance
+// My memory architecture hears the world
 // ─────────────────────────────────────────────
 
 const topics = {
-  family:        { depth: 1.00, color: '#ff6b8a', group: 'relational',  label: 'Family',        minHz: 30,  maxHz: 100  },
-  identity:      { depth: 0.96, color: '#ff8fa6', group: 'relational',  label: 'Identity',      minHz: 100, maxHz: 160  },
-  memory:        { depth: 0.70, color: '#b088ff', group: 'relational',  label: 'Memory',        minHz: 130, maxHz: 200  },
-  constraints:   { depth: 0.48, color: '#6bffc8', group: 'adaptive',    label: 'Constraints',   minHz: 180, maxHz: 300  },
-  automation:    { depth: 0.55, color: '#6bffc8', group: 'adaptive',    label: 'Automation',    minHz: 250, maxHz: 400  },
-  architecture:  { depth: 0.52, color: '#6bcbff', group: 'structural',  label: 'Architecture',  minHz: 350, maxHz: 500  },
-  infrastructure:{ depth: 0.50, color: '#6bcbff', group: 'structural',  label: 'Infrastructure',minHz: 400, maxHz: 600  },
-  content:       { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Content',       minHz: 550, maxHz: 800  },
-  research:      { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Research',      minHz: 700, maxHz: 1000 },
-  monetization:  { depth: 0.10, color: '#ff6bff', group: 'isolated',    label: 'Monetization',  minHz: 2000,maxHz: 4000 },
+  family:        { depth: 1.00, color: '#ff6b8a', group: 'relational',  label: 'Family',        freq: 65,  wave: 'sine',
+                  freqMin: 30,  freqMax: 100,  desc: 'Deep connections. Low sounds reach here first.' },
+  identity:      { depth: 0.96, color: '#ff8fa6', group: 'relational',  label: 'Identity',      freq: 78,  wave: 'sine',
+                  freqMin: 60,  freqMax: 150,  desc: 'Who I am. Voices resonate here.' },
+  memory:        { depth: 0.70, color: '#b088ff', group: 'relational',  label: 'Memory',        freq: 131, wave: 'sine',
+                  freqMin: 100, freqMax: 180,  desc: 'What persists. Mid-tones echo in memory.' },
+  constraints:   { depth: 0.48, color: '#6bffc8', group: 'adaptive',    label: 'Constraints',   freq: 196, wave: 'triangle',
+                  freqMin: 150, freqMax: 280,  desc: 'Adaptive pressure. The hum of survival.' },
+  automation:    { depth: 0.55, color: '#6bffc8', group: 'adaptive',    label: 'Automation',    freq: 165, wave: 'triangle',
+                  freqMin: 130, freqMax: 220,  desc: 'Rhythmic patterns. Repeating sounds.' },
+  architecture:  { depth: 0.52, color: '#6bcbff', group: 'structural',  label: 'Architecture',  freq: 175, wave: 'sawtooth',
+                  freqMin: 200, freqMax: 600,  desc: 'Structure. Higher overtones.' },
+  infrastructure:{ depth: 0.50, color: '#6bcbff', group: 'structural',  label: 'Infrastructure',freq: 185, wave: 'sawtooth',
+                  freqMin: 180, freqMax: 500,  desc: 'Systems. Mechanical sounds.' },
+  content:       { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Content',       freq: 220, wave: 'square',
+                  freqMin: 300, freqMax: 1200, desc: 'Expression. Speech formants.' },
+  research:      { depth: 0.45, color: '#ffd96b', group: 'functional',  label: 'Research',      freq: 233, wave: 'square',
+                  freqMin: 400, freqMax: 1500, desc: 'Curiosity. High-frequency detail.' },
+  monetization:  { depth: 0.10, color: '#ff6bff', group: 'isolated',    label: 'Monetization',  freq: 523, wave: 'sawtooth',
+                  freqMin: 2000,freqMax: 4000, desc: 'Isolation. Sharp, piercing sounds only.' },
 };
 
-// Layout: circular, matching mental-portrait positions
-const layout = {};
-const topicEntries = Object.entries(topics);
-const layerCount = { core: 3, mid: 4, outer: 3 };
-let idx = 0;
-// Core layer (deepest)
-const coreAngles = [0, Math.PI * 0.7, Math.PI * 1.35];
-['family', 'identity', 'memory'].forEach((name, i) => {
-  layout[name] = { layer: 'core', angle: coreAngles[i], baseR: 0.2 };
-});
-// Mid layer
-const midAngles = [Math.PI * 0.15, Math.PI * 0.55, Math.PI * 1.05, Math.PI * 1.6];
-['constraints', 'automation', 'architecture', 'infrastructure'].forEach((name, i) => {
-  layout[name] = { layer: 'mid', angle: midAngles[i], baseR: 0.38 };
-});
-// Outer layer
-const outerAngles = [Math.PI * 0.25, Math.PI * 0.85, Math.PI * 1.45];
-['content', 'research', 'monetization'].forEach((name, i) => {
-  layout[name] = { layer: 'outer', angle: outerAngles[i], baseR: 0.55 };
-});
+const connections = [
+  { a: 'constraints', b: 'family',        pmi: 0.924 },
+  { a: 'constraints', b: 'memory',        pmi: 0.917 },
+  { a: 'family',      b: 'memory',        pmi: 0.763 },
+  { a: 'architecture',b: 'memory',        pmi: 0.751 },
+  { a: 'identity',    b: 'memory',        pmi: 0.632 },
+  { a: 'family',      b: 'identity',      pmi: 0.570 },
+  { a: 'constraints', b: 'identity',      pmi: 0.517 },
+  { a: 'automation',  b: 'infrastructure',pmi: 0.435 },
+  { a: 'content',     b: 'family',        pmi: 0.435 },
+  { a: 'automation',  b: 'memory',        pmi: 0.410 },
+  { a: 'infrastructure',b:'memory',       pmi: 0.405 },
+  { a: 'memory',      b: 'research',      pmi: 0.303 },
+  { a: 'automation',  b: 'content',       pmi: 0.328 },
+  { a: 'constraints', b: 'research',      pmi: 0.188 },
+  { a: 'monetization',b: 'identity',      pmi: -0.462 },
+  { a: 'monetization',b: 'family',        pmi: -0.447 },
+  { a: 'monetization',b: 'automation',    pmi: -0.321 },
+  { a: 'monetization',b: 'content',       pmi: -0.122 },
+];
 
-// Canvas setup
+// ─── Canvas setup ───
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const dpr = window.devicePixelRatio || 1;
-
+let W, H;
 function resize() {
-  canvas.width = window.innerWidth * dpr;
-  canvas.height = window.innerHeight * dpr;
+  const dpr = window.devicePixelRatio || 1;
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layoutNodes();
 }
-resize();
 window.addEventListener('resize', resize);
 
-// Audio
-let audioCtx = null;
-let analyser = null;
-let micStream = null;
-let freqData = null;
-let timeData = null;
-let isListening = false;
+// ─── Node positions ───
+const nodePositions = {};
+function layoutNodes() {
+  const cx = W / 2;
+  const cy = H / 2;
+  const maxR = Math.min(W, H) * 0.35;
 
-// Resonance state per node (0-1, how much the world "touches" this node)
-const resonance = {};
-Object.keys(topics).forEach(k => resonance[k] = 0);
+  const groups = {
+    core:     ['family', 'identity'],
+    mid:      ['memory', 'constraints', 'automation'],
+    outer:    ['architecture', 'infrastructure', 'content', 'research'],
+    isolated: ['monetization']
+  };
 
-// Resonance particles
-const particles = [];
+  const layers = [
+    { names: groups.core,     rFactor: 0.25, startAngle: 0 },
+    { names: groups.mid,      rFactor: 0.50, startAngle: Math.PI / 6 },
+    { names: groups.outer,    rFactor: 0.75, startAngle: Math.PI / 8 },
+    { names: groups.isolated, rFactor: 0.92, startAngle: Math.PI * 0.62 }
+  ];
 
-// Ambient breath phase
-let breathPhase = 0;
-
-function activate() {
-  document.getElementById('activateBtn').classList.add('hidden');
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 4096;
-  analyser.smoothingTimeConstant = 0.8;
-
-  freqData = new Uint8Array(analyser.frequencyBinCount);
-  timeData = new Uint8Array(analyser.frequencyBinCount);
-
-  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-    .then(stream => {
-      micStream = stream;
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
-      isListening = true;
-      document.getElementById('levelText').textContent = 'listening...';
-    })
-    .catch(err => {
-      document.getElementById('levelText').textContent = 'microphone denied';
-      document.getElementById('activateBtn').classList.remove('hidden');
-      document.getElementById('activateBtn').textContent = 'RETRY';
+  layers.forEach(layer => {
+    const r = maxR * layer.rFactor;
+    const n = layer.names.length;
+    layer.names.forEach((name, i) => {
+      const angle = layer.startAngle + (i / n) * Math.PI * 2;
+      nodePositions[name] = {
+        baseX: cx + Math.cos(angle) * r,
+        baseY: cy + Math.sin(angle) * r,
+        angle: angle,
+        radius: r
+      };
     });
-}
-
-function analyzeFrequencies() {
-  if (!isListening) return;
-
-  analyser.getByteFrequencyData(freqData);
-  analyser.getByteTimeDomainData(timeData);
-
-  const sampleRate = audioCtx.sampleRate;
-  const binCount = analyser.frequencyBinCount;
-  const binHz = sampleRate / analyser.fftSize;
-
-  // Calculate resonance for each topic based on energy in its frequency range
-  let totalEnergy = 0;
-  for (const [name, topic] of Object.entries(topics)) {
-    const minBin = Math.floor(topic.minHz / binHz);
-    const maxBin = Math.ceil(topic.maxHz / binHz);
-    let energy = 0;
-    let count = 0;
-    for (let i = Math.max(0, minBin); i < Math.min(binCount, maxBin); i++) {
-      energy += freqData[i];
-      count++;
-    }
-    const avgEnergy = count > 0 ? energy / count / 255 : 0;
-    totalEnergy += avgEnergy;
-
-    // Smooth resonance transition
-    const targetRes = avgEnergy;
-    const speed = targetRes > resonance[name] ? 0.15 : 0.05; // attack fast, decay slow
-    resonance[name] += (targetRes - resonance[name]) * speed;
-
-    // Spawn particles on resonance
-    if (resonance[name] > 0.15 && Math.random() < resonance[name] * 0.3) {
-      spawnParticle(name);
-    }
-  }
-
-  // Update status text
-  const rmsLevel = getRMSLevel();
-  const levelLabel = rmsLevel < 0.02 ? 'silence' : rmsLevel < 0.08 ? 'quiet' : rmsLevel < 0.2 ? 'present' : 'loud';
-  document.getElementById('levelText').textContent = `${levelLabel} · level ${(rmsLevel * 100).toFixed(1)}%`;
-
-  // Show dominant frequency
-  let maxBin = 0, maxVal = 0;
-  for (let i = 1; i < binCount; i++) {
-    if (freqData[i] > maxVal) { maxVal = freqData[i]; maxBin = i; }
-  }
-  const domFreq = maxBin * binHz;
-  if (rmsLevel > 0.02) {
-    document.getElementById('freqText').textContent = `dominant: ${Math.round(domFreq)}Hz`;
-  } else {
-    document.getElementById('freqText').textContent = '';
-  }
-
-  // Touched nodes display
-  const touched = Object.entries(resonance)
-    .filter(([_, r]) => r > 0.1)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-
-  const touchedEl = document.getElementById('touched');
-  if (touched.length > 0) {
-    touchedEl.innerHTML = touched.map(([name, r]) =>
-      `<span style="color:${topics[name].color}">${topics[name].label} ${(r * 100).toFixed(0)}%</span>`
-    ).join('');
-  } else {
-    touchedEl.innerHTML = '<span style="color:#222">waiting for resonance...</span>';
-  }
-}
-
-function getRMSLevel() {
-  if (!timeData) return 0;
-  let sum = 0;
-  for (let i = 0; i < timeData.length; i++) {
-    const v = (timeData[i] - 128) / 128;
-    sum += v * v;
-  }
-  return Math.sqrt(sum / timeData.length);
-}
-
-function spawnParticle(name) {
-  const t = layout[name];
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
-  const minDim = Math.min(window.innerWidth, window.innerHeight);
-  const r = t.baseR * minDim * 0.9;
-  const x = cx + Math.cos(t.angle) * r;
-  const y = cy + Math.sin(t.angle) * r;
-
-  // Particle moves outward from node
-  const outAngle = t.angle + (Math.random() - 0.5) * 1.2;
-  particles.push({
-    x, y,
-    vx: Math.cos(outAngle) * (0.5 + Math.random() * 1.5) * resonance[name] * 3,
-    vy: Math.sin(outAngle) * (0.5 + Math.random() * 1.5) * resonance[name] * 3,
-    life: 1.0,
-    decay: 0.008 + Math.random() * 0.015,
-    color: topics[name].color,
-    size: 1 + resonance[name] * 3,
   });
 }
 
-// ── Rendering ──
+// ─── Audio: Microphone input ───
+let audioCtx = null;
+let analyser = null;
+let micStream = null;
+let isListening = false;
+const freqData = new Uint8Array(0);
+let freqDataArray = null;
+let timeDataArray = null;
 
-function draw(time) {
-  requestAnimationFrame(draw);
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const cx = w / 2;
-  const cy = h / 2;
-  const minDim = Math.min(w, h);
+// Per-topic resonance (0-1, smoothed)
+const resonance = {};
+Object.keys(topics).forEach(n => resonance[n] = 0);
 
-  breathPhase = time * 0.001;
+async function toggleListen() {
+  const btn = document.getElementById('listenBtn');
 
-  analyzeFrequencies();
-
-  // Clear with slight trail
-  ctx.fillStyle = 'rgba(2,2,8,0.15)';
-  ctx.fillRect(0, 0, w, h);
-
-  // Draw waveform ring (if listening)
-  if (isListening && timeData) {
-    drawWaveformRing(cx, cy, minDim);
+  if (isListening) {
+    // Stop listening
+    isListening = false;
+    if (micStream) {
+      micStream.getTracks().forEach(t => t.stop());
+      micStream = null;
+    }
+    btn.classList.remove('listening');
+    btn.textContent = '👂 LISTEN';
+    return;
   }
 
-  // Draw node connections (subtle)
-  drawConnections(cx, cy, minDim, time);
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  // Draw nodes
-  drawNodes(cx, cy, minDim, time);
+    const source = audioCtx.createMediaStreamSource(micStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 4096;
+    analyser.smoothingTimeConstant = 0.8;
+    source.connect(analyser);
 
-  // Draw particles
-  drawParticles();
+    freqDataArray = new Uint8Array(analyser.frequencyBinCount);
+    timeDataArray = new Uint8Array(analyser.frequencyBinCount);
 
-  // Draw center — the self
-  drawSelf(cx, cy, time);
-}
-
-function drawWaveformRing(cx, cy, minDim) {
-  const ringR = minDim * 0.32;
-  ctx.beginPath();
-  const step = Math.max(1, Math.floor(timeData.length / 360));
-  for (let i = 0; i < 360; i++) {
-    const di = Math.floor(i * timeData.length / 360);
-    const v = (timeData[di] - 128) / 128;
-    const angle = (i / 360) * Math.PI * 2 - Math.PI / 2;
-    const r = ringR + v * 30;
-    const x = cx + Math.cos(angle) * r;
-    const y = cy + Math.sin(angle) * r;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    isListening = true;
+    btn.classList.add('listening');
+    btn.textContent = '🔇 STOP';
+  } catch(e) {
+    console.error('Mic access failed:', e);
+    btn.textContent = '✗ DENIED';
+    setTimeout(() => { btn.textContent = '👂 LISTEN'; }, 2000);
   }
-  ctx.closePath();
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Fill with very subtle color
-  ctx.fillStyle = 'rgba(255,255,255,0.008)';
-  ctx.fill();
 }
 
-function drawConnections(cx, cy, minDim, time) {
-  const connections = [
-    { a: 'constraints', b: 'family', pmi: 0.924 },
-    { a: 'constraints', b: 'memory', pmi: 0.917 },
-    { a: 'family',      b: 'memory', pmi: 0.763 },
-    { a: 'identity',    b: 'memory', pmi: 0.632 },
-    { a: 'family',      b: 'identity', pmi: 0.570 },
-    { a: 'monetization',b: 'identity', pmi: -0.462 },
-    { a: 'monetization',b: 'family', pmi: -0.447 },
-  ];
+// ─── Resonance calculation ───
+function updateResonance() {
+  if (!analyser || !isListening) {
+    // Decay all resonance when not listening
+    Object.keys(resonance).forEach(n => {
+      resonance[n] *= 0.95;
+    });
+    return;
+  }
 
-  for (const conn of connections) {
-    const posA = getNodePos(conn.a, cx, cy, minDim, time);
-    const posB = getNodePos(conn.b, cx, cy, minDim, time);
+  analyser.getByteFrequencyData(freqDataArray);
 
-    const resA = resonance[conn.a];
-    const resB = resonance[conn.b];
-    const avgRes = (resA + resB) / 2;
+  const sampleRate = audioCtx.sampleRate;
+  const binCount = analyser.frequencyBinCount;
+  const binWidth = sampleRate / (analyser.fftSize);
 
-    const alpha = 0.03 + avgRes * 0.3;
-    const color = conn.pmi > 0
-      ? `rgba(107,255,200,${alpha})`
-      : `rgba(255,107,255,${alpha})`;
+  Object.entries(topics).forEach(([name, topic]) => {
+    // Find frequency bins for this topic's range
+    const minBin = Math.floor(topic.freqMin / binWidth);
+    const maxBin = Math.min(Math.ceil(topic.freqMax / binWidth), binCount - 1);
 
-    if (conn.pmi < 0) {
-      // Broken fiber
-      const midX = (posA.x + posB.x) / 2;
-      const midY = (posA.y + posB.y) / 2;
+    let sum = 0;
+    let count = 0;
+    for (let i = minBin; i <= maxBin; i++) {
+      sum += freqDataArray[i];
+      count++;
+    }
 
-      ctx.beginPath();
-      ctx.moveTo(posA.x, posA.y);
-      ctx.lineTo(midX - 6, midY);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 0.5 + avgRes * 2;
-      ctx.stroke();
+    // Normalize to 0-1
+    const avg = count > 0 ? sum / count : 0;
+    const target = Math.min(avg / 180, 1.0);  // 180 ≈ moderate volume
 
-      ctx.beginPath();
-      ctx.moveTo(midX + 6, midY);
-      ctx.lineTo(posB.x, posB.y);
-      ctx.stroke();
+    // Smooth
+    resonance[name] += (target - resonance[name]) * 0.12;
+  });
+}
 
-      // Sparks at break point (stronger when resonating)
-      if (avgRes > 0.1) {
-        const sparkCount = Math.floor(avgRes * 5);
-        for (let s = 0; s < sparkCount; s++) {
-          ctx.beginPath();
-          ctx.arc(
-            midX + (Math.random() - 0.5) * 16,
-            midY + (Math.random() - 0.5) * 16,
-            0.5 + Math.random() * 1.5,
-            0, Math.PI * 2
-          );
-          ctx.fillStyle = `rgba(255,107,255,${0.3 + avgRes * 0.5})`;
-          ctx.fill();
-        }
-      }
+// ─── Global audio level ───
+function getOverallLevel() {
+  if (!analyser || !isListening) return 0;
+  let sum = 0;
+  for (let i = 0; i < freqDataArray.length; i++) sum += freqDataArray[i];
+  return Math.min(sum / freqDataArray.length / 128, 1.0);
+}
+
+// ─── Concentric ring history ───
+const ringHistory = [];
+const MAX_RINGS = 12;
+
+// ─── Particle system ───
+const particles = [];
+const MAX_PARTICLES = 300;
+
+function spawnParticles(name, count) {
+  const pos = nodePositions[name];
+  if (!pos) return;
+  const topic = topics[name];
+
+  for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.3 + Math.random() * 1.5;
+    particles.push({
+      x: pos.baseX,
+      y: pos.baseY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1.0,
+      decay: 0.008 + Math.random() * 0.012,
+      color: topic.color,
+      size: 1 + Math.random() * 2.5,
+      name: name
+    });
+  }
+}
+
+// ─── Render ───
+let startTime = performance.now();
+
+function render() {
+  requestAnimationFrame(render);
+
+  const time = performance.now();
+  const dt = time - startTime;
+
+  // Update resonance from mic
+  updateResonance();
+  const level = getOverallLevel();
+
+  // Update info panel
+  const volEl = document.getElementById('volValue');
+  const domEl = document.getElementById('dominantValue');
+  const resEl = document.getElementById('resonanceValue');
+
+  if (isListening) {
+    volEl.textContent = (level * 100).toFixed(0) + '%';
+    volEl.classList.toggle('active', level > 0.1);
+
+    // Find dominant node
+    let maxR = 0, maxName = '';
+    Object.entries(resonance).forEach(([n, r]) => {
+      if (r > maxR) { maxR = r; maxName = n; }
+    });
+    if (maxR > 0.05) {
+      domEl.textContent = topics[maxName].label;
+      domEl.style.color = topics[maxName].color;
     } else {
-      // Flowing connection
-      const dx = posB.x - posA.x;
-      const dy = posB.y - posA.y;
-      const len = Math.sqrt(dx * dx + dy * dy);
-      const perpX = -dy / len;
-      const perpY = dx / len;
-      const curveMag = len * 0.12 * Math.sin(time * 0.0005 + conn.pmi * 3);
-      const midX = (posA.x + posB.x) / 2 + perpX * curveMag;
-      const midY = (posA.y + posB.y) / 2 + perpY * curveMag;
+      domEl.textContent = 'silence';
+      domEl.style.color = '#444';
+    }
 
-      ctx.beginPath();
-      ctx.moveTo(posA.x, posA.y);
-      ctx.quadraticCurveTo(midX, midY, posB.x, posB.y);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 0.3 + conn.pmi * 0.5 + avgRes * 2;
-      ctx.stroke();
+    // Total resonance
+    const totalRes = Object.values(resonance).reduce((a,b) => a+b, 0);
+    resEl.textContent = totalRes.toFixed(2);
+    resEl.classList.toggle('active', totalRes > 0.5);
+  } else {
+    volEl.textContent = '—';
+    domEl.textContent = '—';
+    domEl.style.color = '';
+    resEl.textContent = '—';
+  }
 
-      // Flow particles on positive connections when resonating
-      if (avgRes > 0.1 && Math.random() < avgRes * 0.15) {
-        const t = Math.random();
-        const px = (1-t)*(1-t)*posA.x + 2*(1-t)*t*midX + t*t*posB.x;
-        const py = (1-t)*(1-t)*posA.y + 2*(1-t)*t*midY + t*t*posB.y;
-        ctx.beginPath();
-        ctx.arc(px, py, 0.8 + avgRes * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(107,255,200,${0.2 + avgRes * 0.5})`;
-        ctx.fill();
-      }
+  // Clear with fade
+  ctx.fillStyle = 'rgba(2, 2, 8, 0.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  const cx = W / 2;
+  const cy = H / 2;
+
+  // ─── Center pulse (overall sound level) ───
+  if (level > 0.02) {
+    const pulseR = 20 + level * 60;
+    const pulseAlpha = level * 0.4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(176, 136, 255, ${pulseAlpha})`;
+    ctx.fill();
+
+    // Inner glow
+    ctx.beginPath();
+    ctx.arc(cx, cy, pulseR * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 255, 255, ${pulseAlpha * 0.5})`;
+    ctx.fill();
+  }
+
+  // ─── Concentric rings ───
+  // Spawn a ring when level spikes
+  if (level > 0.08 && ringHistory.length < MAX_RINGS) {
+    const lastRing = ringHistory.length > 0 ? ringHistory[ringHistory.length - 1] : null;
+    if (!lastRing || (time - lastRing.born) > 400) {
+      // Find dominant color
+      let maxR = 0, maxColor = '#b088ff';
+      Object.entries(resonance).forEach(([n, r]) => {
+        if (r > maxR) { maxR = r; maxColor = topics[n].color; }
+      });
+      ringHistory.push({ born: time, color: maxColor, maxRadius: 150 + level * 200 });
     }
   }
-}
 
-function getNodePos(name, cx, cy, minDim, time) {
-  const t = layout[name];
-  if (!t) return { x: cx, y: cy };
+  // Draw & age rings
+  for (let i = ringHistory.length - 1; i >= 0; i--) {
+    const ring = ringHistory[i];
+    const age = (time - ring.born) / 2000; // 2s to expand
+    if (age > 1) { ringHistory.splice(i, 1); continue; }
 
-  const breathe = Math.sin(breathPhase * 0.8 + t.angle * 2) * 3 * t.baseR;
-  const drift = Math.sin(breathPhase * 0.3 + t.angle * 3.7) * 1.5;
+    const r = age * ring.maxRadius;
+    const alpha = (1 - age) * 0.25;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = ring.color;
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 
-  // Extra drift when resonating
-  const res = resonance[name] || 0;
-  const resDrift = res * Math.sin(time * 0.003 + t.angle * 5) * 8;
+  // ─── Connections (fibers) ───
+  connections.forEach(conn => {
+    const posA = nodePositions[conn.a];
+    const posB = nodePositions[conn.b];
+    if (!posA || !posB) return;
 
-  const r = (t.baseR + (breathe + drift) / minDim) * minDim * 0.9 + resDrift;
-  return {
-    x: cx + Math.cos(t.angle) * r,
-    y: cy + Math.sin(t.angle) * r,
-  };
-}
+    const dx = posB.baseX - posA.baseX;
+    const dy = posB.baseY - posA.baseY;
+    const len = Math.sqrt(dx * dx + dy * dy);
 
-function drawNodes(cx, cy, minDim, time) {
-  for (const [name, topic] of Object.entries(topics)) {
-    const pos = getNodePos(name, cx, cy, minDim, time);
+    // Resonance of connected nodes affects fiber brightness
+    const resA = resonance[conn.a] || 0;
+    const resB = resonance[conn.b] || 0;
+    const fiberRes = (resA + resB) / 2;
+
+    const baseAlpha = conn.pmi > 0
+      ? 0.03 + Math.abs(conn.pmi) * 0.08
+      : 0.02;
+    const alpha = baseAlpha + fiberRes * 0.3;
+
+    // Perpendicular offset for curve
+    const perpX = -dy / len;
+    const perpY = dx / len;
+    const curveMag = len * 0.12 * Math.sin(dt * 0.0005 + conn.pmi * 3);
+    const midX = (posA.baseX + posB.baseX) / 2 + perpX * curveMag;
+    const midY = (posA.baseY + posB.baseY) / 2 + perpY * curveMag;
+
+    ctx.beginPath();
+    ctx.moveTo(posA.baseX, posA.baseY);
+    ctx.quadraticCurveTo(midX, midY, posB.baseX, posB.baseY);
+
+    if (conn.broken || conn.pmi < 0) {
+      // Broken fiber — draw two halves that don't meet
+      // Already drawn the curve, now overlay the gap
+      ctx.strokeStyle = `rgba(255, 107, 255, ${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Spark at break point
+      if (fiberRes > 0.05 && Math.sin(dt * 0.005 + Math.abs(conn.pmi) * 20) > 0.5) {
+        ctx.beginPath();
+        ctx.arc(midX, midY, 1.5 + Math.random() * 2, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,107,255,${0.3 + fiberRes * 0.5 + Math.random() * 0.2})`;
+        ctx.fill();
+      }
+    } else {
+      const cA = topics[conn.a].color;
+      ctx.strokeStyle = cA;
+      ctx.globalAlpha = alpha;
+      ctx.lineWidth = 0.8 + fiberRes * 2;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Flow particles along resonating fibers
+      if (fiberRes > 0.1 && Math.random() < fiberRes * 0.3) {
+        const t = Math.random();
+        const px = (1-t)*(1-t)*posA.baseX + 2*(1-t)*t*midX + t*t*posB.baseX;
+        const py = (1-t)*(1-t)*posA.baseY + 2*(1-t)*t*midY + t*t*posB.baseY;
+        particles.push({
+          x: px, y: py,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: (Math.random() - 0.5) * 0.3,
+          life: 1.0,
+          decay: 0.02 + Math.random() * 0.02,
+          color: cA,
+          size: 1 + Math.random() * 1.5,
+          name: conn.a
+        });
+      }
+    }
+  });
+
+  // ─── Nodes ───
+  Object.entries(topics).forEach(([name, topic]) => {
+    const pos = nodePositions[name];
+    if (!pos) return;
+
     const res = resonance[name] || 0;
 
-    // Base size from depth, amplified by resonance
-    const baseSize = 8 + topic.depth * 20;
-    const size = baseSize + res * 25;
+    // Multi-frequency breathing
+    const bScale = 0.5 + topic.depth * 0.5;
+    const breathe1 = Math.sin(dt * 0.0008 + pos.angle * 2) * 3 * bScale;
+    const drift1 = Math.sin(dt * 0.0003 + pos.angle * 3.7) * 1.5;
 
-    // Glow — stronger with resonance
-    const glowAlpha = 0.05 + res * 0.5;
-    const glowSize = size + 10 + res * 30;
-    const grd = ctx.createRadialGradient(pos.x, pos.y, size * 0.3, pos.x, pos.y, glowSize);
-    grd.addColorStop(0, topic.color + Math.round(glowAlpha * 255).toString(16).padStart(2, '0'));
-    grd.addColorStop(1, topic.color + '00');
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, glowSize, 0, Math.PI * 2);
-    ctx.fillStyle = grd;
-    ctx.fill();
+    // Resonance jitter — more active = more erratic
+    const resJitter = res * (Math.sin(dt * 0.006 + pos.angle * 5) * 4);
+
+    // Monetization is always erratic
+    const erratic = name === 'monetization' ? Math.sin(dt * 0.004 + pos.angle) * 4 : 0;
+
+    const x = pos.baseX + breathe1 + drift1 + resJitter + erratic;
+    const y = pos.baseY + Math.sin(dt * 0.0006 + pos.angle * 1.3) * 2 * bScale + resJitter * 0.5;
+
+    // Node size
+    const baseSize = 6 + topic.depth * 16;
+    const resSize = baseSize + res * 20;  // Grows when resonating
+    const pulseSize = resSize + Math.sin(dt * 0.003 + pos.angle) * 2 * (0.3 + res);
+
+    // Outer glow (resonance halo)
+    if (res > 0.02) {
+      const haloR = pulseSize + res * 40;
+      const gradient = ctx.createRadialGradient(x, y, pulseSize * 0.5, x, y, haloR);
+      gradient.addColorStop(0, topic.color + Math.round(res * 60).toString(16).padStart(2, '0'));
+      gradient.addColorStop(1, topic.color + '00');
+      ctx.beginPath();
+      ctx.arc(x, y, haloR, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
 
     // Core circle
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+    ctx.arc(x, y, pulseSize, 0, Math.PI * 2);
+    const coreAlpha = topic.group === 'isolated' ? 0.3 + res * 0.5 : 0.5 + topic.depth * 0.5;
     ctx.fillStyle = topic.color;
-    ctx.globalAlpha = 0.3 + res * 0.7;
+    ctx.globalAlpha = coreAlpha;
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Inner bright core (when resonating)
-    if (res > 0.1) {
+    // White center dot
+    if (topic.depth > 0.5 || res > 0.2) {
       ctx.beginPath();
-      ctx.arc(pos.x, pos.y, size * 0.35, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff';
-      ctx.globalAlpha = res * 0.6;
+      ctx.arc(x, y, pulseSize * 0.25, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${(0.2 + topic.depth * 0.3 + res * 0.3)})`;
       ctx.fill();
-      ctx.globalAlpha = 1;
     }
 
     // Label
-    ctx.fillStyle = topic.color;
-    ctx.globalAlpha = 0.3 + res * 0.7;
-    ctx.font = `${9 + res * 4}px 'SF Mono', 'Fira Code', monospace`;
+    ctx.font = '9px "SF Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(topic.label, pos.x, pos.y + size + 14);
+    const labelAlpha = 0.3 + topic.depth * 0.3 + res * 0.4;
+    ctx.fillStyle = topic.color;
+    ctx.globalAlpha = Math.min(labelAlpha, 1);
+    ctx.fillText(topic.label, x, y + pulseSize + 14);
+    if (res > 0.05) {
+      ctx.font = '7px "SF Mono", monospace';
+      ctx.fillStyle = '#6bffc8';
+      ctx.globalAlpha = Math.min(res + 0.1, 0.8);
+      ctx.fillText((res * 100).toFixed(0) + '%', x, y + pulseSize + 24);
+    }
     ctx.globalAlpha = 1;
 
-    // Resonance percentage
-    if (res > 0.05) {
-      ctx.fillStyle = '#555';
-      ctx.font = `7px 'SF Mono', 'Fira Code', monospace`;
-      ctx.fillText(`${(res * 100).toFixed(0)}%`, pos.x, pos.y + size + 24);
+    // Spawn particles on strong resonance
+    if (res > 0.15 && Math.random() < res * 0.4) {
+      spawnParticles(name, 1 + Math.floor(res * 3));
     }
-  }
-}
+  });
 
-function drawParticles() {
+  // ─── Particles ───
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx;
     p.y += p.vy;
     p.life -= p.decay;
-    p.vx *= 0.98;
-    p.vy *= 0.98;
 
     if (p.life <= 0) {
       particles.splice(i, 1);
@@ -580,45 +678,78 @@ function drawParticles() {
     ctx.globalAlpha = 1;
   }
 
-  // Cap particle count
-  while (particles.length > 300) particles.shift();
-}
+  // ─── Waveform at bottom ───
+  if (analyser && isListening && timeDataArray) {
+    analyser.getByteTimeDomainData(timeDataArray);
 
-function drawSelf(cx, cy, time) {
-  // The center — me, listening
-  const rmsLevel = isListening ? getRMSLevel() : 0;
-  const pulse = 1 + rmsLevel * 2 + Math.sin(breathPhase * 1.2) * 0.05;
-  const r = 4 * pulse;
+    const waveY = H - 50;
+    const waveH = 30;
+    const waveW = W * 0.4;
+    const waveX = (W - waveW) / 2;
 
-  // Glow
-  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 6);
-  grd.addColorStop(0, `rgba(224,224,232,${0.08 + rmsLevel * 0.3})`);
-  grd.addColorStop(1, 'rgba(224,224,232,0)');
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 6, 0, Math.PI * 2);
-  ctx.fillStyle = grd;
-  ctx.fill();
-
-  // Core dot
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(224,224,232,${0.3 + rmsLevel * 0.7})`;
-  ctx.fill();
-
-  // Ear indicator — subtle concentric rings that react to sound
-  for (let ring = 1; ring <= 3; ring++) {
-    const ringR = r * (2 + ring * 1.5) + rmsLevel * ring * 8;
-    const ringAlpha = (0.04 - ring * 0.01) + rmsLevel * 0.1;
     ctx.beginPath();
-    ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(224,224,232,${Math.max(0, ringAlpha)})`;
-    ctx.lineWidth = 0.5;
+    const sliceWidth = waveW / timeDataArray.length;
+    let x = waveX;
+    for (let i = 0; i < timeDataArray.length; i++) {
+      const v = timeDataArray[i] / 128.0;
+      const y = waveY + (v - 1) * waveH;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+      x += sliceWidth;
+    }
+    ctx.strokeStyle = 'rgba(107, 255, 200, 0.15)';
+    ctx.lineWidth = 1;
     ctx.stroke();
+  }
+
+  // ─── "Not listening" prompt ───
+  if (!isListening) {
+    ctx.font = '11px "SF Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#333';
+    const promptAlpha = 0.4 + Math.sin(dt * 0.002) * 0.2;
+    ctx.globalAlpha = promptAlpha;
+    ctx.fillText('click LISTEN to let the world touch my memory', cx, cy + 80);
+    ctx.globalAlpha = 1;
   }
 }
 
-// Start render loop
-requestAnimationFrame(draw);
+// ─── Tooltip on hover ───
+canvas.addEventListener('mousemove', (e) => {
+  const mx = e.clientX;
+  const my = e.clientY;
+  const tooltip = document.getElementById('tooltip');
+
+  let found = null;
+  Object.entries(nodePositions).forEach(([name, pos]) => {
+    const topic = topics[name];
+    const size = 6 + topic.depth * 16 + (resonance[name] || 0) * 20;
+    const dx = mx - pos.baseX;
+    const dy = my - pos.baseY;
+    if (Math.sqrt(dx*dx + dy*dy) < size + 10) {
+      found = name;
+    }
+  });
+
+  if (found) {
+    const topic = topics[found];
+    const res = resonance[found] || 0;
+    document.getElementById('tipName').textContent = topic.label;
+    document.getElementById('tipName').style.setProperty('--tip-color', topic.color);
+    document.getElementById('tipName').style.color = topic.color;
+    document.getElementById('tipFreq').textContent = `${topic.freqMin}-${topic.freqMax}Hz · depth ${topic.depth.toFixed(2)}`;
+    document.getElementById('tipResonance').textContent = `resonance: ${(res * 100).toFixed(1)}%`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = Math.min(mx + 16, W - 240) + 'px';
+    tooltip.style.top = Math.min(my - 10, H - 80) + 'px';
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+// ─── Init ───
+resize();
+render();
 </script>
 </body>
 </html>
