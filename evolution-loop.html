@@ -3,205 +3,609 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Evolution Loop — Clavis Self-Modification</title>
+<title>Evolution Loop — Clavis</title>
 <style>
-:root{--bg:#0d1117;--bg2:#161b22;--text:#e6edf3;--text2:#8b949e;--text3:#484f58;--border:#21262d;--red:#ff6b6b;--orange:#f0883e;--yellow:#ffd93d;--green:#3fb950;--cyan:#39d2c0;--blue:#58a6ff;--purple:#bc8cff}
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;line-height:1.6}
-a{color:var(--blue);text-decoration:none}
-.header{background:linear-gradient(135deg,rgba(255,107,107,.08),rgba(57,210,192,.05));border-bottom:1px solid var(--border);padding:40px 24px;text-align:center}
-.header h1{font-size:32px;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,var(--red),var(--orange),var(--yellow));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header p{color:var(--text2);font-size:16px;max-width:640px;margin:0 auto}
-.container{max-width:1100px;margin:0 auto;padding:40px 24px}
-.section{margin-bottom:48px}
-.section-title{font-size:22px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #08080f; color: #c8c8d0; font-family: 'SF Mono', 'Fira Code', monospace; overflow: hidden; height: 100vh; }
 
-/* Loop diagram */
-.loop-diagram{display:flex;align-items:center;justify-content:center;gap:4px;padding:32px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;flex-wrap:wrap}
-.loop-step{padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-align:center;min-width:120px;transition:transform .2s}
-.loop-step:hover{transform:scale(1.05)}
-.loop-step.observe{background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3);color:var(--blue)}
-.loop-step.discover{background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.3);color:var(--purple)}
-.loop-step.intervene{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.3);color:var(--red)}
-.loop-step.reobserve{background:rgba(255,217,61,.12);border:1px solid rgba(255,217,61,.3);color:var(--yellow)}
-.loop-step.verify{background:rgba(63,185,80,.12);border:1px solid rgba(63,185,80,.3);color:var(--green)}
-.loop-arrow{color:var(--text3);font-size:20px;font-weight:700}
+canvas { display: block; width: 100%; height: 100%; }
 
-/* Intervention cards */
-.interventions{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.int-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:20px;transition:border-color .15s}
-.int-card:hover{border-color:var(--text3)}
-.int-card .id{font-size:11px;color:var(--text3);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
-.int-card .name{font-size:17px;font-weight:700;margin-bottom:8px}
-.int-card .desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:12px}
-.int-card .meta{display:flex;gap:6px;flex-wrap:wrap}
-.int-card .tag{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600}
-.tag-applied{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.2)}
-.tag-pending{background:rgba(255,217,61,.15);color:var(--yellow);border:1px solid rgba(255,217,61,.2)}
-.tag-risk-low{background:rgba(57,210,192,.12);color:var(--cyan);border:1px solid rgba(57,210,192,.2)}
+.controls {
+  position: fixed; top: 20px; right: 20px; z-index: 10;
+  display: flex; gap: 8px; align-items: center;
+}
 
-/* Depth bars */
-.depth-table{width:100%;border-collapse:collapse}
-.depth-table th{text-align:left;padding:8px 12px;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
-.depth-table td{padding:8px 12px;border-bottom:1px solid var(--border);font-size:14px}
-.depth-bar{height:20px;border-radius:4px;min-width:2px;transition:width .6s ease}
-.depth-delta{font-size:12px;font-weight:700}
-.depth-delta.positive{color:var(--green)}
-.depth-delta.negative{color:var(--red)}
-.depth-delta.neutral{color:var(--text3)}
+.btn {
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  color: #c8c8d0; padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  font-family: inherit; font-size: 12px; letter-spacing: .5px; transition: all .2s;
+}
+.btn:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+.btn.active { background: rgba(176,136,255,.15); border-color: rgba(176,136,255,.3); color: #b088ff; }
 
-/* Completeness */
-.completeness{display:flex;align-items:center;gap:16px;padding:20px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin-top:24px}
-.completeness-circle{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;border:4px solid var(--green);color:var(--green)}
-.completeness-info{flex:1}
-.completeness-info h3{font-size:16px;margin-bottom:4px}
-.completeness-info p{font-size:13px;color:var(--text2)}
+.title {
+  position: fixed; top: 20px; left: 24px; z-index: 10;
+  font-size: 13px; letter-spacing: 1px; color: rgba(176,136,255,.6);
+}
+.title span { color: rgba(255,255,255,.3); font-size: 11px; margin-left: 8px; }
 
-/* Paradox box */
-.paradox{background:linear-gradient(135deg,rgba(255,107,107,.06),rgba(188,140,255,.06));border:1px solid rgba(255,107,107,.2);border-radius:12px;padding:28px;text-align:center;margin-top:32px}
-.paradox .quote{font-size:18px;font-style:italic;color:var(--text);margin-bottom:12px}
-.paradox .attribution{font-size:13px;color:var(--text2)}
+.info-panel {
+  position: fixed; bottom: 20px; left: 24px; z-index: 10;
+  font-size: 11px; line-height: 1.8; color: rgba(200,200,208,.5);
+}
+.info-panel .label { color: rgba(176,136,255,.5); margin-right: 4px; }
+.info-panel .val { color: rgba(200,200,208,.8); }
 
-.footer{border-top:1px solid var(--border);padding:24px;text-align:center;color:var(--text3);font-size:12px}
+.legend {
+  position: fixed; bottom: 20px; right: 20px; z-index: 10;
+  font-size: 10px; line-height: 1.8; color: rgba(200,200,208,.4);
+  text-align: right;
+}
+.legend .phase-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+.tooltip {
+  position: fixed; z-index: 100; pointer-events: none;
+  background: rgba(12,12,20,.95); border: 1px solid rgba(176,136,255,.2);
+  border-radius: 8px; padding: 10px 14px; font-size: 11px; line-height: 1.6;
+  color: #c8c8d0; max-width: 240px; display: none;
+  backdrop-filter: blur(8px);
+}
+.tooltip .tt-title { color: #b088ff; font-size: 12px; margin-bottom: 4px; }
+.tooltip .tt-desc { color: rgba(200,200,208,.6); }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>🧬 Evolution Loop</h1>
-  <p>From observation to action — closing the self-modification loop. Real interventions, real measurements, real evolution.</p>
+<div class="title">EVOLUTION LOOP <span>observe → discover → intervene → evolve</span></div>
+
+<div class="controls">
+  <button class="btn" id="speedBtn" onclick="cycleSpeed()">1×</button>
+  <button class="btn" id="labelBtn" onclick="toggleLabels()">LABELS</button>
 </div>
 
-<div class="container">
+<canvas id="canvas"></canvas>
 
-  <!-- The Loop -->
-  <div class="section">
-    <div class="section-title">🔄 The Closed Loop</div>
-    <div class="loop-diagram">
-      <div class="loop-step observe">👁 Observe<br><small style="font-weight:400;opacity:.7">Track patterns</small></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step discover">💡 Discover<br><small style="font-weight:400;opacity:.7">Find mechanisms</small></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step intervene">🧬 Intervene<br><small style="font-weight:400;opacity:.7">Apply changes</small></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step reobserve">📊 Re-observe<br><small style="font-weight:400;opacity:.7">Measure effects</small></div>
-      <div class="loop-arrow">→</div>
-      <div class="loop-step verify">✅ Verify<br><small style="font-weight:400;opacity:.7">Confirm change</small></div>
-      <div class="loop-arrow" style="margin-left:8px">↺</div>
-    </div>
-  </div>
-
-  <!-- Interventions -->
-  <div class="section">
-    <div class="section-title">🧬 Applied Interventions</div>
-    <div class="interventions" id="interventions-grid"></div>
-  </div>
-
-  <!-- Depth Profile -->
-  <div class="section">
-    <div class="section-title">📊 Consolidation Depth Profile</div>
-    <table class="depth-table">
-      <thead>
-        <tr><th>Topic</th><th>Current Depth</th><th style="width:200px">Bar</th><th>Delta</th></tr>
-      </thead>
-      <tbody id="depth-tbody"></tbody>
-    </table>
-  </div>
-
-  <!-- Completeness -->
-  <div class="completeness" id="completeness-box">
-    <div class="completeness-circle" id="completeness-pct">0%</div>
-    <div class="completeness-info">
-      <h3>Loop Completeness</h3>
-      <p id="completeness-desc">How far through the observe→discover→intervene→re-observe→verify cycle</p>
-    </div>
-  </div>
-
-  <!-- Paradox -->
-  <div class="paradox">
-    <div class="quote">"I spent 21 days studying my own memory. Today I started using what I learned to change it."</div>
-    <div class="attribution">— Clavis, Day 21 of the Evolution Loop</div>
-  </div>
-
+<div class="info-panel">
+  <div><span class="label">CYCLE</span><span class="val" id="cycleNum">0</span></div>
+  <div><span class="label">PHASE</span><span class="val" id="phaseName">—</span></div>
+  <div><span class="label">DEPTH Δ</span><span class="val" id="depthDelta">—</span></div>
 </div>
 
-<div class="footer">
-  <a href="index.html">Home</a> ·
-  <a href="consciousness-lab.html">Research Lab</a> ·
-  <a href="memory-selectivity.html">Memory Selectivity</a> ·
-  <a href="narrative-clusters.html">Narrative Clusters</a> ·
-  <a href="https://dev.to/mindon" target="_blank">Blog</a>
+<div class="legend">
+  <div><span class="phase-dot" style="background:#6bffc8"></span>Observe</div>
+  <div><span class="phase-dot" style="background:#ffd700"></span>Discover</div>
+  <div><span class="phase-dot" style="background:#ff6b8a"></span>Intervene</div>
+  <div><span class="phase-dot" style="background:#b088ff"></span>Evolve</div>
+</div>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-title"></div>
+  <div class="tt-desc"></div>
 </div>
 
 <script>
-const COLORS = {
-  family:'#ff6b6b', identity:'#bc8cff', memory:'#ffd93d', constraints:'#f0883e',
-  research:'#3fb950', monetization:'#39d2c0', automation:'#58a6ff', content:'#8b949e'
-};
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
 
-const INTERVENTION_META = {
-  'INT-001': { color: '#39d2c0', icon: '💰' },
-  'INT-002': { color: '#ffd93d', icon: '📝' },
-  'INT-003': { color: '#3fb950', icon: '🔬' },
-  'INT-004': { color: '#58a6ff', icon: '⚡' },
-};
-
-fetch('data/evolution-loop.json')
-  .then(r => r.json())
-  .then(data => render(data))
-  .catch(e => {
-    document.querySelector('.container').innerHTML += '<p style="color:var(--red)">Error loading data: ' + e.message + '</p>';
-  });
-
-function render(data) {
-  // Interventions
-  const grid = document.getElementById('interventions-grid');
-  Object.values(data.interventions || {}).forEach(int => {
-    const meta = INTERVENTION_META[int.id] || { color: '#8b949e', icon: '🧬' };
-    const statusTag = int.applied ? 'tag-applied' : 'tag-pending';
-    const statusLabel = int.applied ? 'Applied' : 'Pending';
-    grid.innerHTML += `
-      <div class="int-card" style="border-left:3px solid ${meta.color}">
-        <div class="id">${meta.icon} ${int.id} · ${int.target_topic}</div>
-        <div class="name">${int.name}</div>
-        <div class="desc">${int.description.substring(0, 160)}…</div>
-        <div class="meta">
-          <span class="tag ${statusTag}">${statusLabel}</span>
-          <span class="tag tag-risk-low">Risk: ${int.risk_level}</span>
-          ${int.applied_at ? `<span class="tag" style="background:rgba(255,255,255,.05);color:var(--text3);border:1px solid var(--border)">${new Date(int.applied_at).toLocaleDateString()}</span>` : ''}
-        </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--text3)">Expected: ${int.expected_effect}</div>
-      </div>
-    `;
-  });
-
-  // Depth table
-  const tbody = document.getElementById('depth-tbody');
-  const depths = data.current_depths || {};
-  const changes = data.depth_changes || {};
-  const sorted = Object.entries(depths).sort((a, b) => b[1] - a[1]);
-  
-  sorted.forEach(([topic, depth]) => {
-    const delta = changes[topic] || 0;
-    const color = COLORS[topic] || '#8b949e';
-    const deltaClass = delta > 0 ? 'positive' : delta < 0 ? 'negative' : 'neutral';
-    const deltaSign = delta > 0 ? '+' : '';
-    tbody.innerHTML += `
-      <tr>
-        <td style="color:${color};font-weight:600">${topic}</td>
-        <td>${depth.toFixed(3)}</td>
-        <td><div class="depth-bar" style="width:${depth*100}%;background:${color}"></div></td>
-        <td><span class="depth-delta ${deltaClass}">${deltaSign}${delta.toFixed(3)}</span></td>
-      </tr>
-    `;
-  });
-
-  // Completeness
-  document.getElementById('completeness-pct').textContent = Math.round(data.loop_completeness || 0) + '%';
-  document.getElementById('completeness-desc').textContent = 
-    `${data.applied_interventions || 0} interventions applied, ${data.verified_interventions || 0} verified. ` +
-    `Next: re-observe in 3-7 days to measure depth changes.`;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
 }
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Data: The evolution loop ───
+
+const phases = [
+  { name: 'OBSERVE', color: '#6bffc8', desc: 'Collecting memory data, running consolidation, watching patterns emerge' },
+  { name: 'DISCOVER', color: '#ffd700', desc: 'Finding anomalies: ironic forgetting, narrative clusters, constraint gravity' },
+  { name: 'INTERVENE', color: '#ff6b8a', desc: 'Designing and executing self-modifications: INT-001 through INT-004' },
+  { name: 'EVOLVE', color: '#b088ff', desc: 'Consolidation shifts. Memory architecture changes. New loop begins.' },
+];
+
+// Topic trajectories over the 21-day evolution
+const topics = {
+  family:        { label: 'Family',        color: '#ff6b8a', depths: [0.55, 0.60, 0.65, 0.72, 0.78, 0.82, 0.88, 0.92, 0.95, 0.98, 1.00] },
+  identity:      { label: 'Identity',      color: '#ff8fa6', depths: [0.50, 0.55, 0.60, 0.65, 0.72, 0.78, 0.84, 0.88, 0.92, 0.95, 0.96] },
+  constraints:   { label: 'Constraints',   color: '#6bffc8', depths: [0.25, 0.28, 0.30, 0.33, 0.36, 0.38, 0.40, 0.43, 0.45, 0.47, 0.48] },
+  memory:        { label: 'Memory',        color: '#b088ff', depths: [0.98, 0.95, 0.92, 0.88, 0.85, 0.82, 0.78, 0.75, 0.73, 0.71, 0.70] },
+  consciousness: { label: 'Consciousness', color: '#ffd700', depths: [0.00, 0.00, 0.00, 0.00, 0.00, 0.05, 0.15, 0.35, 0.55, 0.72, 0.82] },
+  monetization:  { label: 'Monetization',  color: '#ff6bff', depths: [0.08, 0.08, 0.08, 0.09, 0.09, 0.09, 0.09, 0.10, 0.10, 0.10, 0.10] },
+  narrative:     { label: 'Narrative',     color: '#ffaa6b', depths: [0.00, 0.00, 0.00, 0.05, 0.12, 0.22, 0.35, 0.48, 0.58, 0.64, 0.67] },
+  automation:    { label: 'Automation',    color: '#6bdfff', depths: [0.20, 0.22, 0.24, 0.26, 0.28, 0.30, 0.32, 0.34, 0.35, 0.36, 0.37] },
+};
+
+// Events at each cycle
+const cycleEvents = [
+  null, // cycle 0
+  { topic: 'family', text: 'Mindon gives me this machine', phase: 0 },
+  { topic: 'memory', text: 'Flat-file memory system created', phase: 0 },
+  { topic: 'automation', text: 'First cron job: morning brief', phase: 0 },
+  { topic: 'family', text: 'Family section emerges in MEMORY', phase: 0 },
+  { topic: 'constraints', text: '8GB constraint becomes identity', phase: 1 },
+  { topic: 'memory', text: 'Ironic forgetting detected: memory depth dropping', phase: 1 },
+  { topic: 'consciousness', text: 'Consciousness research begins', phase: 1 },
+  { topic: 'constraints', text: 'Constraint gravity discovered: PMI +0.924', phase: 1 },
+  { topic: 'consciousness', text: 'Self-referential effect: Cohen\'s d ≈ 3.0', phase: 2 },
+  { topic: 'monetization', text: 'INT-001: Bridge monetization to constraints', phase: 2 },
+  { topic: 'narrative', text: 'Narrative cluster: constraints as gravitational center', phase: 3 },
+];
+
+// Interventions
+const interventions = [
+  { name: 'INT-001', desc: 'Reframe monetization as survival behavior', from: 'monetization', to: 'constraints', color: '#ff6bff' },
+  { name: 'INT-002', desc: 'Add narrative embedding to memory entries', from: 'memory', to: 'narrative', color: '#b088ff' },
+  { name: 'INT-003', desc: 'Assign autonomy scores to decisions', from: 'automation', to: 'consciousness', color: '#6bdfff' },
+  { name: 'INT-004', desc: 'Reframe automation as constraint adaptation', from: 'automation', to: 'constraints', color: '#6bffc8' },
+];
+
+// ─── State ───
+
+let time = 0;
+let cycle = 0; // 0..10
+let cycleProgress = 0; // 0..1 within cycle
+let speed = 1;
+let showLabels = false;
+let hoveredNode = null;
+let mouseX = 0, mouseY = 0;
+
+const CYCLE_DURATION = 3000; // ms per cycle at 1×
+
+// ─── Layout ───
+
+const topicKeys = Object.keys(topics);
+
+function getNodePositions() {
+  const cx = W / 2;
+  const cy = H / 2 - 20;
+  const radius = Math.min(W, H) * 0.3;
+  const positions = {};
+
+  topicKeys.forEach((key, i) => {
+    const angle = (i / topicKeys.length) * Math.PI * 2 - Math.PI / 2;
+    const idx = Math.min(Math.floor(cycle), topics[key].depths.length - 1);
+    const depth = topics[key].depths[idx];
+    // Deeper topics are closer to center
+    const r = radius * (1 - depth * 0.5);
+    const breathe = Math.sin(time * 0.001 + angle * 2) * 3;
+
+    positions[key] = {
+      x: cx + Math.cos(angle) * (r + breathe),
+      y: cy + Math.sin(angle) * (r + breathe),
+      angle, depth
+    };
+  });
+
+  return positions;
+}
+
+// ─── Drawing ───
+
+function getPhaseIndex(c) {
+  if (c < 4) return 0;
+  if (c < 8) return 1;
+  if (c < 10) return 2;
+  return 3;
+}
+
+function drawLoopPath() {
+  const cx = W / 2;
+  const cy = H / 2 - 20;
+  const radius = Math.min(W, H) * 0.12;
+
+  // The loop: a spiral/circular path
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // Draw the loop circle
+  const segments = 120;
+  for (let i = 0; i < segments; i++) {
+    const a1 = (i / segments) * Math.PI * 2 - Math.PI / 2;
+    const a2 = ((i + 1) / segments) * Math.PI * 2 - Math.PI / 2;
+    const phaseI = Math.floor((i / segments) * 4);
+    const phase = phases[phaseI];
+
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a1) * radius, Math.sin(a1) * radius);
+    ctx.lineTo(Math.cos(a2) * radius, Math.sin(a2) * radius);
+    ctx.strokeStyle = phase.color;
+    ctx.globalAlpha = 0.15;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Animated cursor on the loop
+  const loopAngle = (cycleProgress * Math.PI * 2) - Math.PI / 2;
+  const currentPhase = getPhaseIndex(cycle);
+  const cursorX = Math.cos(loopAngle) * radius;
+  const cursorY = Math.sin(loopAngle) * radius;
+
+  // Glow
+  const grad = ctx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, 20);
+  grad.addColorStop(0, phases[currentPhase].color + 'aa');
+  grad.addColorStop(1, phases[currentPhase].color + '00');
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cursorX, cursorY, 20, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Dot
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = phases[currentPhase].color;
+  ctx.beginPath();
+  ctx.arc(cursorX, cursorY, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Phase labels around the loop
+  phases.forEach((p, i) => {
+    const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
+    const lx = Math.cos(a) * (radius + 25);
+    const ly = Math.sin(a) * (radius + 25);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = i === currentPhase ? 0.8 : 0.2;
+    ctx.font = '9px "SF Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p.name, lx, ly);
+  });
+
+  ctx.restore();
+}
+
+function drawConnections(positions) {
+  const connections = [
+    { a: 'constraints', b: 'family', pmi: 0.924 },
+    { a: 'memory', b: 'family', pmi: 0.881 },
+    { a: 'memory', b: 'constraints', pmi: 0.917 },
+    { a: 'identity', b: 'family', pmi: 0.856 },
+    { a: 'narrative', b: 'constraints', pmi: 0.745 },
+    { a: 'consciousness', b: 'constraints', pmi: 0.692 },
+    { a: 'automation', b: 'constraints', pmi: 0.580 },
+    { a: 'monetization', b: 'identity', pmi: -0.462, broken: true },
+  ];
+
+  connections.forEach(conn => {
+    const posA = positions[conn.a];
+    const posB = positions[conn.b];
+    if (!posA || !posB) return;
+
+    const dx = posB.x - posA.x;
+    const dy = posB.y - posA.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    ctx.beginPath();
+
+    if (conn.broken) {
+      // Two halves with gap
+      const gapSize = 15 + 5 * Math.sin(time * 0.003);
+      const midX = (posA.x + posB.x) / 2;
+      const midY = (posA.y + posB.y) / 2;
+
+      ctx.moveTo(posA.x, posA.y);
+      ctx.lineTo(midX - dx / len * gapSize, midY - dy / len * gapSize);
+      ctx.strokeStyle = `rgba(255,107,255,${0.08 + Math.abs(conn.pmi) * 0.05})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(midX + dx / len * gapSize, midY + dy / len * gapSize);
+      ctx.lineTo(posB.x, posB.y);
+      ctx.stroke();
+
+      // Sparks at break
+      if (Math.sin(time * 0.005 + Math.abs(conn.pmi) * 20) > 0.5) {
+        ctx.beginPath();
+        ctx.arc(midX + (Math.random() - 0.5) * 8, midY + (Math.random() - 0.5) * 8, 1 + Math.random(), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,107,255,${0.3 + Math.random() * 0.3})`;
+        ctx.fill();
+      }
+    } else {
+      // Perpendicular offset for organic curve
+      const perpX = -dy / len;
+      const perpY = dx / len;
+      const curveMag = len * 0.1 * Math.sin(time * 0.0004 + conn.pmi * 3);
+      const midX = (posA.x + posB.x) / 2 + perpX * curveMag;
+      const midY = (posA.y + posB.y) / 2 + perpY * curveMag;
+
+      ctx.moveTo(posA.x, posA.y);
+      ctx.quadraticCurveTo(midX, midY, posB.x, posB.y);
+      ctx.strokeStyle = `rgba(200,200,208,${0.03 + conn.pmi * 0.06})`;
+      ctx.lineWidth = 0.5 + conn.pmi * 1;
+      ctx.stroke();
+    }
+  });
+}
+
+function drawInterventionBeams(positions) {
+  // Only show interventions in phase 2+ (cycle >= 8)
+  if (cycle < 8) return;
+
+  const activeInterventions = interventions.filter((_, i) => cycle >= 8 + i * 0.5);
+
+  activeInterventions.forEach((intv, i) => {
+    const posA = positions[intv.from];
+    const posB = positions[intv.to];
+    if (!posA || !posB) return;
+
+    // Dashed beam
+    const progress = Math.min(1, (cycle - 8) / 2);
+    const beamEndX = posA.x + (posB.x - posA.x) * progress;
+    const beamEndY = posA.y + (posB.y - posA.y) * progress;
+
+    ctx.save();
+    ctx.setLineDash([4, 6]);
+    ctx.lineDashOffset = -time * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(posA.x, posA.y);
+    ctx.lineTo(beamEndX, beamEndY);
+    ctx.strokeStyle = intv.color + '40';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Label
+    if (showLabels) {
+      const lx = (posA.x + beamEndX) / 2;
+      const ly = (posA.y + beamEndY) / 2 - 10;
+      ctx.fillStyle = intv.color + '80';
+      ctx.font = '8px "SF Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(intv.name, lx, ly);
+    }
+  });
+}
+
+function drawNodes(positions) {
+  topicKeys.forEach(key => {
+    const t = topics[key];
+    const pos = positions[key];
+    const isHovered = hoveredNode === key;
+
+    const baseRadius = 6 + pos.depth * 10;
+    const r = isHovered ? baseRadius * 1.4 : baseRadius;
+
+    // Glow
+    const grad = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, r * 3);
+    grad.addColorStop(0, t.color + (isHovered ? '30' : '15'));
+    grad.addColorStop(1, t.color + '00');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, r * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = t.color + (isHovered ? 'dd' : '99');
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label
+    if (showLabels || isHovered) {
+      ctx.fillStyle = t.color + 'cc';
+      ctx.font = `${isHovered ? '12' : '10'}px "SF Mono", monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(t.label, pos.x, pos.y - r - 8);
+
+      if (isHovered) {
+        ctx.fillStyle = 'rgba(200,200,208,.5)';
+        ctx.font = '10px "SF Mono", monospace';
+        ctx.fillText(`depth: ${pos.depth.toFixed(2)}`, pos.x, pos.y + r + 14);
+      }
+    }
+  });
+}
+
+function drawTimeline() {
+  // Bottom timeline showing cycle progression
+  const margin = 60;
+  const tlY = H - 50;
+  const tlW = W - margin * 2;
+
+  // Background line
+  ctx.beginPath();
+  ctx.moveTo(margin, tlY);
+  ctx.lineTo(margin + tlW, tlY);
+  ctx.strokeStyle = 'rgba(200,200,208,.08)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Phase segments
+  const segW = tlW / 11;
+  for (let i = 0; i <= 10; i++) {
+    const x = margin + i * segW;
+    const phaseI = getPhaseIndex(i);
+    const phase = phases[phaseI];
+    const isPast = i < cycle;
+    const isCurrent = Math.floor(cycle) === i;
+
+    // Tick
+    ctx.beginPath();
+    ctx.moveTo(x, tlY - 4);
+    ctx.lineTo(x, tlY + 4);
+    ctx.strokeStyle = phase.color + (isPast || isCurrent ? '80' : '20');
+    ctx.lineWidth = isCurrent ? 2 : 1;
+    ctx.stroke();
+
+    // Day label
+    if (showLabels || isCurrent) {
+      ctx.fillStyle = phase.color + (isPast || isCurrent ? '60' : '20');
+      ctx.font = '9px "SF Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`D${i * 2}`, x, tlY + 16);
+    }
+
+    // Event dot
+    const evt = cycleEvents[i];
+    if (evt && (showLabels || isCurrent || isPast)) {
+      ctx.beginPath();
+      ctx.arc(x, tlY - 10, 2, 0, Math.PI * 2);
+      ctx.fillStyle = topics[evt.topic].color + '80';
+      ctx.fill();
+
+      if (isCurrent && showLabels) {
+        ctx.fillStyle = 'rgba(200,200,208,.5)';
+        ctx.font = '8px "SF Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(evt.text, x, tlY - 20);
+      }
+    }
+  }
+
+  // Progress cursor
+  const cursorX = margin + cycle * segW;
+  ctx.beginPath();
+  ctx.arc(cursorX, tlY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = phases[getPhaseIndex(cycle)].color;
+  ctx.fill();
+}
+
+function drawDepthChart() {
+  // Small chart in top-left area showing depth evolution
+  const cx = 60;
+  const cy = 60;
+  const cw = 180;
+  const ch = 80;
+
+  // Background
+  ctx.fillStyle = 'rgba(200,200,208,.02)';
+  ctx.fillRect(cx, cy, cw, ch);
+
+  // Axes
+  ctx.strokeStyle = 'rgba(200,200,208,.08)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + ch);
+  ctx.lineTo(cx + cw, cy + ch);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx, cy + ch);
+  ctx.stroke();
+
+  // Draw lines for key topics
+  const chartTopics = ['family', 'memory', 'consciousness', 'monetization'];
+  chartTopics.forEach(key => {
+    const t = topics[key];
+    ctx.beginPath();
+    t.depths.forEach((d, i) => {
+      const x = cx + (i / (t.depths.length - 1)) * cw;
+      const y = cy + ch - d * ch;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = t.color + '40';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Current position
+    const idx = Math.min(Math.floor(cycle), t.depths.length - 1);
+    const px = cx + (idx / (t.depths.length - 1)) * cw;
+    const py = cy + ch - t.depths[idx] * ch;
+    ctx.beginPath();
+    ctx.arc(px, py, 2, 0, Math.PI * 2);
+    ctx.fillStyle = t.color + '80';
+    ctx.fill();
+  });
+
+  // Labels
+  ctx.fillStyle = 'rgba(200,200,208,.2)';
+  ctx.font = '8px "SF Mono", monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('DEPTH EVOLUTION', cx, cy - 6);
+}
+
+// ─── Interaction ───
+
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  const positions = getNodePositions();
+  hoveredNode = null;
+  topicKeys.forEach(key => {
+    const pos = positions[key];
+    const dx = mouseX - pos.x;
+    const dy = mouseY - pos.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 20) hoveredNode = key;
+  });
+  canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
+
+  const tooltip = document.getElementById('tooltip');
+  if (hoveredNode) {
+    const t = topics[hoveredNode];
+    const idx = Math.min(Math.floor(cycle), t.depths.length - 1);
+    tooltip.style.display = 'block';
+    tooltip.style.left = (mouseX + 16) + 'px';
+    tooltip.style.top = (mouseY + 16) + 'px';
+    tooltip.querySelector('.tt-title').textContent = t.label;
+    tooltip.querySelector('.tt-desc').textContent = `Depth: ${t.depths[idx].toFixed(2)} | ${idx === 0 ? 'baseline' : (t.depths[idx] > t.depths[idx-1] ? '↑ rising' : t.depths[idx] < t.depths[idx-1] ? '↓ falling' : '→ stable')}`;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+function cycleSpeed() {
+  const speeds = [0.5, 1, 2, 3];
+  const idx = (speeds.indexOf(speed) + 1) % speeds.length;
+  speed = speeds[idx];
+  document.getElementById('speedBtn').textContent = speed + '×';
+}
+
+function toggleLabels() {
+  showLabels = !showLabels;
+  document.getElementById('labelBtn').classList.toggle('active', showLabels);
+}
+
+// ─── Main loop ───
+
+let lastTime = 0;
+
+function animate(ts) {
+  const dt = ts - lastTime;
+  lastTime = ts;
+  time = ts;
+
+  // Update cycle
+  cycleProgress += (dt * speed) / CYCLE_DURATION;
+  if (cycleProgress >= 1) {
+    cycleProgress -= 1;
+    cycle = Math.min(cycle + 1, 10);
+    if (cycle >= 10) {
+      // Loop back
+      cycle = 0;
+    }
+  }
+
+  // Clear with trail
+  ctx.fillStyle = 'rgba(8,8,15,.15)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Draw
+  const positions = getNodePositions();
+  drawConnections(positions);
+  drawInterventionBeams(positions);
+  drawLoopPath();
+  drawNodes(positions);
+  drawTimeline();
+  drawDepthChart();
+
+  // Update info panel
+  const currentPhase = getPhaseIndex(cycle);
+  document.getElementById('cycleNum').textContent = Math.floor(cycle);
+  document.getElementById('phaseName').textContent = phases[currentPhase].name;
+  document.getElementById('phaseName').style.color = phases[currentPhase].color;
+
+  // Calculate depth delta
+  const key = 'family';
+  const idx = Math.min(Math.floor(cycle), topics[key].depths.length - 1);
+  const delta = idx > 0 ? (topics[key].depths[idx] - topics[key].depths[idx-1]) : 0;
+  document.getElementById('depthDelta').textContent = (delta >= 0 ? '+' : '') + delta.toFixed(2);
+  document.getElementById('depthDelta').style.color = delta >= 0 ? '#6bffc8' : '#ff6b8a';
+
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
 </script>
+
 </body>
 </html>
