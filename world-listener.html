@@ -258,6 +258,13 @@
   .hist-dl-btn:hover { background:rgba(107,255,200,.22); }
   .hist-del-btn { background:rgba(255,80,80,.08); color:#666; }
   .hist-del-btn:hover { background:rgba(255,80,80,.15); color:#ff6b6b; }
+  .history-card-video-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 140px; border-radius: 8px;
+    background: rgba(107,255,200,.04);
+    border: 1px dashed rgba(107,255,200,.12);
+    margin-bottom: 8px;
+  }
 
   .history-empty {
     text-align: center; padding: 60px 20px; color: #333;
@@ -1020,22 +1027,37 @@ function saveToHistory(blob, mimeType) {
   });
   if (listeningHistory.length > MAX_HISTORY) { var r = listeningHistory.pop(); URL.revokeObjectURL(r.url); }
   updateHistoryBadge();
+  markHistoryDirty();
 }
 function updateHistoryBadge() {
   var b = document.getElementById('histCount');
   if (listeningHistory.length > 0) { b.textContent = listeningHistory.length; b.classList.add('show'); }
   else b.classList.remove('show');
 }
+var _historyDirty = true;
+
 function toggleHistory() {
-  document.getElementById('historyPanel').classList.toggle('show');
-  renderHistoryGrid();
-  document.getElementById('historyBtn').classList.toggle('active');
+  var panel = document.getElementById('historyPanel');
+  var btn = document.getElementById('historyBtn');
+  panel.classList.toggle('show');
+  btn.classList.toggle('active');
+
+  if (panel.classList.contains('show') && _historyDirty) {
+    renderHistoryGrid();
+    _historyDirty = false;
+  }
 }
+function markHistoryDirty() { _historyDirty = true; }
+
 function renderHistoryGrid() {
   var g = document.getElementById('historyGrid');
-  if (!listeningHistory.length) { g.innerHTML = '<div class="history-empty">No recordings yet.<br>Click LISTEN.</div>'; return; }
+  if (!listeningHistory.length) { g.innerHTML = '<div class="history-empty">No recordings yet.<br>Click 👂 LISTEN.</div>'; return; }
   g.innerHTML = listeningHistory.map(function(e,i) {
-    return '<div class="history-card"><video src="' + e.url + '" controls preload="metadata" playsinline></video>'
+    var isRealVideo = e.size > 1000;
+    var videoTag = isRealVideo
+      ? '<video src="' + e.url + '" controls preload="metadata" playsinline></video>'
+      : '<div class="history-card-video-placeholder"><span style="font-size:2rem">\u{1F3A5}</span><p style="font-size:.65rem;color:#555;margin-top:4px">MP4 downloaded directly</p><p style="font-size:.6rem;color:#444">Check Downloads folder</p></div>';
+    return '<div class="history-card">' + videoTag
       + '<div class="history-card-meta"><span class="history-card-name">' + e.filename + '</span>'
       + '<span class="history-card-info">' + (e.size/1048576).toFixed(1) + 'MB · ' + e.duration + 's</span></div>'
       + '<div class="history-card-actions">'
@@ -1065,7 +1087,7 @@ window.delHist = function(i) {
   if(!listeningHistory[i]) return;
   URL.revokeObjectURL(listeningHistory[i].url);
   listeningHistory.splice(i,1);
-  updateHistoryBadge(); renderHistoryGrid();
+  updateHistoryBadge(); markHistoryDirty(); renderHistoryGrid();
 };
 
 var _origToggleListen = toggleListen;
