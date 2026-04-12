@@ -1,130 +1,6584 @@
+// ../node_modules/mediabunny/dist/modules/src/misc.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */function N($){if(!$)throw Error("Assertion failed.")}var y=($)=>{return $&&$[$.length-1]},M0=($)=>{return $>=0&&$<4294967296};class r{constructor($){this.bytes=$,this.pos=0}seekToByte($){this.pos=8*$}readBit(){let $=Math.floor(this.pos/8),J=this.bytes[$]??0,Y=7-(this.pos&7),Z=(J&1<<Y)>>Y;return this.pos++,Z}readBits($){if($===1)return this.readBit();let J=0;for(let Y=0;Y<$;Y++)J<<=1,J|=this.readBit();return J}writeBits($,J){let Y=this.pos+$;for(let Z=this.pos;Z<Y;Z++){let G=Math.floor(Z/8),K=this.bytes[G],X=7-(Z&7);K&=~(1<<X),K|=(J&1<<Y-Z-1)>>Y-Z-1<<X,this.bytes[G]=K}this.pos=Y}readAlignedByte(){if(this.pos%8!==0)throw Error("Bitstream is not byte-aligned.");let $=this.pos/8,J=this.bytes[$]??0;return this.pos+=8,J}skipBits($){this.pos+=$}getBitsLeft(){return this.bytes.length*8-this.pos}clone(){let $=new r(this.bytes);return $.pos=this.pos,$}}var M=($)=>{let J=0;while($.readBits(1)===0&&J<32)J++;if(J>=32)throw Error("Invalid exponential-Golomb code.");return(1<<J)-1+$.readBits(J)},s=($)=>{let J=M($);return(J&1)===0?-(J>>1):J+1>>1};var u=($)=>{if($.constructor===Uint8Array)return $;else if(ArrayBuffer.isView($))return new Uint8Array($.buffer,$.byteOffset,$.byteLength);else return new Uint8Array($)},d=($)=>{if($.constructor===DataView)return $;else if(ArrayBuffer.isView($))return new DataView($.buffer,$.byteOffset,$.byteLength);else return new DataView($)};var c=new TextEncoder;var O0={bt709:1,bt470bg:5,smpte170m:6,bt2020:9,smpte432:12};var F0={bt709:1,smpte170m:6,linear:8,"iec61966-2-1":13,pq:16,hlg:18};var D0={rgb:0,bt709:1,bt470bg:5,smpte170m:6,"bt2020-ncl":9};var x1=($)=>{return!!$&&!!$.primaries&&!!$.transfer&&!!$.matrix&&$.fullRange!==void 0},R0=($)=>{return $ instanceof ArrayBuffer||typeof SharedArrayBuffer<"u"&&$ instanceof SharedArrayBuffer||ArrayBuffer.isView($)};class T0{constructor(){this.currentPromise=Promise.resolve(),this.pending=0}async acquire(){let $,J=new Promise((Z)=>{let G=!1;$=()=>{if(G)return;Z(),this.pending--,G=!0}}),Y=this.currentPromise;return this.currentPromise=J,this.pending++,await Y,$}}var n0=()=>{let $,J;return{promise:new Promise((Z,G)=>{$=Z,J=G}),resolve:$,reject:J}};var q0=($)=>{throw Error(`Unexpected value: ${$}`)};var x0=($,J,Y,Z)=>{if(Y=Y>>>0,Y=Y&16777215,Z)$.setUint8(J,Y&255),$.setUint8(J+1,Y>>>8&255),$.setUint8(J+2,Y>>>16&255);else $.setUint8(J,Y>>>16&255),$.setUint8(J+1,Y>>>8&255),$.setUint8(J+2,Y&255)},S1=($,J,Y,Z)=>{if(Y=C(Y,-8388608,8388607),Y<0)Y=Y+16777216&16777215;x0($,J,Y,Z)};var C=($,J,Y)=>{return Math.max(J,Math.min(Y,$))},b1="und";var a6=/^[a-z]{3}$/,y1=($)=>{return a6.test($)},i=1e6*(1+Number.EPSILON);var C1=($,J)=>{let Y=$<0?-1:1;$=Math.abs($);let Z=0,G=1,K=1,X=0,Q=$;while(!0){let U=Math.floor(Q),q=U*K+Z,j=U*X+G;if(j>J)return{numerator:Y*K,denominator:X};if(Z=K,G=X,K=q,X=j,Q=1/(Q-U),!isFinite(Q))break}return{numerator:Y*K,denominator:X}};class s0{constructor(){this.currentPromise=Promise.resolve()}call($){return this.currentPromise=this.currentPromise.then($)}}var q1=null,k1=()=>{if(q1!==null)return q1;return q1=!!(typeof navigator<"u"&&(navigator.vendor?.match(/apple/i)||/AppleWebKit/.test(navigator.userAgent)&&!/Chrome/.test(navigator.userAgent)||/\b(iPad|iPhone|iPod)\b/.test(navigator.userAgent)))},j1=null,S0=()=>{if(j1!==null)return j1;return j1=typeof navigator<"u"&&navigator.userAgent?.includes("Firefox")};var i0=function*($){for(let J in $){let Y=$[J];if(Y===void 0)continue;yield{key:J,value:Y}}};var v1=()=>{Symbol.dispose??=Symbol("Symbol.dispose")};/*!
+ */
+function assert(x) {
+  if (!x) {
+    throw new Error("Assertion failed.");
+  }
+}
+var last = (arr) => {
+  return arr && arr[arr.length - 1];
+};
+var isU32 = (value) => {
+  return value >= 0 && value < 2 ** 32;
+};
+
+class Bitstream {
+  constructor(bytes) {
+    this.bytes = bytes;
+    this.pos = 0;
+  }
+  seekToByte(byteOffset) {
+    this.pos = 8 * byteOffset;
+  }
+  readBit() {
+    const byteIndex = Math.floor(this.pos / 8);
+    const byte = this.bytes[byteIndex] ?? 0;
+    const bitIndex = 7 - (this.pos & 7);
+    const bit = (byte & 1 << bitIndex) >> bitIndex;
+    this.pos++;
+    return bit;
+  }
+  readBits(n) {
+    if (n === 1) {
+      return this.readBit();
+    }
+    let result = 0;
+    for (let i = 0;i < n; i++) {
+      result <<= 1;
+      result |= this.readBit();
+    }
+    return result;
+  }
+  writeBits(n, value) {
+    const end = this.pos + n;
+    for (let i = this.pos;i < end; i++) {
+      const byteIndex = Math.floor(i / 8);
+      let byte = this.bytes[byteIndex];
+      const bitIndex = 7 - (i & 7);
+      byte &= ~(1 << bitIndex);
+      byte |= (value & 1 << end - i - 1) >> end - i - 1 << bitIndex;
+      this.bytes[byteIndex] = byte;
+    }
+    this.pos = end;
+  }
+  readAlignedByte() {
+    if (this.pos % 8 !== 0) {
+      throw new Error("Bitstream is not byte-aligned.");
+    }
+    const byteIndex = this.pos / 8;
+    const byte = this.bytes[byteIndex] ?? 0;
+    this.pos += 8;
+    return byte;
+  }
+  skipBits(n) {
+    this.pos += n;
+  }
+  getBitsLeft() {
+    return this.bytes.length * 8 - this.pos;
+  }
+  clone() {
+    const clone = new Bitstream(this.bytes);
+    clone.pos = this.pos;
+    return clone;
+  }
+}
+var readExpGolomb = (bitstream) => {
+  let leadingZeroBits = 0;
+  while (bitstream.readBits(1) === 0 && leadingZeroBits < 32) {
+    leadingZeroBits++;
+  }
+  if (leadingZeroBits >= 32) {
+    throw new Error("Invalid exponential-Golomb code.");
+  }
+  const result = (1 << leadingZeroBits) - 1 + bitstream.readBits(leadingZeroBits);
+  return result;
+};
+var readSignedExpGolomb = (bitstream) => {
+  const codeNum = readExpGolomb(bitstream);
+  return (codeNum & 1) === 0 ? -(codeNum >> 1) : codeNum + 1 >> 1;
+};
+var toUint8Array = (source) => {
+  if (source.constructor === Uint8Array) {
+    return source;
+  } else if (ArrayBuffer.isView(source)) {
+    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  } else {
+    return new Uint8Array(source);
+  }
+};
+var toDataView = (source) => {
+  if (source.constructor === DataView) {
+    return source;
+  } else if (ArrayBuffer.isView(source)) {
+    return new DataView(source.buffer, source.byteOffset, source.byteLength);
+  } else {
+    return new DataView(source);
+  }
+};
+var textEncoder = /* @__PURE__ */ new TextEncoder;
+var COLOR_PRIMARIES_MAP = {
+  bt709: 1,
+  bt470bg: 5,
+  smpte170m: 6,
+  bt2020: 9,
+  smpte432: 12
+};
+var TRANSFER_CHARACTERISTICS_MAP = {
+  bt709: 1,
+  smpte170m: 6,
+  linear: 8,
+  "iec61966-2-1": 13,
+  pq: 16,
+  hlg: 18
+};
+var MATRIX_COEFFICIENTS_MAP = {
+  rgb: 0,
+  bt709: 1,
+  bt470bg: 5,
+  smpte170m: 6,
+  "bt2020-ncl": 9
+};
+var colorSpaceIsComplete = (colorSpace) => {
+  return !!colorSpace && !!colorSpace.primaries && !!colorSpace.transfer && !!colorSpace.matrix && colorSpace.fullRange !== undefined;
+};
+var isAllowSharedBufferSource = (x) => {
+  return x instanceof ArrayBuffer || typeof SharedArrayBuffer !== "undefined" && x instanceof SharedArrayBuffer || ArrayBuffer.isView(x);
+};
+
+class AsyncMutex {
+  constructor() {
+    this.currentPromise = Promise.resolve();
+    this.pending = 0;
+  }
+  async acquire() {
+    let resolver;
+    const nextPromise = new Promise((resolve) => {
+      let resolved = false;
+      resolver = () => {
+        if (resolved) {
+          return;
+        }
+        resolve();
+        this.pending--;
+        resolved = true;
+      };
+    });
+    const currentPromiseAlias = this.currentPromise;
+    this.currentPromise = nextPromise;
+    this.pending++;
+    await currentPromiseAlias;
+    return resolver;
+  }
+}
+var promiseWithResolvers = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+};
+var assertNever = (x) => {
+  throw new Error(`Unexpected value: ${x}`);
+};
+var setUint24 = (view, byteOffset, value, littleEndian) => {
+  value = value >>> 0;
+  value = value & 16777215;
+  if (littleEndian) {
+    view.setUint8(byteOffset, value & 255);
+    view.setUint8(byteOffset + 1, value >>> 8 & 255);
+    view.setUint8(byteOffset + 2, value >>> 16 & 255);
+  } else {
+    view.setUint8(byteOffset, value >>> 16 & 255);
+    view.setUint8(byteOffset + 1, value >>> 8 & 255);
+    view.setUint8(byteOffset + 2, value & 255);
+  }
+};
+var setInt24 = (view, byteOffset, value, littleEndian) => {
+  value = clamp(value, -8388608, 8388607);
+  if (value < 0) {
+    value = value + 16777216 & 16777215;
+  }
+  setUint24(view, byteOffset, value, littleEndian);
+};
+var clamp = (value, min, max) => {
+  return Math.max(min, Math.min(max, value));
+};
+var UNDETERMINED_LANGUAGE = "und";
+var ISO_639_2_REGEX = /^[a-z]{3}$/;
+var isIso639Dash2LanguageCode = (x) => {
+  return ISO_639_2_REGEX.test(x);
+};
+var SECOND_TO_MICROSECOND_FACTOR = 1e6 * (1 + Number.EPSILON);
+var computeRationalApproximation = (x, maxDenominator) => {
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  let prevNumerator = 0, prevDenominator = 1;
+  let currNumerator = 1, currDenominator = 0;
+  let remainder = x;
+  while (true) {
+    const integer = Math.floor(remainder);
+    const nextNumerator = integer * currNumerator + prevNumerator;
+    const nextDenominator = integer * currDenominator + prevDenominator;
+    if (nextDenominator > maxDenominator) {
+      return {
+        numerator: sign * currNumerator,
+        denominator: currDenominator
+      };
+    }
+    prevNumerator = currNumerator;
+    prevDenominator = currDenominator;
+    currNumerator = nextNumerator;
+    currDenominator = nextDenominator;
+    remainder = 1 / (remainder - integer);
+    if (!isFinite(remainder)) {
+      break;
+    }
+  }
+  return {
+    numerator: sign * currNumerator,
+    denominator: currDenominator
+  };
+};
+
+class CallSerializer {
+  constructor() {
+    this.currentPromise = Promise.resolve();
+  }
+  call(fn) {
+    return this.currentPromise = this.currentPromise.then(fn);
+  }
+}
+var isWebKitCache = null;
+var isWebKit = () => {
+  if (isWebKitCache !== null) {
+    return isWebKitCache;
+  }
+  return isWebKitCache = !!(typeof navigator !== "undefined" && (navigator.vendor?.match(/apple/i) || /AppleWebKit/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent) || /\b(iPad|iPhone|iPod)\b/.test(navigator.userAgent)));
+};
+var isFirefoxCache = null;
+var isFirefox = () => {
+  if (isFirefoxCache !== null) {
+    return isFirefoxCache;
+  }
+  return isFirefoxCache = typeof navigator !== "undefined" && navigator.userAgent?.includes("Firefox");
+};
+var keyValueIterator = function* (object) {
+  for (const key in object) {
+    const value = object[key];
+    if (value === undefined) {
+      continue;
+    }
+    yield { key, value };
+  }
+};
+var polyfillSymbolDispose = () => {
+  Symbol.dispose ??= Symbol("Symbol.dispose");
+};
+
+// ../node_modules/mediabunny/dist/modules/src/metadata.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class o0{constructor($,J){if(this.data=$,this.mimeType=J,!($ instanceof Uint8Array))throw TypeError("data must be a Uint8Array.");if(typeof J!=="string")throw TypeError("mimeType must be a string.")}}class h1{constructor($,J,Y,Z){if(this.data=$,this.mimeType=J,this.name=Y,this.description=Z,!($ instanceof Uint8Array))throw TypeError("data must be a Uint8Array.");if(J!==void 0&&typeof J!=="string")throw TypeError("mimeType, when provided, must be a string.");if(Y!==void 0&&typeof Y!=="string")throw TypeError("name, when provided, must be a string.");if(Z!==void 0&&typeof Z!=="string")throw TypeError("description, when provided, must be a string.")}}var f1=($)=>{if(!$||typeof $!=="object")throw TypeError("tags must be an object.");if($.title!==void 0&&typeof $.title!=="string")throw TypeError("tags.title, when provided, must be a string.");if($.description!==void 0&&typeof $.description!=="string")throw TypeError("tags.description, when provided, must be a string.");if($.artist!==void 0&&typeof $.artist!=="string")throw TypeError("tags.artist, when provided, must be a string.");if($.album!==void 0&&typeof $.album!=="string")throw TypeError("tags.album, when provided, must be a string.");if($.albumArtist!==void 0&&typeof $.albumArtist!=="string")throw TypeError("tags.albumArtist, when provided, must be a string.");if($.trackNumber!==void 0&&(!Number.isInteger($.trackNumber)||$.trackNumber<=0))throw TypeError("tags.trackNumber, when provided, must be a positive integer.");if($.tracksTotal!==void 0&&(!Number.isInteger($.tracksTotal)||$.tracksTotal<=0))throw TypeError("tags.tracksTotal, when provided, must be a positive integer.");if($.discNumber!==void 0&&(!Number.isInteger($.discNumber)||$.discNumber<=0))throw TypeError("tags.discNumber, when provided, must be a positive integer.");if($.discsTotal!==void 0&&(!Number.isInteger($.discsTotal)||$.discsTotal<=0))throw TypeError("tags.discsTotal, when provided, must be a positive integer.");if($.genre!==void 0&&typeof $.genre!=="string")throw TypeError("tags.genre, when provided, must be a string.");if($.date!==void 0&&(!($.date instanceof Date)||Number.isNaN($.date.getTime())))throw TypeError("tags.date, when provided, must be a valid Date.");if($.lyrics!==void 0&&typeof $.lyrics!=="string")throw TypeError("tags.lyrics, when provided, must be a string.");if($.images!==void 0){if(!Array.isArray($.images))throw TypeError("tags.images, when provided, must be an array.");for(let J of $.images){if(!J||typeof J!=="object")throw TypeError("Each image in tags.images must be an object.");if(!(J.data instanceof Uint8Array))throw TypeError("Each image.data must be a Uint8Array.");if(typeof J.mimeType!=="string")throw TypeError("Each image.mimeType must be a string.");if(!["coverFront","coverBack","unknown"].includes(J.kind))throw TypeError("Each image.kind must be 'coverFront', 'coverBack', or 'unknown'.")}}if($.comment!==void 0&&typeof $.comment!=="string")throw TypeError("tags.comment, when provided, must be a string.");if($.raw!==void 0){if(!$.raw||typeof $.raw!=="object")throw TypeError("tags.raw, when provided, must be an object.");for(let J of Object.values($.raw))if(J!==null&&typeof J!=="string"&&!(J instanceof Uint8Array)&&!(J instanceof o0)&&!(J instanceof h1))throw TypeError("Each value in tags.raw must be a string, Uint8Array, RichImageData, AttachedFile, or null.")}};var g1=($)=>{if(!$||typeof $!=="object")throw TypeError("disposition must be an object.");if($.default!==void 0&&typeof $.default!=="boolean")throw TypeError("disposition.default must be a boolean.");if($.forced!==void 0&&typeof $.forced!=="boolean")throw TypeError("disposition.forced must be a boolean.");if($.original!==void 0&&typeof $.original!=="boolean")throw TypeError("disposition.original must be a boolean.");if($.commentary!==void 0&&typeof $.commentary!=="boolean")throw TypeError("disposition.commentary must be a boolean.");if($.hearingImpaired!==void 0&&typeof $.hearingImpaired!=="boolean")throw TypeError("disposition.hearingImpaired must be a boolean.");if($.visuallyImpaired!==void 0&&typeof $.visuallyImpaired!=="boolean")throw TypeError("disposition.visuallyImpaired must be a boolean.")};/*!
+ */
+
+class RichImageData {
+  constructor(data, mimeType) {
+    this.data = data;
+    this.mimeType = mimeType;
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (typeof mimeType !== "string") {
+      throw new TypeError("mimeType must be a string.");
+    }
+  }
+}
+
+class AttachedFile {
+  constructor(data, mimeType, name, description) {
+    this.data = data;
+    this.mimeType = mimeType;
+    this.name = name;
+    this.description = description;
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (mimeType !== undefined && typeof mimeType !== "string") {
+      throw new TypeError("mimeType, when provided, must be a string.");
+    }
+    if (name !== undefined && typeof name !== "string") {
+      throw new TypeError("name, when provided, must be a string.");
+    }
+    if (description !== undefined && typeof description !== "string") {
+      throw new TypeError("description, when provided, must be a string.");
+    }
+  }
+}
+var validateMetadataTags = (tags) => {
+  if (!tags || typeof tags !== "object") {
+    throw new TypeError("tags must be an object.");
+  }
+  if (tags.title !== undefined && typeof tags.title !== "string") {
+    throw new TypeError("tags.title, when provided, must be a string.");
+  }
+  if (tags.description !== undefined && typeof tags.description !== "string") {
+    throw new TypeError("tags.description, when provided, must be a string.");
+  }
+  if (tags.artist !== undefined && typeof tags.artist !== "string") {
+    throw new TypeError("tags.artist, when provided, must be a string.");
+  }
+  if (tags.album !== undefined && typeof tags.album !== "string") {
+    throw new TypeError("tags.album, when provided, must be a string.");
+  }
+  if (tags.albumArtist !== undefined && typeof tags.albumArtist !== "string") {
+    throw new TypeError("tags.albumArtist, when provided, must be a string.");
+  }
+  if (tags.trackNumber !== undefined && (!Number.isInteger(tags.trackNumber) || tags.trackNumber <= 0)) {
+    throw new TypeError("tags.trackNumber, when provided, must be a positive integer.");
+  }
+  if (tags.tracksTotal !== undefined && (!Number.isInteger(tags.tracksTotal) || tags.tracksTotal <= 0)) {
+    throw new TypeError("tags.tracksTotal, when provided, must be a positive integer.");
+  }
+  if (tags.discNumber !== undefined && (!Number.isInteger(tags.discNumber) || tags.discNumber <= 0)) {
+    throw new TypeError("tags.discNumber, when provided, must be a positive integer.");
+  }
+  if (tags.discsTotal !== undefined && (!Number.isInteger(tags.discsTotal) || tags.discsTotal <= 0)) {
+    throw new TypeError("tags.discsTotal, when provided, must be a positive integer.");
+  }
+  if (tags.genre !== undefined && typeof tags.genre !== "string") {
+    throw new TypeError("tags.genre, when provided, must be a string.");
+  }
+  if (tags.date !== undefined && (!(tags.date instanceof Date) || Number.isNaN(tags.date.getTime()))) {
+    throw new TypeError("tags.date, when provided, must be a valid Date.");
+  }
+  if (tags.lyrics !== undefined && typeof tags.lyrics !== "string") {
+    throw new TypeError("tags.lyrics, when provided, must be a string.");
+  }
+  if (tags.images !== undefined) {
+    if (!Array.isArray(tags.images)) {
+      throw new TypeError("tags.images, when provided, must be an array.");
+    }
+    for (const image of tags.images) {
+      if (!image || typeof image !== "object") {
+        throw new TypeError("Each image in tags.images must be an object.");
+      }
+      if (!(image.data instanceof Uint8Array)) {
+        throw new TypeError("Each image.data must be a Uint8Array.");
+      }
+      if (typeof image.mimeType !== "string") {
+        throw new TypeError("Each image.mimeType must be a string.");
+      }
+      if (!["coverFront", "coverBack", "unknown"].includes(image.kind)) {
+        throw new TypeError("Each image.kind must be 'coverFront', 'coverBack', or 'unknown'.");
+      }
+    }
+  }
+  if (tags.comment !== undefined && typeof tags.comment !== "string") {
+    throw new TypeError("tags.comment, when provided, must be a string.");
+  }
+  if (tags.raw !== undefined) {
+    if (!tags.raw || typeof tags.raw !== "object") {
+      throw new TypeError("tags.raw, when provided, must be an object.");
+    }
+    for (const value of Object.values(tags.raw)) {
+      if (value !== null && typeof value !== "string" && !(value instanceof Uint8Array) && !(value instanceof RichImageData) && !(value instanceof AttachedFile)) {
+        throw new TypeError("Each value in tags.raw must be a string, Uint8Array, RichImageData, AttachedFile, or null.");
+      }
+    }
+  }
+};
+var validateTrackDisposition = (disposition) => {
+  if (!disposition || typeof disposition !== "object") {
+    throw new TypeError("disposition must be an object.");
+  }
+  if (disposition.default !== undefined && typeof disposition.default !== "boolean") {
+    throw new TypeError("disposition.default must be a boolean.");
+  }
+  if (disposition.forced !== undefined && typeof disposition.forced !== "boolean") {
+    throw new TypeError("disposition.forced must be a boolean.");
+  }
+  if (disposition.original !== undefined && typeof disposition.original !== "boolean") {
+    throw new TypeError("disposition.original must be a boolean.");
+  }
+  if (disposition.commentary !== undefined && typeof disposition.commentary !== "boolean") {
+    throw new TypeError("disposition.commentary must be a boolean.");
+  }
+  if (disposition.hearingImpaired !== undefined && typeof disposition.hearingImpaired !== "boolean") {
+    throw new TypeError("disposition.hearingImpaired must be a boolean.");
+  }
+  if (disposition.visuallyImpaired !== undefined && typeof disposition.visuallyImpaired !== "boolean") {
+    throw new TypeError("disposition.visuallyImpaired must be a boolean.");
+  }
+};
+
+// ../node_modules/mediabunny/dist/modules/src/codec.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var o=["avc","hevc","vp9","av1","vp8"],h=["pcm-s16","pcm-s16be","pcm-s24","pcm-s24be","pcm-s32","pcm-s32be","pcm-f32","pcm-f32be","pcm-f64","pcm-f64be","pcm-u8","pcm-s8","ulaw","alaw"],N1=["aac","opus","mp3","vorbis","flac"],J0=[...N1,...h],V0=["webvtt"],b0=[{maxMacroblocks:99,maxBitrate:64000,maxDpbMbs:396,level:10},{maxMacroblocks:396,maxBitrate:192000,maxDpbMbs:900,level:11},{maxMacroblocks:396,maxBitrate:384000,maxDpbMbs:2376,level:12},{maxMacroblocks:396,maxBitrate:768000,maxDpbMbs:2376,level:13},{maxMacroblocks:396,maxBitrate:2000000,maxDpbMbs:2376,level:20},{maxMacroblocks:792,maxBitrate:4000000,maxDpbMbs:4752,level:21},{maxMacroblocks:1620,maxBitrate:4000000,maxDpbMbs:8100,level:22},{maxMacroblocks:1620,maxBitrate:1e7,maxDpbMbs:8100,level:30},{maxMacroblocks:3600,maxBitrate:14000000,maxDpbMbs:18000,level:31},{maxMacroblocks:5120,maxBitrate:20000000,maxDpbMbs:20480,level:32},{maxMacroblocks:8192,maxBitrate:20000000,maxDpbMbs:32768,level:40},{maxMacroblocks:8192,maxBitrate:50000000,maxDpbMbs:32768,level:41},{maxMacroblocks:8704,maxBitrate:50000000,maxDpbMbs:34816,level:42},{maxMacroblocks:22080,maxBitrate:135000000,maxDpbMbs:110400,level:50},{maxMacroblocks:36864,maxBitrate:240000000,maxDpbMbs:184320,level:51},{maxMacroblocks:36864,maxBitrate:240000000,maxDpbMbs:184320,level:52},{maxMacroblocks:139264,maxBitrate:240000000,maxDpbMbs:696320,level:60},{maxMacroblocks:139264,maxBitrate:480000000,maxDpbMbs:696320,level:61},{maxMacroblocks:139264,maxBitrate:800000000,maxDpbMbs:696320,level:62}],u1=[{maxPictureSize:36864,maxBitrate:128000,tier:"L",level:30},{maxPictureSize:122880,maxBitrate:1500000,tier:"L",level:60},{maxPictureSize:245760,maxBitrate:3000000,tier:"L",level:63},{maxPictureSize:552960,maxBitrate:6000000,tier:"L",level:90},{maxPictureSize:983040,maxBitrate:1e7,tier:"L",level:93},{maxPictureSize:2228224,maxBitrate:12000000,tier:"L",level:120},{maxPictureSize:2228224,maxBitrate:30000000,tier:"H",level:120},{maxPictureSize:2228224,maxBitrate:20000000,tier:"L",level:123},{maxPictureSize:2228224,maxBitrate:50000000,tier:"H",level:123},{maxPictureSize:8912896,maxBitrate:25000000,tier:"L",level:150},{maxPictureSize:8912896,maxBitrate:1e8,tier:"H",level:150},{maxPictureSize:8912896,maxBitrate:40000000,tier:"L",level:153},{maxPictureSize:8912896,maxBitrate:160000000,tier:"H",level:153},{maxPictureSize:8912896,maxBitrate:60000000,tier:"L",level:156},{maxPictureSize:8912896,maxBitrate:240000000,tier:"H",level:156},{maxPictureSize:35651584,maxBitrate:60000000,tier:"L",level:180},{maxPictureSize:35651584,maxBitrate:240000000,tier:"H",level:180},{maxPictureSize:35651584,maxBitrate:120000000,tier:"L",level:183},{maxPictureSize:35651584,maxBitrate:480000000,tier:"H",level:183},{maxPictureSize:35651584,maxBitrate:240000000,tier:"L",level:186},{maxPictureSize:35651584,maxBitrate:800000000,tier:"H",level:186}],z1=[{maxPictureSize:36864,maxBitrate:200000,level:10},{maxPictureSize:73728,maxBitrate:800000,level:11},{maxPictureSize:122880,maxBitrate:1800000,level:20},{maxPictureSize:245760,maxBitrate:3600000,level:21},{maxPictureSize:552960,maxBitrate:7200000,level:30},{maxPictureSize:983040,maxBitrate:12000000,level:31},{maxPictureSize:2228224,maxBitrate:18000000,level:40},{maxPictureSize:2228224,maxBitrate:30000000,level:41},{maxPictureSize:8912896,maxBitrate:60000000,level:50},{maxPictureSize:8912896,maxBitrate:120000000,level:51},{maxPictureSize:8912896,maxBitrate:180000000,level:52},{maxPictureSize:35651584,maxBitrate:180000000,level:60},{maxPictureSize:35651584,maxBitrate:240000000,level:61},{maxPictureSize:35651584,maxBitrate:480000000,level:62}],l1=[{maxPictureSize:147456,maxBitrate:1500000,tier:"M",level:0},{maxPictureSize:278784,maxBitrate:3000000,tier:"M",level:1},{maxPictureSize:665856,maxBitrate:6000000,tier:"M",level:4},{maxPictureSize:1065024,maxBitrate:1e7,tier:"M",level:5},{maxPictureSize:2359296,maxBitrate:12000000,tier:"M",level:8},{maxPictureSize:2359296,maxBitrate:30000000,tier:"H",level:8},{maxPictureSize:2359296,maxBitrate:20000000,tier:"M",level:9},{maxPictureSize:2359296,maxBitrate:50000000,tier:"H",level:9},{maxPictureSize:8912896,maxBitrate:30000000,tier:"M",level:12},{maxPictureSize:8912896,maxBitrate:1e8,tier:"H",level:12},{maxPictureSize:8912896,maxBitrate:40000000,tier:"M",level:13},{maxPictureSize:8912896,maxBitrate:160000000,tier:"H",level:13},{maxPictureSize:8912896,maxBitrate:60000000,tier:"M",level:14},{maxPictureSize:8912896,maxBitrate:240000000,tier:"H",level:14},{maxPictureSize:35651584,maxBitrate:60000000,tier:"M",level:15},{maxPictureSize:35651584,maxBitrate:240000000,tier:"H",level:15},{maxPictureSize:35651584,maxBitrate:60000000,tier:"M",level:16},{maxPictureSize:35651584,maxBitrate:240000000,tier:"H",level:16},{maxPictureSize:35651584,maxBitrate:1e8,tier:"M",level:17},{maxPictureSize:35651584,maxBitrate:480000000,tier:"H",level:17},{maxPictureSize:35651584,maxBitrate:160000000,tier:"M",level:18},{maxPictureSize:35651584,maxBitrate:800000000,tier:"H",level:18},{maxPictureSize:35651584,maxBitrate:160000000,tier:"M",level:19},{maxPictureSize:35651584,maxBitrate:800000000,tier:"H",level:19}];var p1=($,J,Y,Z)=>{if($==="avc"){let K=Math.ceil(J/16)*Math.ceil(Y/16),X=b0.find((z)=>K<=z.maxMacroblocks&&Z<=z.maxBitrate)??y(b0),Q=X?X.level:0,U=100 .toString(16).padStart(2,"0"),q="00",j=Q.toString(16).padStart(2,"0");return`avc1.${U}00${j}`}else if($==="hevc"){let Q=J*Y,U=u1.find((j)=>Q<=j.maxPictureSize&&Z<=j.maxBitrate)??y(u1),q="B0";return`hev1.1.6.${U.tier}${U.level}.B0`}else if($==="vp8")return"vp8";else if($==="vp9"){let K=J*Y,X=z1.find((U)=>K<=U.maxPictureSize&&Z<=U.maxBitrate)??y(z1),Q="08";return`vp09.00.${X.level.toString().padStart(2,"0")}.08`}else if($==="av1"){let K=J*Y,X=l1.find((q)=>K<=q.maxPictureSize&&Z<=q.maxBitrate)??y(l1),Q=X.level.toString().padStart(2,"0"),U="08";return`av01.0.${Q}${X.tier}.08`}throw TypeError(`Unhandled codec '${$}'.`)};var m1=($)=>{let J=$.split("."),Y=1,Z=1,G=129,K=Number(J[1]),X=J[2],Q=Number(X.slice(0,-1)),U=(K<<5)+Q,q=X.slice(-1)==="H"?1:0,z=Number(J[3])===8?0:1,V=0,W=J[4]?Number(J[4]):0,R=J[5]?Number(J[5][0]):1,H=J[5]?Number(J[5][1]):1,A=J[5]?Number(J[5][2]):0,I=(q<<7)+(z<<6)+0+(W<<4)+(R<<3)+(H<<2)+A,F=0,T=0;return[129,U,I,0]};var d1=($,J,Y)=>{if($==="aac"){if(J>=2&&Y<=24000)return"mp4a.40.29";if(Y<=24000)return"mp4a.40.5";return"mp4a.40.2"}else if($==="mp3")return"mp3";else if($==="opus")return"opus";else if($==="vorbis")return"vorbis";else if($==="flac")return"flac";else if(h.includes($))return $;throw TypeError(`Unhandled codec '${$}'.`)};var y0=[96000,88200,64000,48000,44100,32000,24000,22050,16000,12000,11025,8000,7350],a0=[-1,1,2,3,4,5,6,8],c1=($)=>{if(!$||$.byteLength<2)throw TypeError("AAC description must be at least 2 bytes long.");let J=new r($),Y=J.readBits(5);if(Y===31)Y=32+J.readBits(6);let Z=J.readBits(4),G=null;if(Z===15)G=J.readBits(24);else if(Z<y0.length)G=y0[Z];let K=J.readBits(4),X=null;if(K>=1&&K<=7)X=a0[K];return{objectType:Y,frequencyIndex:Z,sampleRate:G,channelConfiguration:K,numberOfChannels:X}},t0=($)=>{let J=y0.indexOf($.sampleRate),Y=null;if(J===-1)J=15,Y=$.sampleRate;let Z=a0.indexOf($.numberOfChannels);if(Z===-1)throw TypeError(`Unsupported number of channels: ${$.numberOfChannels}`);let G=13;if($.objectType>=32)G+=6;if(J===15)G+=24;let K=Math.ceil(G/8),X=new Uint8Array(K),Q=new r(X);if($.objectType<32)Q.writeBits(5,$.objectType);else Q.writeBits(5,31),Q.writeBits(6,$.objectType-32);if(Q.writeBits(4,J),J===15)Q.writeBits(24,Y);return Q.writeBits(4,Z),X};var r1=/^pcm-([usf])(\d+)+(be)?$/,Y0=($)=>{if(N(h.includes($)),$==="ulaw")return{dataType:"ulaw",sampleSize:1,littleEndian:!0,silentValue:255};else if($==="alaw")return{dataType:"alaw",sampleSize:1,littleEndian:!0,silentValue:213};let J=r1.exec($);N(J);let Y;if(J[1]==="u")Y="unsigned";else if(J[1]==="s")Y="signed";else Y="float";let Z=Number(J[2])/8,G=J[3]!=="be";return{dataType:Y,sampleSize:Z,littleEndian:G,silentValue:$==="pcm-u8"?128:0}},L1=($)=>{if($.startsWith("avc1")||$.startsWith("avc3"))return"avc";else if($.startsWith("hev1")||$.startsWith("hvc1"))return"hevc";else if($==="vp8")return"vp8";else if($.startsWith("vp09"))return"vp9";else if($.startsWith("av01"))return"av1";if($.startsWith("mp4a.40")||$==="mp4a.67")return"aac";else if($==="mp3"||$==="mp4a.69"||$==="mp4a.6B"||$==="mp4a.6b")return"mp3";else if($==="opus")return"opus";else if($==="vorbis")return"vorbis";else if($==="flac")return"flac";else if($==="ulaw")return"ulaw";else if($==="alaw")return"alaw";else if(r1.test($))return $;if($==="webvtt")return"webvtt";return null},n1=($)=>{if($==="avc")return{avc:{format:"avc"}};else if($==="hevc")return{hevc:{format:"hevc"}};return{}},s1=($)=>{if($==="aac")return{aac:{format:"aac"}};else if($==="opus")return{opus:{format:"opus"}};return{}},t6=["avc1","avc3","hev1","hvc1","vp8","vp09","av01"],e6=/^(avc1|avc3)\.[0-9a-fA-F]{6}$/,$8=/^(hev1|hvc1)\.(?:[ABC]?\d+)\.[0-9a-fA-F]{1,8}\.[LH]\d+(?:\.[0-9a-fA-F]{1,2}){0,6}$/,J8=/^vp09(?:\.\d{2}){3}(?:(?:\.\d{2}){5})?$/,Y8=/^av01\.\d\.\d{2}[MH]\.\d{2}(?:\.\d\.\d{3}\.\d{2}\.\d{2}\.\d{2}\.\d)?$/,i1=($)=>{if(!$)throw TypeError("Video chunk metadata must be provided.");if(typeof $!=="object")throw TypeError("Video chunk metadata must be an object.");if(!$.decoderConfig)throw TypeError("Video chunk metadata must include a decoder configuration.");if(typeof $.decoderConfig!=="object")throw TypeError("Video chunk metadata decoder configuration must be an object.");if(typeof $.decoderConfig.codec!=="string")throw TypeError("Video chunk metadata decoder configuration must specify a codec string.");if(!t6.some((J)=>$.decoderConfig.codec.startsWith(J)))throw TypeError("Video chunk metadata decoder configuration codec string must be a valid video codec string as specified in the WebCodecs Codec Registry.");if(!Number.isInteger($.decoderConfig.codedWidth)||$.decoderConfig.codedWidth<=0)throw TypeError("Video chunk metadata decoder configuration must specify a valid codedWidth (positive integer).");if(!Number.isInteger($.decoderConfig.codedHeight)||$.decoderConfig.codedHeight<=0)throw TypeError("Video chunk metadata decoder configuration must specify a valid codedHeight (positive integer).");if($.decoderConfig.description!==void 0){if(!R0($.decoderConfig.description))throw TypeError("Video chunk metadata decoder configuration description, when defined, must be an ArrayBuffer or an ArrayBuffer view.")}if($.decoderConfig.colorSpace!==void 0){let{colorSpace:J}=$.decoderConfig;if(typeof J!=="object")throw TypeError("Video chunk metadata decoder configuration colorSpace, when provided, must be an object.");let Y=Object.keys(O0);if(J.primaries!=null&&!Y.includes(J.primaries))throw TypeError(`Video chunk metadata decoder configuration colorSpace primaries, when defined, must be one of ${Y.join(", ")}.`);let Z=Object.keys(F0);if(J.transfer!=null&&!Z.includes(J.transfer))throw TypeError(`Video chunk metadata decoder configuration colorSpace transfer, when defined, must be one of ${Z.join(", ")}.`);let G=Object.keys(D0);if(J.matrix!=null&&!G.includes(J.matrix))throw TypeError(`Video chunk metadata decoder configuration colorSpace matrix, when defined, must be one of ${G.join(", ")}.`);if(J.fullRange!=null&&typeof J.fullRange!=="boolean")throw TypeError("Video chunk metadata decoder configuration colorSpace fullRange, when defined, must be a boolean.")}if($.decoderConfig.codec.startsWith("avc1")||$.decoderConfig.codec.startsWith("avc3")){if(!e6.test($.decoderConfig.codec))throw TypeError("Video chunk metadata decoder configuration codec string for AVC must be a valid AVC codec string as specified in Section 3.4 of RFC 6381.")}else if($.decoderConfig.codec.startsWith("hev1")||$.decoderConfig.codec.startsWith("hvc1")){if(!$8.test($.decoderConfig.codec))throw TypeError("Video chunk metadata decoder configuration codec string for HEVC must be a valid HEVC codec string as specified in Section E.3 of ISO 14496-15.")}else if($.decoderConfig.codec.startsWith("vp8")){if($.decoderConfig.codec!=="vp8")throw TypeError('Video chunk metadata decoder configuration codec string for VP8 must be "vp8".')}else if($.decoderConfig.codec.startsWith("vp09")){if(!J8.test($.decoderConfig.codec))throw TypeError('Video chunk metadata decoder configuration codec string for VP9 must be a valid VP9 codec string as specified in Section "Codecs Parameter String" of https://www.webmproject.org/vp9/mp4/.')}else if($.decoderConfig.codec.startsWith("av01")){if(!Y8.test($.decoderConfig.codec))throw TypeError('Video chunk metadata decoder configuration codec string for AV1 must be a valid AV1 codec string as specified in Section "Codecs Parameter String" of https://aomediacodec.github.io/av1-isobmff/.')}},Z8=["mp4a","mp3","opus","vorbis","flac","ulaw","alaw","pcm"],o1=($)=>{if(!$)throw TypeError("Audio chunk metadata must be provided.");if(typeof $!=="object")throw TypeError("Audio chunk metadata must be an object.");if(!$.decoderConfig)throw TypeError("Audio chunk metadata must include a decoder configuration.");if(typeof $.decoderConfig!=="object")throw TypeError("Audio chunk metadata decoder configuration must be an object.");if(typeof $.decoderConfig.codec!=="string")throw TypeError("Audio chunk metadata decoder configuration must specify a codec string.");if(!Z8.some((J)=>$.decoderConfig.codec.startsWith(J)))throw TypeError("Audio chunk metadata decoder configuration codec string must be a valid audio codec string as specified in the WebCodecs Codec Registry.");if(!Number.isInteger($.decoderConfig.sampleRate)||$.decoderConfig.sampleRate<=0)throw TypeError("Audio chunk metadata decoder configuration must specify a valid sampleRate (positive integer).");if(!Number.isInteger($.decoderConfig.numberOfChannels)||$.decoderConfig.numberOfChannels<=0)throw TypeError("Audio chunk metadata decoder configuration must specify a valid numberOfChannels (positive integer).");if($.decoderConfig.description!==void 0){if(!R0($.decoderConfig.description))throw TypeError("Audio chunk metadata decoder configuration description, when defined, must be an ArrayBuffer or an ArrayBuffer view.")}if($.decoderConfig.codec.startsWith("mp4a")&&$.decoderConfig.codec!=="mp4a.69"&&$.decoderConfig.codec!=="mp4a.6B"&&$.decoderConfig.codec!=="mp4a.6b"){if(!["mp4a.40.2","mp4a.40.02","mp4a.40.5","mp4a.40.05","mp4a.40.29","mp4a.67"].includes($.decoderConfig.codec))throw TypeError("Audio chunk metadata decoder configuration codec string for AAC must be a valid AAC codec string as specified in https://www.w3.org/TR/webcodecs-aac-codec-registration/.")}else if($.decoderConfig.codec.startsWith("mp3")||$.decoderConfig.codec.startsWith("mp4a")){if($.decoderConfig.codec!=="mp3"&&$.decoderConfig.codec!=="mp4a.69"&&$.decoderConfig.codec!=="mp4a.6B"&&$.decoderConfig.codec!=="mp4a.6b")throw TypeError('Audio chunk metadata decoder configuration codec string for MP3 must be "mp3", "mp4a.69" or "mp4a.6B".')}else if($.decoderConfig.codec.startsWith("opus")){if($.decoderConfig.codec!=="opus")throw TypeError('Audio chunk metadata decoder configuration codec string for Opus must be "opus".');if($.decoderConfig.description&&$.decoderConfig.description.byteLength<18)throw TypeError("Audio chunk metadata decoder configuration description, when specified, is expected to be an Identification Header as specified in Section 5.1 of RFC 7845.")}else if($.decoderConfig.codec.startsWith("vorbis")){if($.decoderConfig.codec!=="vorbis")throw TypeError('Audio chunk metadata decoder configuration codec string for Vorbis must be "vorbis".');if(!$.decoderConfig.description)throw TypeError("Audio chunk metadata decoder configuration for Vorbis must include a description, which is expected to adhere to the format described in https://www.w3.org/TR/webcodecs-vorbis-codec-registration/.")}else if($.decoderConfig.codec.startsWith("flac")){if($.decoderConfig.codec!=="flac")throw TypeError('Audio chunk metadata decoder configuration codec string for FLAC must be "flac".');let J=42;if(!$.decoderConfig.description||$.decoderConfig.description.byteLength<J)throw TypeError("Audio chunk metadata decoder configuration for FLAC must include a description, which is expected to adhere to the format described in https://www.w3.org/TR/webcodecs-flac-codec-registration/.")}else if($.decoderConfig.codec.startsWith("pcm")||$.decoderConfig.codec.startsWith("ulaw")||$.decoderConfig.codec.startsWith("alaw")){if(!h.includes($.decoderConfig.codec))throw TypeError(`Audio chunk metadata decoder configuration codec string for PCM must be one of the supported PCM codecs (${h.join(", ")}).`)}},a1=($)=>{if(!$)throw TypeError("Subtitle metadata must be provided.");if(typeof $!=="object")throw TypeError("Subtitle metadata must be an object.");if(!$.config)throw TypeError("Subtitle metadata must include a config object.");if(typeof $.config!=="object")throw TypeError("Subtitle metadata config must be an object.");if(typeof $.config.description!=="string")throw TypeError("Subtitle metadata config description must be a string.")};/*!
+ */
+var VIDEO_CODECS = [
+  "avc",
+  "hevc",
+  "vp9",
+  "av1",
+  "vp8"
+];
+var PCM_AUDIO_CODECS = [
+  "pcm-s16",
+  "pcm-s16be",
+  "pcm-s24",
+  "pcm-s24be",
+  "pcm-s32",
+  "pcm-s32be",
+  "pcm-f32",
+  "pcm-f32be",
+  "pcm-f64",
+  "pcm-f64be",
+  "pcm-u8",
+  "pcm-s8",
+  "ulaw",
+  "alaw"
+];
+var NON_PCM_AUDIO_CODECS = [
+  "aac",
+  "opus",
+  "mp3",
+  "vorbis",
+  "flac"
+];
+var AUDIO_CODECS = [
+  ...NON_PCM_AUDIO_CODECS,
+  ...PCM_AUDIO_CODECS
+];
+var SUBTITLE_CODECS = [
+  "webvtt"
+];
+var AVC_LEVEL_TABLE = [
+  { maxMacroblocks: 99, maxBitrate: 64000, maxDpbMbs: 396, level: 10 },
+  { maxMacroblocks: 396, maxBitrate: 192000, maxDpbMbs: 900, level: 11 },
+  { maxMacroblocks: 396, maxBitrate: 384000, maxDpbMbs: 2376, level: 12 },
+  { maxMacroblocks: 396, maxBitrate: 768000, maxDpbMbs: 2376, level: 13 },
+  { maxMacroblocks: 396, maxBitrate: 2000000, maxDpbMbs: 2376, level: 20 },
+  { maxMacroblocks: 792, maxBitrate: 4000000, maxDpbMbs: 4752, level: 21 },
+  { maxMacroblocks: 1620, maxBitrate: 4000000, maxDpbMbs: 8100, level: 22 },
+  { maxMacroblocks: 1620, maxBitrate: 1e7, maxDpbMbs: 8100, level: 30 },
+  { maxMacroblocks: 3600, maxBitrate: 14000000, maxDpbMbs: 18000, level: 31 },
+  { maxMacroblocks: 5120, maxBitrate: 20000000, maxDpbMbs: 20480, level: 32 },
+  { maxMacroblocks: 8192, maxBitrate: 20000000, maxDpbMbs: 32768, level: 40 },
+  { maxMacroblocks: 8192, maxBitrate: 50000000, maxDpbMbs: 32768, level: 41 },
+  { maxMacroblocks: 8704, maxBitrate: 50000000, maxDpbMbs: 34816, level: 42 },
+  { maxMacroblocks: 22080, maxBitrate: 135000000, maxDpbMbs: 110400, level: 50 },
+  { maxMacroblocks: 36864, maxBitrate: 240000000, maxDpbMbs: 184320, level: 51 },
+  { maxMacroblocks: 36864, maxBitrate: 240000000, maxDpbMbs: 184320, level: 52 },
+  { maxMacroblocks: 139264, maxBitrate: 240000000, maxDpbMbs: 696320, level: 60 },
+  { maxMacroblocks: 139264, maxBitrate: 480000000, maxDpbMbs: 696320, level: 61 },
+  { maxMacroblocks: 139264, maxBitrate: 800000000, maxDpbMbs: 696320, level: 62 }
+];
+var HEVC_LEVEL_TABLE = [
+  { maxPictureSize: 36864, maxBitrate: 128000, tier: "L", level: 30 },
+  { maxPictureSize: 122880, maxBitrate: 1500000, tier: "L", level: 60 },
+  { maxPictureSize: 245760, maxBitrate: 3000000, tier: "L", level: 63 },
+  { maxPictureSize: 552960, maxBitrate: 6000000, tier: "L", level: 90 },
+  { maxPictureSize: 983040, maxBitrate: 1e7, tier: "L", level: 93 },
+  { maxPictureSize: 2228224, maxBitrate: 12000000, tier: "L", level: 120 },
+  { maxPictureSize: 2228224, maxBitrate: 30000000, tier: "H", level: 120 },
+  { maxPictureSize: 2228224, maxBitrate: 20000000, tier: "L", level: 123 },
+  { maxPictureSize: 2228224, maxBitrate: 50000000, tier: "H", level: 123 },
+  { maxPictureSize: 8912896, maxBitrate: 25000000, tier: "L", level: 150 },
+  { maxPictureSize: 8912896, maxBitrate: 1e8, tier: "H", level: 150 },
+  { maxPictureSize: 8912896, maxBitrate: 40000000, tier: "L", level: 153 },
+  { maxPictureSize: 8912896, maxBitrate: 160000000, tier: "H", level: 153 },
+  { maxPictureSize: 8912896, maxBitrate: 60000000, tier: "L", level: 156 },
+  { maxPictureSize: 8912896, maxBitrate: 240000000, tier: "H", level: 156 },
+  { maxPictureSize: 35651584, maxBitrate: 60000000, tier: "L", level: 180 },
+  { maxPictureSize: 35651584, maxBitrate: 240000000, tier: "H", level: 180 },
+  { maxPictureSize: 35651584, maxBitrate: 120000000, tier: "L", level: 183 },
+  { maxPictureSize: 35651584, maxBitrate: 480000000, tier: "H", level: 183 },
+  { maxPictureSize: 35651584, maxBitrate: 240000000, tier: "L", level: 186 },
+  { maxPictureSize: 35651584, maxBitrate: 800000000, tier: "H", level: 186 }
+];
+var VP9_LEVEL_TABLE = [
+  { maxPictureSize: 36864, maxBitrate: 200000, level: 10 },
+  { maxPictureSize: 73728, maxBitrate: 800000, level: 11 },
+  { maxPictureSize: 122880, maxBitrate: 1800000, level: 20 },
+  { maxPictureSize: 245760, maxBitrate: 3600000, level: 21 },
+  { maxPictureSize: 552960, maxBitrate: 7200000, level: 30 },
+  { maxPictureSize: 983040, maxBitrate: 12000000, level: 31 },
+  { maxPictureSize: 2228224, maxBitrate: 18000000, level: 40 },
+  { maxPictureSize: 2228224, maxBitrate: 30000000, level: 41 },
+  { maxPictureSize: 8912896, maxBitrate: 60000000, level: 50 },
+  { maxPictureSize: 8912896, maxBitrate: 120000000, level: 51 },
+  { maxPictureSize: 8912896, maxBitrate: 180000000, level: 52 },
+  { maxPictureSize: 35651584, maxBitrate: 180000000, level: 60 },
+  { maxPictureSize: 35651584, maxBitrate: 240000000, level: 61 },
+  { maxPictureSize: 35651584, maxBitrate: 480000000, level: 62 }
+];
+var AV1_LEVEL_TABLE = [
+  { maxPictureSize: 147456, maxBitrate: 1500000, tier: "M", level: 0 },
+  { maxPictureSize: 278784, maxBitrate: 3000000, tier: "M", level: 1 },
+  { maxPictureSize: 665856, maxBitrate: 6000000, tier: "M", level: 4 },
+  { maxPictureSize: 1065024, maxBitrate: 1e7, tier: "M", level: 5 },
+  { maxPictureSize: 2359296, maxBitrate: 12000000, tier: "M", level: 8 },
+  { maxPictureSize: 2359296, maxBitrate: 30000000, tier: "H", level: 8 },
+  { maxPictureSize: 2359296, maxBitrate: 20000000, tier: "M", level: 9 },
+  { maxPictureSize: 2359296, maxBitrate: 50000000, tier: "H", level: 9 },
+  { maxPictureSize: 8912896, maxBitrate: 30000000, tier: "M", level: 12 },
+  { maxPictureSize: 8912896, maxBitrate: 1e8, tier: "H", level: 12 },
+  { maxPictureSize: 8912896, maxBitrate: 40000000, tier: "M", level: 13 },
+  { maxPictureSize: 8912896, maxBitrate: 160000000, tier: "H", level: 13 },
+  { maxPictureSize: 8912896, maxBitrate: 60000000, tier: "M", level: 14 },
+  { maxPictureSize: 8912896, maxBitrate: 240000000, tier: "H", level: 14 },
+  { maxPictureSize: 35651584, maxBitrate: 60000000, tier: "M", level: 15 },
+  { maxPictureSize: 35651584, maxBitrate: 240000000, tier: "H", level: 15 },
+  { maxPictureSize: 35651584, maxBitrate: 60000000, tier: "M", level: 16 },
+  { maxPictureSize: 35651584, maxBitrate: 240000000, tier: "H", level: 16 },
+  { maxPictureSize: 35651584, maxBitrate: 1e8, tier: "M", level: 17 },
+  { maxPictureSize: 35651584, maxBitrate: 480000000, tier: "H", level: 17 },
+  { maxPictureSize: 35651584, maxBitrate: 160000000, tier: "M", level: 18 },
+  { maxPictureSize: 35651584, maxBitrate: 800000000, tier: "H", level: 18 },
+  { maxPictureSize: 35651584, maxBitrate: 160000000, tier: "M", level: 19 },
+  { maxPictureSize: 35651584, maxBitrate: 800000000, tier: "H", level: 19 }
+];
+var buildVideoCodecString = (codec, width, height, bitrate) => {
+  if (codec === "avc") {
+    const profileIndication = 100;
+    const totalMacroblocks = Math.ceil(width / 16) * Math.ceil(height / 16);
+    const levelInfo = AVC_LEVEL_TABLE.find((level) => totalMacroblocks <= level.maxMacroblocks && bitrate <= level.maxBitrate) ?? last(AVC_LEVEL_TABLE);
+    const levelIndication = levelInfo ? levelInfo.level : 0;
+    const hexProfileIndication = profileIndication.toString(16).padStart(2, "0");
+    const hexProfileCompatibility = "00";
+    const hexLevelIndication = levelIndication.toString(16).padStart(2, "0");
+    return `avc1.${hexProfileIndication}${hexProfileCompatibility}${hexLevelIndication}`;
+  } else if (codec === "hevc") {
+    const profilePrefix = "";
+    const profileIdc = 1;
+    const compatibilityFlags = "6";
+    const pictureSize = width * height;
+    const levelInfo = HEVC_LEVEL_TABLE.find((level) => pictureSize <= level.maxPictureSize && bitrate <= level.maxBitrate) ?? last(HEVC_LEVEL_TABLE);
+    const constraintFlags = "B0";
+    return "hev1." + `${profilePrefix}${profileIdc}.` + `${compatibilityFlags}.` + `${levelInfo.tier}${levelInfo.level}.` + `${constraintFlags}`;
+  } else if (codec === "vp8") {
+    return "vp8";
+  } else if (codec === "vp9") {
+    const profile = "00";
+    const pictureSize = width * height;
+    const levelInfo = VP9_LEVEL_TABLE.find((level) => pictureSize <= level.maxPictureSize && bitrate <= level.maxBitrate) ?? last(VP9_LEVEL_TABLE);
+    const bitDepth = "08";
+    return `vp09.${profile}.${levelInfo.level.toString().padStart(2, "0")}.${bitDepth}`;
+  } else if (codec === "av1") {
+    const profile = 0;
+    const pictureSize = width * height;
+    const levelInfo = AV1_LEVEL_TABLE.find((level2) => pictureSize <= level2.maxPictureSize && bitrate <= level2.maxBitrate) ?? last(AV1_LEVEL_TABLE);
+    const level = levelInfo.level.toString().padStart(2, "0");
+    const bitDepth = "08";
+    return `av01.${profile}.${level}${levelInfo.tier}.${bitDepth}`;
+  }
+  throw new TypeError(`Unhandled codec '${codec}'.`);
+};
+var generateAv1CodecConfigurationFromCodecString = (codecString) => {
+  const parts = codecString.split(".");
+  const marker = 1;
+  const version = 1;
+  const firstByte = (marker << 7) + version;
+  const profile = Number(parts[1]);
+  const levelAndTier = parts[2];
+  const level = Number(levelAndTier.slice(0, -1));
+  const secondByte = (profile << 5) + level;
+  const tier = levelAndTier.slice(-1) === "H" ? 1 : 0;
+  const bitDepth = Number(parts[3]);
+  const highBitDepth = bitDepth === 8 ? 0 : 1;
+  const twelveBit = 0;
+  const monochrome = parts[4] ? Number(parts[4]) : 0;
+  const chromaSubsamplingX = parts[5] ? Number(parts[5][0]) : 1;
+  const chromaSubsamplingY = parts[5] ? Number(parts[5][1]) : 1;
+  const chromaSamplePosition = parts[5] ? Number(parts[5][2]) : 0;
+  const thirdByte = (tier << 7) + (highBitDepth << 6) + (twelveBit << 5) + (monochrome << 4) + (chromaSubsamplingX << 3) + (chromaSubsamplingY << 2) + chromaSamplePosition;
+  const initialPresentationDelayPresent = 0;
+  const fourthByte = initialPresentationDelayPresent;
+  return [firstByte, secondByte, thirdByte, fourthByte];
+};
+var buildAudioCodecString = (codec, numberOfChannels, sampleRate) => {
+  if (codec === "aac") {
+    if (numberOfChannels >= 2 && sampleRate <= 24000) {
+      return "mp4a.40.29";
+    }
+    if (sampleRate <= 24000) {
+      return "mp4a.40.5";
+    }
+    return "mp4a.40.2";
+  } else if (codec === "mp3") {
+    return "mp3";
+  } else if (codec === "opus") {
+    return "opus";
+  } else if (codec === "vorbis") {
+    return "vorbis";
+  } else if (codec === "flac") {
+    return "flac";
+  } else if (PCM_AUDIO_CODECS.includes(codec)) {
+    return codec;
+  }
+  throw new TypeError(`Unhandled codec '${codec}'.`);
+};
+var aacFrequencyTable = [
+  96000,
+  88200,
+  64000,
+  48000,
+  44100,
+  32000,
+  24000,
+  22050,
+  16000,
+  12000,
+  11025,
+  8000,
+  7350
+];
+var aacChannelMap = [-1, 1, 2, 3, 4, 5, 6, 8];
+var parseAacAudioSpecificConfig = (bytes) => {
+  if (!bytes || bytes.byteLength < 2) {
+    throw new TypeError("AAC description must be at least 2 bytes long.");
+  }
+  const bitstream = new Bitstream(bytes);
+  let objectType = bitstream.readBits(5);
+  if (objectType === 31) {
+    objectType = 32 + bitstream.readBits(6);
+  }
+  const frequencyIndex = bitstream.readBits(4);
+  let sampleRate = null;
+  if (frequencyIndex === 15) {
+    sampleRate = bitstream.readBits(24);
+  } else {
+    if (frequencyIndex < aacFrequencyTable.length) {
+      sampleRate = aacFrequencyTable[frequencyIndex];
+    }
+  }
+  const channelConfiguration = bitstream.readBits(4);
+  let numberOfChannels = null;
+  if (channelConfiguration >= 1 && channelConfiguration <= 7) {
+    numberOfChannels = aacChannelMap[channelConfiguration];
+  }
+  return {
+    objectType,
+    frequencyIndex,
+    sampleRate,
+    channelConfiguration,
+    numberOfChannels
+  };
+};
+var buildAacAudioSpecificConfig = (config) => {
+  let frequencyIndex = aacFrequencyTable.indexOf(config.sampleRate);
+  let customSampleRate = null;
+  if (frequencyIndex === -1) {
+    frequencyIndex = 15;
+    customSampleRate = config.sampleRate;
+  }
+  const channelConfiguration = aacChannelMap.indexOf(config.numberOfChannels);
+  if (channelConfiguration === -1) {
+    throw new TypeError(`Unsupported number of channels: ${config.numberOfChannels}`);
+  }
+  let bitCount = 5 + 4 + 4;
+  if (config.objectType >= 32) {
+    bitCount += 6;
+  }
+  if (frequencyIndex === 15) {
+    bitCount += 24;
+  }
+  const byteCount = Math.ceil(bitCount / 8);
+  const bytes = new Uint8Array(byteCount);
+  const bitstream = new Bitstream(bytes);
+  if (config.objectType < 32) {
+    bitstream.writeBits(5, config.objectType);
+  } else {
+    bitstream.writeBits(5, 31);
+    bitstream.writeBits(6, config.objectType - 32);
+  }
+  bitstream.writeBits(4, frequencyIndex);
+  if (frequencyIndex === 15) {
+    bitstream.writeBits(24, customSampleRate);
+  }
+  bitstream.writeBits(4, channelConfiguration);
+  return bytes;
+};
+var PCM_CODEC_REGEX = /^pcm-([usf])(\d+)+(be)?$/;
+var parsePcmCodec = (codec) => {
+  assert(PCM_AUDIO_CODECS.includes(codec));
+  if (codec === "ulaw") {
+    return { dataType: "ulaw", sampleSize: 1, littleEndian: true, silentValue: 255 };
+  } else if (codec === "alaw") {
+    return { dataType: "alaw", sampleSize: 1, littleEndian: true, silentValue: 213 };
+  }
+  const match = PCM_CODEC_REGEX.exec(codec);
+  assert(match);
+  let dataType;
+  if (match[1] === "u") {
+    dataType = "unsigned";
+  } else if (match[1] === "s") {
+    dataType = "signed";
+  } else {
+    dataType = "float";
+  }
+  const sampleSize = Number(match[2]) / 8;
+  const littleEndian = match[3] !== "be";
+  const silentValue = codec === "pcm-u8" ? 2 ** 7 : 0;
+  return { dataType, sampleSize, littleEndian, silentValue };
+};
+var inferCodecFromCodecString = (codecString) => {
+  if (codecString.startsWith("avc1") || codecString.startsWith("avc3")) {
+    return "avc";
+  } else if (codecString.startsWith("hev1") || codecString.startsWith("hvc1")) {
+    return "hevc";
+  } else if (codecString === "vp8") {
+    return "vp8";
+  } else if (codecString.startsWith("vp09")) {
+    return "vp9";
+  } else if (codecString.startsWith("av01")) {
+    return "av1";
+  }
+  if (codecString.startsWith("mp4a.40") || codecString === "mp4a.67") {
+    return "aac";
+  } else if (codecString === "mp3" || codecString === "mp4a.69" || codecString === "mp4a.6B" || codecString === "mp4a.6b") {
+    return "mp3";
+  } else if (codecString === "opus") {
+    return "opus";
+  } else if (codecString === "vorbis") {
+    return "vorbis";
+  } else if (codecString === "flac") {
+    return "flac";
+  } else if (codecString === "ulaw") {
+    return "ulaw";
+  } else if (codecString === "alaw") {
+    return "alaw";
+  } else if (PCM_CODEC_REGEX.test(codecString)) {
+    return codecString;
+  }
+  if (codecString === "webvtt") {
+    return "webvtt";
+  }
+  return null;
+};
+var getVideoEncoderConfigExtension = (codec) => {
+  if (codec === "avc") {
+    return {
+      avc: {
+        format: "avc"
+      }
+    };
+  } else if (codec === "hevc") {
+    return {
+      hevc: {
+        format: "hevc"
+      }
+    };
+  }
+  return {};
+};
+var getAudioEncoderConfigExtension = (codec) => {
+  if (codec === "aac") {
+    return {
+      aac: {
+        format: "aac"
+      }
+    };
+  } else if (codec === "opus") {
+    return {
+      opus: {
+        format: "opus"
+      }
+    };
+  }
+  return {};
+};
+var VALID_VIDEO_CODEC_STRING_PREFIXES = ["avc1", "avc3", "hev1", "hvc1", "vp8", "vp09", "av01"];
+var AVC_CODEC_STRING_REGEX = /^(avc1|avc3)\.[0-9a-fA-F]{6}$/;
+var HEVC_CODEC_STRING_REGEX = /^(hev1|hvc1)\.(?:[ABC]?\d+)\.[0-9a-fA-F]{1,8}\.[LH]\d+(?:\.[0-9a-fA-F]{1,2}){0,6}$/;
+var VP9_CODEC_STRING_REGEX = /^vp09(?:\.\d{2}){3}(?:(?:\.\d{2}){5})?$/;
+var AV1_CODEC_STRING_REGEX = /^av01\.\d\.\d{2}[MH]\.\d{2}(?:\.\d\.\d{3}\.\d{2}\.\d{2}\.\d{2}\.\d)?$/;
+var validateVideoChunkMetadata = (metadata) => {
+  if (!metadata) {
+    throw new TypeError("Video chunk metadata must be provided.");
+  }
+  if (typeof metadata !== "object") {
+    throw new TypeError("Video chunk metadata must be an object.");
+  }
+  if (!metadata.decoderConfig) {
+    throw new TypeError("Video chunk metadata must include a decoder configuration.");
+  }
+  if (typeof metadata.decoderConfig !== "object") {
+    throw new TypeError("Video chunk metadata decoder configuration must be an object.");
+  }
+  if (typeof metadata.decoderConfig.codec !== "string") {
+    throw new TypeError("Video chunk metadata decoder configuration must specify a codec string.");
+  }
+  if (!VALID_VIDEO_CODEC_STRING_PREFIXES.some((prefix) => metadata.decoderConfig.codec.startsWith(prefix))) {
+    throw new TypeError("Video chunk metadata decoder configuration codec string must be a valid video codec string as specified in" + " the WebCodecs Codec Registry.");
+  }
+  if (!Number.isInteger(metadata.decoderConfig.codedWidth) || metadata.decoderConfig.codedWidth <= 0) {
+    throw new TypeError("Video chunk metadata decoder configuration must specify a valid codedWidth (positive integer).");
+  }
+  if (!Number.isInteger(metadata.decoderConfig.codedHeight) || metadata.decoderConfig.codedHeight <= 0) {
+    throw new TypeError("Video chunk metadata decoder configuration must specify a valid codedHeight (positive integer).");
+  }
+  if (metadata.decoderConfig.description !== undefined) {
+    if (!isAllowSharedBufferSource(metadata.decoderConfig.description)) {
+      throw new TypeError("Video chunk metadata decoder configuration description, when defined, must be an ArrayBuffer or an" + " ArrayBuffer view.");
+    }
+  }
+  if (metadata.decoderConfig.colorSpace !== undefined) {
+    const { colorSpace } = metadata.decoderConfig;
+    if (typeof colorSpace !== "object") {
+      throw new TypeError("Video chunk metadata decoder configuration colorSpace, when provided, must be an object.");
+    }
+    const primariesValues = Object.keys(COLOR_PRIMARIES_MAP);
+    if (colorSpace.primaries != null && !primariesValues.includes(colorSpace.primaries)) {
+      throw new TypeError(`Video chunk metadata decoder configuration colorSpace primaries, when defined, must be one of` + ` ${primariesValues.join(", ")}.`);
+    }
+    const transferValues = Object.keys(TRANSFER_CHARACTERISTICS_MAP);
+    if (colorSpace.transfer != null && !transferValues.includes(colorSpace.transfer)) {
+      throw new TypeError(`Video chunk metadata decoder configuration colorSpace transfer, when defined, must be one of` + ` ${transferValues.join(", ")}.`);
+    }
+    const matrixValues = Object.keys(MATRIX_COEFFICIENTS_MAP);
+    if (colorSpace.matrix != null && !matrixValues.includes(colorSpace.matrix)) {
+      throw new TypeError(`Video chunk metadata decoder configuration colorSpace matrix, when defined, must be one of` + ` ${matrixValues.join(", ")}.`);
+    }
+    if (colorSpace.fullRange != null && typeof colorSpace.fullRange !== "boolean") {
+      throw new TypeError("Video chunk metadata decoder configuration colorSpace fullRange, when defined, must be a boolean.");
+    }
+  }
+  if (metadata.decoderConfig.codec.startsWith("avc1") || metadata.decoderConfig.codec.startsWith("avc3")) {
+    if (!AVC_CODEC_STRING_REGEX.test(metadata.decoderConfig.codec)) {
+      throw new TypeError("Video chunk metadata decoder configuration codec string for AVC must be a valid AVC codec string as" + " specified in Section 3.4 of RFC 6381.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("hev1") || metadata.decoderConfig.codec.startsWith("hvc1")) {
+    if (!HEVC_CODEC_STRING_REGEX.test(metadata.decoderConfig.codec)) {
+      throw new TypeError("Video chunk metadata decoder configuration codec string for HEVC must be a valid HEVC codec string as" + " specified in Section E.3 of ISO 14496-15.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("vp8")) {
+    if (metadata.decoderConfig.codec !== "vp8") {
+      throw new TypeError('Video chunk metadata decoder configuration codec string for VP8 must be "vp8".');
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("vp09")) {
+    if (!VP9_CODEC_STRING_REGEX.test(metadata.decoderConfig.codec)) {
+      throw new TypeError("Video chunk metadata decoder configuration codec string for VP9 must be a valid VP9 codec string as" + ' specified in Section "Codecs Parameter String" of https://www.webmproject.org/vp9/mp4/.');
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("av01")) {
+    if (!AV1_CODEC_STRING_REGEX.test(metadata.decoderConfig.codec)) {
+      throw new TypeError("Video chunk metadata decoder configuration codec string for AV1 must be a valid AV1 codec string as" + ' specified in Section "Codecs Parameter String" of https://aomediacodec.github.io/av1-isobmff/.');
+    }
+  }
+};
+var VALID_AUDIO_CODEC_STRING_PREFIXES = ["mp4a", "mp3", "opus", "vorbis", "flac", "ulaw", "alaw", "pcm"];
+var validateAudioChunkMetadata = (metadata) => {
+  if (!metadata) {
+    throw new TypeError("Audio chunk metadata must be provided.");
+  }
+  if (typeof metadata !== "object") {
+    throw new TypeError("Audio chunk metadata must be an object.");
+  }
+  if (!metadata.decoderConfig) {
+    throw new TypeError("Audio chunk metadata must include a decoder configuration.");
+  }
+  if (typeof metadata.decoderConfig !== "object") {
+    throw new TypeError("Audio chunk metadata decoder configuration must be an object.");
+  }
+  if (typeof metadata.decoderConfig.codec !== "string") {
+    throw new TypeError("Audio chunk metadata decoder configuration must specify a codec string.");
+  }
+  if (!VALID_AUDIO_CODEC_STRING_PREFIXES.some((prefix) => metadata.decoderConfig.codec.startsWith(prefix))) {
+    throw new TypeError("Audio chunk metadata decoder configuration codec string must be a valid audio codec string as specified in" + " the WebCodecs Codec Registry.");
+  }
+  if (!Number.isInteger(metadata.decoderConfig.sampleRate) || metadata.decoderConfig.sampleRate <= 0) {
+    throw new TypeError("Audio chunk metadata decoder configuration must specify a valid sampleRate (positive integer).");
+  }
+  if (!Number.isInteger(metadata.decoderConfig.numberOfChannels) || metadata.decoderConfig.numberOfChannels <= 0) {
+    throw new TypeError("Audio chunk metadata decoder configuration must specify a valid numberOfChannels (positive integer).");
+  }
+  if (metadata.decoderConfig.description !== undefined) {
+    if (!isAllowSharedBufferSource(metadata.decoderConfig.description)) {
+      throw new TypeError("Audio chunk metadata decoder configuration description, when defined, must be an ArrayBuffer or an" + " ArrayBuffer view.");
+    }
+  }
+  if (metadata.decoderConfig.codec.startsWith("mp4a") && metadata.decoderConfig.codec !== "mp4a.69" && metadata.decoderConfig.codec !== "mp4a.6B" && metadata.decoderConfig.codec !== "mp4a.6b") {
+    const validStrings = ["mp4a.40.2", "mp4a.40.02", "mp4a.40.5", "mp4a.40.05", "mp4a.40.29", "mp4a.67"];
+    if (!validStrings.includes(metadata.decoderConfig.codec)) {
+      throw new TypeError("Audio chunk metadata decoder configuration codec string for AAC must be a valid AAC codec string as" + " specified in https://www.w3.org/TR/webcodecs-aac-codec-registration/.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("mp3") || metadata.decoderConfig.codec.startsWith("mp4a")) {
+    if (metadata.decoderConfig.codec !== "mp3" && metadata.decoderConfig.codec !== "mp4a.69" && metadata.decoderConfig.codec !== "mp4a.6B" && metadata.decoderConfig.codec !== "mp4a.6b") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for MP3 must be "mp3", "mp4a.69" or' + ' "mp4a.6B".');
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("opus")) {
+    if (metadata.decoderConfig.codec !== "opus") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for Opus must be "opus".');
+    }
+    if (metadata.decoderConfig.description && metadata.decoderConfig.description.byteLength < 18) {
+      throw new TypeError("Audio chunk metadata decoder configuration description, when specified, is expected to be an" + " Identification Header as specified in Section 5.1 of RFC 7845.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("vorbis")) {
+    if (metadata.decoderConfig.codec !== "vorbis") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for Vorbis must be "vorbis".');
+    }
+    if (!metadata.decoderConfig.description) {
+      throw new TypeError("Audio chunk metadata decoder configuration for Vorbis must include a description, which is expected to" + " adhere to the format described in https://www.w3.org/TR/webcodecs-vorbis-codec-registration/.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("flac")) {
+    if (metadata.decoderConfig.codec !== "flac") {
+      throw new TypeError('Audio chunk metadata decoder configuration codec string for FLAC must be "flac".');
+    }
+    const minDescriptionSize = 4 + 4 + 34;
+    if (!metadata.decoderConfig.description || metadata.decoderConfig.description.byteLength < minDescriptionSize) {
+      throw new TypeError("Audio chunk metadata decoder configuration for FLAC must include a description, which is expected to" + " adhere to the format described in https://www.w3.org/TR/webcodecs-flac-codec-registration/.");
+    }
+  } else if (metadata.decoderConfig.codec.startsWith("pcm") || metadata.decoderConfig.codec.startsWith("ulaw") || metadata.decoderConfig.codec.startsWith("alaw")) {
+    if (!PCM_AUDIO_CODECS.includes(metadata.decoderConfig.codec)) {
+      throw new TypeError("Audio chunk metadata decoder configuration codec string for PCM must be one of the supported PCM" + ` codecs (${PCM_AUDIO_CODECS.join(", ")}).`);
+    }
+  }
+};
+var validateSubtitleMetadata = (metadata) => {
+  if (!metadata) {
+    throw new TypeError("Subtitle metadata must be provided.");
+  }
+  if (typeof metadata !== "object") {
+    throw new TypeError("Subtitle metadata must be an object.");
+  }
+  if (!metadata.config) {
+    throw new TypeError("Subtitle metadata must include a config object.");
+  }
+  if (typeof metadata.config !== "object") {
+    throw new TypeError("Subtitle metadata config must be an object.");
+  }
+  if (typeof metadata.config.description !== "string") {
+    throw new TypeError("Subtitle metadata config description must be a string.");
+  }
+};
+
+// ../node_modules/mediabunny/dist/modules/src/muxer.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class M1{constructor($){this.mutex=new T0,this.firstMediaStreamTimestamp=null,this.trackTimestampInfo=new WeakMap,this.output=$}onTrackClose($){}validateAndNormalizeTimestamp($,J,Y){J+=$.source._timestampOffset;let Z=this.trackTimestampInfo.get($);if(!Z){if(!Y)throw Error("First packet must be a key packet.");Z={maxTimestamp:J,maxTimestampBeforeLastKeyPacket:J},this.trackTimestampInfo.set($,Z)}if(J<0)throw Error(`Timestamps must be non-negative (got ${J}s).`);if(Y)Z.maxTimestampBeforeLastKeyPacket=Z.maxTimestamp;if(J<Z.maxTimestampBeforeLastKeyPacket)throw Error(`Timestamps cannot be smaller than the largest timestamp of the previous GOP (a GOP begins with a key packet and ends right before the next key packet). Got ${J}s, but largest timestamp is ${Z.maxTimestampBeforeLastKeyPacket}s.`);return Z.maxTimestamp=Math.max(Z.maxTimestamp,J),J}}/*!
+ */
+
+class Muxer {
+  constructor(output) {
+    this.mutex = new AsyncMutex;
+    this.firstMediaStreamTimestamp = null;
+    this.trackTimestampInfo = new WeakMap;
+    this.output = output;
+  }
+  onTrackClose(track) {}
+  validateAndNormalizeTimestamp(track, timestampInSeconds, isKeyPacket) {
+    timestampInSeconds += track.source._timestampOffset;
+    let timestampInfo = this.trackTimestampInfo.get(track);
+    if (!timestampInfo) {
+      if (!isKeyPacket) {
+        throw new Error("First packet must be a key packet.");
+      }
+      timestampInfo = {
+        maxTimestamp: timestampInSeconds,
+        maxTimestampBeforeLastKeyPacket: timestampInSeconds
+      };
+      this.trackTimestampInfo.set(track, timestampInfo);
+    }
+    if (timestampInSeconds < 0) {
+      throw new Error(`Timestamps must be non-negative (got ${timestampInSeconds}s).`);
+    }
+    if (isKeyPacket) {
+      timestampInfo.maxTimestampBeforeLastKeyPacket = timestampInfo.maxTimestamp;
+    }
+    if (timestampInSeconds < timestampInfo.maxTimestampBeforeLastKeyPacket) {
+      throw new Error(`Timestamps cannot be smaller than the largest timestamp of the previous GOP (a GOP begins with a key` + ` packet and ends right before the next key packet). Got ${timestampInSeconds}s, but largest` + ` timestamp is ${timestampInfo.maxTimestampBeforeLastKeyPacket}s.`);
+    }
+    timestampInfo.maxTimestamp = Math.max(timestampInfo.maxTimestamp, timestampInSeconds);
+    return timestampInSeconds;
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/codec-data.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var C0;(function($){$[$.NON_IDR_SLICE=1]="NON_IDR_SLICE",$[$.SLICE_DPA=2]="SLICE_DPA",$[$.SLICE_DPB=3]="SLICE_DPB",$[$.SLICE_DPC=4]="SLICE_DPC",$[$.IDR=5]="IDR",$[$.SEI=6]="SEI",$[$.SPS=7]="SPS",$[$.PPS=8]="PPS",$[$.AUD=9]="AUD",$[$.SPS_EXT=13]="SPS_EXT"})(C0||(C0={}));var a;(function($){$[$.RASL_N=8]="RASL_N",$[$.RASL_R=9]="RASL_R",$[$.BLA_W_LP=16]="BLA_W_LP",$[$.RSV_IRAP_VCL23=23]="RSV_IRAP_VCL23",$[$.VPS_NUT=32]="VPS_NUT",$[$.SPS_NUT=33]="SPS_NUT",$[$.PPS_NUT=34]="PPS_NUT",$[$.AUD_NUT=35]="AUD_NUT",$[$.PREFIX_SEI_NUT=39]="PREFIX_SEI_NUT",$[$.SUFFIX_SEI_NUT=40]="SUFFIX_SEI_NUT"})(a||(a={}));var e0=function*($){let J=0,Y=-1;while(J<$.length-2){let Z=$.indexOf(0,J);if(Z===-1||Z>=$.length-2)break;J=Z;let G=0;if(J+3<$.length&&$[J+1]===0&&$[J+2]===0&&$[J+3]===1)G=4;else if($[J+1]===0&&$[J+2]===1)G=3;if(G===0){J++;continue}if(Y!==-1&&J>Y)yield{offset:Y,length:J-Y};Y=J+G,J=Y}if(Y!==-1&&Y<$.length)yield{offset:Y,length:$.length-Y}};var K8=function*($){yield*e0($)},X8=($)=>{return $&31},V1=($)=>{let J=[],Y=$.length;for(let Z=0;Z<Y;Z++)if(Z+2<Y&&$[Z]===0&&$[Z+1]===0&&$[Z+2]===3)J.push(0,0),Z+=2;else J.push($[Z]);return new Uint8Array(J)},d2=new Uint8Array([0,0,0,1]);var Y6=($,J)=>{let Y=$.reduce((K,X)=>K+J+X.byteLength,0),Z=new Uint8Array(Y),G=0;for(let K of $){let X=new DataView(Z.buffer,Z.byteOffset,Z.byteLength);switch(J){case 1:X.setUint8(G,K.byteLength);break;case 2:X.setUint16(G,K.byteLength,!1);break;case 3:x0(X,G,K.byteLength,!1);break;case 4:X.setUint32(G,K.byteLength,!1);break}G+=J,Z.set(K,G),G+=K.byteLength}return Z};var Z6=($)=>{try{let J=[],Y=[],Z=[];for(let Q of K8($)){let U=$.subarray(Q.offset,Q.offset+Q.length),q=X8(U[0]);if(q===C0.SPS)J.push(U);else if(q===C0.PPS)Y.push(U);else if(q===C0.SPS_EXT)Z.push(U)}if(J.length===0)return null;if(Y.length===0)return null;let G=J[0],K=Q8(G);N(K!==null);let X=K.profileIdc===100||K.profileIdc===110||K.profileIdc===122||K.profileIdc===144;return{configurationVersion:1,avcProfileIndication:K.profileIdc,profileCompatibility:K.constraintFlags,avcLevelIndication:K.levelIdc,lengthSizeMinusOne:3,sequenceParameterSets:J,pictureParameterSets:Y,chromaFormat:X?K.chromaFormatIdc:null,bitDepthLumaMinus8:X?K.bitDepthLumaMinus8:null,bitDepthChromaMinus8:X?K.bitDepthChromaMinus8:null,sequenceParameterSetExt:X?Z:null}}catch(J){return console.error("Error building AVC Decoder Configuration Record:",J),null}},G6=($)=>{let J=[];J.push($.configurationVersion),J.push($.avcProfileIndication),J.push($.profileCompatibility),J.push($.avcLevelIndication),J.push(252|$.lengthSizeMinusOne&3),J.push(224|$.sequenceParameterSets.length&31);for(let Y of $.sequenceParameterSets){let Z=Y.byteLength;J.push(Z>>8),J.push(Z&255);for(let G=0;G<Z;G++)J.push(Y[G])}J.push($.pictureParameterSets.length);for(let Y of $.pictureParameterSets){let Z=Y.byteLength;J.push(Z>>8),J.push(Z&255);for(let G=0;G<Z;G++)J.push(Y[G])}if($.avcProfileIndication===100||$.avcProfileIndication===110||$.avcProfileIndication===122||$.avcProfileIndication===144){N($.chromaFormat!==null),N($.bitDepthLumaMinus8!==null),N($.bitDepthChromaMinus8!==null),N($.sequenceParameterSetExt!==null),J.push(252|$.chromaFormat&3),J.push(248|$.bitDepthLumaMinus8&7),J.push(248|$.bitDepthChromaMinus8&7),J.push($.sequenceParameterSetExt.length);for(let Y of $.sequenceParameterSetExt){let Z=Y.byteLength;J.push(Z>>8),J.push(Z&255);for(let G=0;G<Z;G++)J.push(Y[G])}}return new Uint8Array(J)};var Q8=($)=>{try{let J=new r(V1($));if(J.skipBits(1),J.skipBits(2),J.readBits(5)!==7)return null;let Z=J.readAlignedByte(),G=J.readAlignedByte(),K=J.readAlignedByte();M(J);let X=1,Q=0,U=0,q=0;if(Z===100||Z===110||Z===122||Z===244||Z===44||Z===83||Z===86||Z===118||Z===128){if(X=M(J),X===3)q=J.readBits(1);if(Q=M(J),U=M(J),J.skipBits(1),J.readBits(1)){for(let w=0;w<(X!==3?8:12);w++)if(J.readBits(1)){let U0=w<6?16:64,p=8,x=8;for(let m=0;m<U0;m++){if(x!==0){let L0=s(J);x=(p+L0+256)%256}p=x===0?p:x}}}}M(J);let j=M(J);if(j===0)M(J);else if(j===1){J.skipBits(1),s(J),s(J);let f=M(J);for(let w=0;w<f;w++)s(J)}M(J),J.skipBits(1);let z=M(J),V=M(J),W=16*(z+1),R=16*(V+1),H=W,A=R,I=J.readBits(1);if(!I)J.skipBits(1);if(J.skipBits(1),J.readBits(1)){let f=M(J),w=M(J),l=M(J),U0=M(J),p,x;if((q===0?X:0)===0)p=1,x=2-I;else{let L0=X===3?1:2,U1=X===1?2:1;p=L0,x=U1*(2-I)}H-=p*(f+w),A-=x*(l+U0)}let T=2,v=2,g=2,X0=0,S=null,b=null;if(J.readBits(1)){if(J.readBits(1)){if(J.readBits(8)===255)J.skipBits(16),J.skipBits(16)}if(J.readBits(1))J.skipBits(1);if(J.readBits(1)){if(J.skipBits(3),X0=J.readBits(1),J.readBits(1))T=J.readBits(8),v=J.readBits(8),g=J.readBits(8)}if(J.readBits(1))M(J),M(J);if(J.readBits(1))J.skipBits(32),J.skipBits(32),J.skipBits(1);let x=J.readBits(1);if(x)t1(J);let m=J.readBits(1);if(m)t1(J);if(x||m)J.skipBits(1);if(J.skipBits(1),J.readBits(1))J.skipBits(1),M(J),M(J),M(J),M(J),S=M(J),b=M(J)}if(S===null){N(b===null);let f=G&16;if((Z===44||Z===86||Z===100||Z===110||Z===122||Z===244)&&f)S=0,b=0;else{let w=z+1,l=V+1,U0=(2-I)*l,p=b0.find((m)=>m.level>=K)??y(b0),x=Math.min(Math.floor(p.maxDpbMbs/(w*U0)),16);S=x,b=x}}return N(b!==null),{profileIdc:Z,constraintFlags:G,levelIdc:K,frameMbsOnlyFlag:I,chromaFormatIdc:X,bitDepthLumaMinus8:Q,bitDepthChromaMinus8:U,codedWidth:W,codedHeight:R,displayWidth:H,displayHeight:A,colourPrimaries:T,matrixCoefficients:g,transferCharacteristics:v,fullRangeFlag:X0,numReorderFrames:S,maxDecFrameBuffering:b}}catch(J){return console.error("Error parsing AVC SPS:",J),null}},t1=($)=>{let J=M($);$.skipBits(4),$.skipBits(4);for(let Y=0;Y<=J;Y++)M($),M($),$.skipBits(1);$.skipBits(5),$.skipBits(5),$.skipBits(5),$.skipBits(5)};var U8=function*($){yield*e0($)},e1=($)=>{return $>>1&63},q8=($)=>{try{let J=new r(V1($));J.skipBits(16),J.readBits(4);let Y=J.readBits(3),Z=J.readBits(1),{general_profile_space:G,general_tier_flag:K,general_profile_idc:X,general_profile_compatibility_flags:Q,general_constraint_indicator_flags:U,general_level_idc:q}=j8(J,Y);M(J);let j=M(J),z=0;if(j===3)z=J.readBits(1);let V=M(J),W=M(J),R=V,H=W;if(J.readBits(1)){let w=M(J),l=M(J),U0=M(J),p=M(J),x=1,m=1,L0=z===0?j:0;if(L0===1)x=2,m=2;else if(L0===2)x=2,m=1;R-=(w+l)*x,H-=(U0+p)*m}let A=M(J),I=M(J);M(J);let T=J.readBits(1)?0:Y,v=0;for(let w=T;w<=Y;w++)M(J),v=M(J),M(J);if(M(J),M(J),M(J),M(J),M(J),M(J),J.readBits(1)){if(J.readBits(1))z8(J)}if(J.skipBits(1),J.skipBits(1),J.readBits(1))J.skipBits(4),J.skipBits(4),M(J),M(J),J.skipBits(1);let g=M(J);if(N8(J,g),J.readBits(1)){let w=M(J);for(let l=0;l<w;l++)M(J),J.skipBits(1)}J.skipBits(1),J.skipBits(1);let X0=2,S=2,b=2,Q0=0,f=0;if(J.readBits(1)){let w=M8(J,Y);X0=w.colourPrimaries,S=w.transferCharacteristics,b=w.matrixCoefficients,Q0=w.fullRangeFlag,f=w.minSpatialSegmentationIdc}return{displayWidth:R,displayHeight:H,colourPrimaries:X0,transferCharacteristics:S,matrixCoefficients:b,fullRangeFlag:Q0,maxDecFrameBuffering:v+1,spsMaxSubLayersMinus1:Y,spsTemporalIdNestingFlag:Z,generalProfileSpace:G,generalTierFlag:K,generalProfileIdc:X,generalProfileCompatibilityFlags:Q,generalConstraintIndicatorFlags:U,generalLevelIdc:q,chromaFormatIdc:j,bitDepthLumaMinus8:A,bitDepthChromaMinus8:I,minSpatialSegmentationIdc:f}}catch(J){return console.error("Error parsing HEVC SPS:",J),null}},K6=($)=>{try{let J=[],Y=[],Z=[],G=[];for(let q of U8($)){let j=$.subarray(q.offset,q.offset+q.length),z=e1(j[0]);if(z===a.VPS_NUT)J.push(j);else if(z===a.SPS_NUT)Y.push(j);else if(z===a.PPS_NUT)Z.push(j);else if(z===a.PREFIX_SEI_NUT||z===a.SUFFIX_SEI_NUT)G.push(j)}if(Y.length===0||Z.length===0)return null;let K=q8(Y[0]);if(!K)return null;let X=0;if(Z.length>0){let q=Z[0],j=new r(V1(q));if(j.skipBits(16),M(j),M(j),j.skipBits(1),j.skipBits(1),j.skipBits(3),j.skipBits(1),j.skipBits(1),M(j),M(j),s(j),j.skipBits(1),j.skipBits(1),j.readBits(1))M(j);s(j),s(j),j.skipBits(1),j.skipBits(1),j.skipBits(1),j.skipBits(1);let z=j.readBits(1),V=j.readBits(1);if(!z&&!V)X=0;else if(z&&!V)X=2;else if(!z&&V)X=3;else X=0}let Q=[...J.length?[{arrayCompleteness:1,nalUnitType:a.VPS_NUT,nalUnits:J}]:[],...Y.length?[{arrayCompleteness:1,nalUnitType:a.SPS_NUT,nalUnits:Y}]:[],...Z.length?[{arrayCompleteness:1,nalUnitType:a.PPS_NUT,nalUnits:Z}]:[],...G.length?[{arrayCompleteness:1,nalUnitType:e1(G[0][0]),nalUnits:G}]:[]];return{configurationVersion:1,generalProfileSpace:K.generalProfileSpace,generalTierFlag:K.generalTierFlag,generalProfileIdc:K.generalProfileIdc,generalProfileCompatibilityFlags:K.generalProfileCompatibilityFlags,generalConstraintIndicatorFlags:K.generalConstraintIndicatorFlags,generalLevelIdc:K.generalLevelIdc,minSpatialSegmentationIdc:K.minSpatialSegmentationIdc,parallelismType:X,chromaFormatIdc:K.chromaFormatIdc,bitDepthLumaMinus8:K.bitDepthLumaMinus8,bitDepthChromaMinus8:K.bitDepthChromaMinus8,avgFrameRate:0,constantFrameRate:0,numTemporalLayers:K.spsMaxSubLayersMinus1+1,temporalIdNested:K.spsTemporalIdNestingFlag,lengthSizeMinusOne:3,arrays:Q}}catch(J){return console.error("Error building HEVC Decoder Configuration Record:",J),null}},j8=($,J)=>{let Y=$.readBits(2),Z=$.readBits(1),G=$.readBits(5),K=0;for(let j=0;j<32;j++)K=K<<1|$.readBits(1);let X=new Uint8Array(6);for(let j=0;j<6;j++)X[j]=$.readBits(8);let Q=$.readBits(8),U=[],q=[];for(let j=0;j<J;j++)U.push($.readBits(1)),q.push($.readBits(1));if(J>0)for(let j=J;j<8;j++)$.skipBits(2);for(let j=0;j<J;j++){if(U[j])$.skipBits(88);if(q[j])$.skipBits(8)}return{general_profile_space:Y,general_tier_flag:Z,general_profile_idc:G,general_profile_compatibility_flags:K,general_constraint_indicator_flags:X,general_level_idc:Q}},z8=($)=>{for(let J=0;J<4;J++)for(let Y=0;Y<(J===3?2:6);Y++)if(!$.readBits(1))M($);else{let G=Math.min(64,1<<4+(J<<1));if(J>1)s($);for(let K=0;K<G;K++)s($)}},N8=($,J)=>{let Y=[];for(let Z=0;Z<J;Z++)Y[Z]=L8($,Z,J,Y)},L8=($,J,Y,Z)=>{let G=0,K=0,X=0;if(J!==0)K=$.readBits(1);if(K){if(J===Y){let U=M($);X=J-(U+1)}else X=J-1;$.readBits(1),M($);let Q=Z[X]??0;for(let U=0;U<=Q;U++)if(!$.readBits(1))$.readBits(1);G=Z[X]}else{let Q=M($),U=M($);for(let q=0;q<Q;q++)M($),$.readBits(1);for(let q=0;q<U;q++)M($),$.readBits(1);G=Q+U}return G},M8=($,J)=>{let Y=2,Z=2,G=2,K=0,X=0;if($.readBits(1)){if($.readBits(8)===255)$.readBits(16),$.readBits(16)}if($.readBits(1))$.readBits(1);if($.readBits(1)){if($.readBits(3),K=$.readBits(1),$.readBits(1))Y=$.readBits(8),Z=$.readBits(8),G=$.readBits(8)}if($.readBits(1))M($),M($);if($.readBits(1),$.readBits(1),$.readBits(1),$.readBits(1))M($),M($),M($),M($);if($.readBits(1)){if($.readBits(32),$.readBits(32),$.readBits(1))M($);if($.readBits(1))V8($,!0,J)}if($.readBits(1))$.readBits(1),$.readBits(1),$.readBits(1),X=M($),M($),M($),M($),M($);return{colourPrimaries:Y,transferCharacteristics:Z,matrixCoefficients:G,fullRangeFlag:K,minSpatialSegmentationIdc:X}},V8=($,J,Y)=>{let Z=!1,G=!1,K=!1;if(J){if(Z=$.readBits(1)===1,G=$.readBits(1)===1,Z||G){if(K=$.readBits(1)===1,K)$.readBits(8),$.readBits(5),$.readBits(1),$.readBits(5);if($.readBits(4),$.readBits(4),K)$.readBits(4);$.readBits(5),$.readBits(5),$.readBits(5)}}for(let X=0;X<=Y;X++){let Q=$.readBits(1)===1,U=!0;if(!Q)U=$.readBits(1)===1;let q=!1;if(U)M($);else q=$.readBits(1)===1;let j=1;if(!q)j=M($)+1;if(Z)$6($,j,K);if(G)$6($,j,K)}},$6=($,J,Y)=>{for(let Z=0;Z<J;Z++){if(M($),M($),Y)M($),M($);$.readBits(1)}},X6=($)=>{let J=[];J.push($.configurationVersion),J.push(($.generalProfileSpace&3)<<6|($.generalTierFlag&1)<<5|$.generalProfileIdc&31),J.push($.generalProfileCompatibilityFlags>>>24&255),J.push($.generalProfileCompatibilityFlags>>>16&255),J.push($.generalProfileCompatibilityFlags>>>8&255),J.push($.generalProfileCompatibilityFlags&255),J.push(...$.generalConstraintIndicatorFlags),J.push($.generalLevelIdc&255),J.push(240|$.minSpatialSegmentationIdc>>8&15),J.push($.minSpatialSegmentationIdc&255),J.push(252|$.parallelismType&3),J.push(252|$.chromaFormatIdc&3),J.push(248|$.bitDepthLumaMinus8&7),J.push(248|$.bitDepthChromaMinus8&7),J.push($.avgFrameRate>>8&255),J.push($.avgFrameRate&255),J.push(($.constantFrameRate&3)<<6|($.numTemporalLayers&7)<<3|($.temporalIdNested&1)<<2|$.lengthSizeMinusOne&3),J.push($.arrays.length&255);for(let Y of $.arrays){J.push((Y.arrayCompleteness&1)<<7|0|Y.nalUnitType&63),J.push(Y.nalUnits.length>>8&255),J.push(Y.nalUnits.length&255);for(let Z of Y.nalUnits){J.push(Z.length>>8&255),J.push(Z.length&255);for(let G=0;G<Z.length;G++)J.push(Z[G])}}return new Uint8Array(J)};var Q6=($)=>{let J=d($),Y=J.getUint8(9),Z=J.getUint16(10,!0),G=J.getUint32(12,!0),K=J.getInt16(16,!0),X=J.getUint8(18),Q=null;if(X)Q=$.subarray(19,21+Y);return{outputChannelCount:Y,preSkip:Z,inputSampleRate:G,outputGain:K,channelMappingFamily:X,channelMappingTable:Q}};var J6;(function($){$[$.STREAMINFO=0]="STREAMINFO",$[$.VORBIS_COMMENT=4]="VORBIS_COMMENT",$[$.PICTURE=6]="PICTURE"})(J6||(J6={}));/*!
+ */
+var AvcNalUnitType;
+(function(AvcNalUnitType2) {
+  AvcNalUnitType2[AvcNalUnitType2["NON_IDR_SLICE"] = 1] = "NON_IDR_SLICE";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPA"] = 2] = "SLICE_DPA";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPB"] = 3] = "SLICE_DPB";
+  AvcNalUnitType2[AvcNalUnitType2["SLICE_DPC"] = 4] = "SLICE_DPC";
+  AvcNalUnitType2[AvcNalUnitType2["IDR"] = 5] = "IDR";
+  AvcNalUnitType2[AvcNalUnitType2["SEI"] = 6] = "SEI";
+  AvcNalUnitType2[AvcNalUnitType2["SPS"] = 7] = "SPS";
+  AvcNalUnitType2[AvcNalUnitType2["PPS"] = 8] = "PPS";
+  AvcNalUnitType2[AvcNalUnitType2["AUD"] = 9] = "AUD";
+  AvcNalUnitType2[AvcNalUnitType2["SPS_EXT"] = 13] = "SPS_EXT";
+})(AvcNalUnitType || (AvcNalUnitType = {}));
+var HevcNalUnitType;
+(function(HevcNalUnitType2) {
+  HevcNalUnitType2[HevcNalUnitType2["RASL_N"] = 8] = "RASL_N";
+  HevcNalUnitType2[HevcNalUnitType2["RASL_R"] = 9] = "RASL_R";
+  HevcNalUnitType2[HevcNalUnitType2["BLA_W_LP"] = 16] = "BLA_W_LP";
+  HevcNalUnitType2[HevcNalUnitType2["RSV_IRAP_VCL23"] = 23] = "RSV_IRAP_VCL23";
+  HevcNalUnitType2[HevcNalUnitType2["VPS_NUT"] = 32] = "VPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["SPS_NUT"] = 33] = "SPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["PPS_NUT"] = 34] = "PPS_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["AUD_NUT"] = 35] = "AUD_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["PREFIX_SEI_NUT"] = 39] = "PREFIX_SEI_NUT";
+  HevcNalUnitType2[HevcNalUnitType2["SUFFIX_SEI_NUT"] = 40] = "SUFFIX_SEI_NUT";
+})(HevcNalUnitType || (HevcNalUnitType = {}));
+var iterateNalUnitsInAnnexB = function* (packetData) {
+  let i = 0;
+  let nalStart = -1;
+  while (i < packetData.length - 2) {
+    const zeroIndex = packetData.indexOf(0, i);
+    if (zeroIndex === -1 || zeroIndex >= packetData.length - 2) {
+      break;
+    }
+    i = zeroIndex;
+    let startCodeLength = 0;
+    if (i + 3 < packetData.length && packetData[i + 1] === 0 && packetData[i + 2] === 0 && packetData[i + 3] === 1) {
+      startCodeLength = 4;
+    } else if (packetData[i + 1] === 0 && packetData[i + 2] === 1) {
+      startCodeLength = 3;
+    }
+    if (startCodeLength === 0) {
+      i++;
+      continue;
+    }
+    if (nalStart !== -1 && i > nalStart) {
+      yield {
+        offset: nalStart,
+        length: i - nalStart
+      };
+    }
+    nalStart = i + startCodeLength;
+    i = nalStart;
+  }
+  if (nalStart !== -1 && nalStart < packetData.length) {
+    yield {
+      offset: nalStart,
+      length: packetData.length - nalStart
+    };
+  }
+};
+var iterateAvcNalUnitsAnnexB = function* (packetData) {
+  yield* iterateNalUnitsInAnnexB(packetData);
+};
+var extractNalUnitTypeForAvc = (byte) => {
+  return byte & 31;
+};
+var removeEmulationPreventionBytes = (data) => {
+  const result = [];
+  const len = data.length;
+  for (let i = 0;i < len; i++) {
+    if (i + 2 < len && data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 3) {
+      result.push(0, 0);
+      i += 2;
+    } else {
+      result.push(data[i]);
+    }
+  }
+  return new Uint8Array(result);
+};
+var ANNEX_B_START_CODE = new Uint8Array([0, 0, 0, 1]);
+var concatNalUnitsInLengthPrefixed = (nalUnits, lengthSize) => {
+  const totalLength = nalUnits.reduce((a, b) => a + lengthSize + b.byteLength, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const nalUnit of nalUnits) {
+    const dataView = new DataView(result.buffer, result.byteOffset, result.byteLength);
+    switch (lengthSize) {
+      case 1:
+        dataView.setUint8(offset, nalUnit.byteLength);
+        break;
+      case 2:
+        dataView.setUint16(offset, nalUnit.byteLength, false);
+        break;
+      case 3:
+        setUint24(dataView, offset, nalUnit.byteLength, false);
+        break;
+      case 4:
+        dataView.setUint32(offset, nalUnit.byteLength, false);
+        break;
+    }
+    offset += lengthSize;
+    result.set(nalUnit, offset);
+    offset += nalUnit.byteLength;
+  }
+  return result;
+};
+var extractAvcDecoderConfigurationRecord = (packetData) => {
+  try {
+    const spsUnits = [];
+    const ppsUnits = [];
+    const spsExtUnits = [];
+    for (const loc of iterateAvcNalUnitsAnnexB(packetData)) {
+      const nalUnit = packetData.subarray(loc.offset, loc.offset + loc.length);
+      const type = extractNalUnitTypeForAvc(nalUnit[0]);
+      if (type === AvcNalUnitType.SPS) {
+        spsUnits.push(nalUnit);
+      } else if (type === AvcNalUnitType.PPS) {
+        ppsUnits.push(nalUnit);
+      } else if (type === AvcNalUnitType.SPS_EXT) {
+        spsExtUnits.push(nalUnit);
+      }
+    }
+    if (spsUnits.length === 0) {
+      return null;
+    }
+    if (ppsUnits.length === 0) {
+      return null;
+    }
+    const spsData = spsUnits[0];
+    const spsInfo = parseAvcSps(spsData);
+    assert(spsInfo !== null);
+    const hasExtendedData = spsInfo.profileIdc === 100 || spsInfo.profileIdc === 110 || spsInfo.profileIdc === 122 || spsInfo.profileIdc === 144;
+    return {
+      configurationVersion: 1,
+      avcProfileIndication: spsInfo.profileIdc,
+      profileCompatibility: spsInfo.constraintFlags,
+      avcLevelIndication: spsInfo.levelIdc,
+      lengthSizeMinusOne: 3,
+      sequenceParameterSets: spsUnits,
+      pictureParameterSets: ppsUnits,
+      chromaFormat: hasExtendedData ? spsInfo.chromaFormatIdc : null,
+      bitDepthLumaMinus8: hasExtendedData ? spsInfo.bitDepthLumaMinus8 : null,
+      bitDepthChromaMinus8: hasExtendedData ? spsInfo.bitDepthChromaMinus8 : null,
+      sequenceParameterSetExt: hasExtendedData ? spsExtUnits : null
+    };
+  } catch (error) {
+    console.error("Error building AVC Decoder Configuration Record:", error);
+    return null;
+  }
+};
+var serializeAvcDecoderConfigurationRecord = (record) => {
+  const bytes = [];
+  bytes.push(record.configurationVersion);
+  bytes.push(record.avcProfileIndication);
+  bytes.push(record.profileCompatibility);
+  bytes.push(record.avcLevelIndication);
+  bytes.push(252 | record.lengthSizeMinusOne & 3);
+  bytes.push(224 | record.sequenceParameterSets.length & 31);
+  for (const sps of record.sequenceParameterSets) {
+    const length = sps.byteLength;
+    bytes.push(length >> 8);
+    bytes.push(length & 255);
+    for (let i = 0;i < length; i++) {
+      bytes.push(sps[i]);
+    }
+  }
+  bytes.push(record.pictureParameterSets.length);
+  for (const pps of record.pictureParameterSets) {
+    const length = pps.byteLength;
+    bytes.push(length >> 8);
+    bytes.push(length & 255);
+    for (let i = 0;i < length; i++) {
+      bytes.push(pps[i]);
+    }
+  }
+  if (record.avcProfileIndication === 100 || record.avcProfileIndication === 110 || record.avcProfileIndication === 122 || record.avcProfileIndication === 144) {
+    assert(record.chromaFormat !== null);
+    assert(record.bitDepthLumaMinus8 !== null);
+    assert(record.bitDepthChromaMinus8 !== null);
+    assert(record.sequenceParameterSetExt !== null);
+    bytes.push(252 | record.chromaFormat & 3);
+    bytes.push(248 | record.bitDepthLumaMinus8 & 7);
+    bytes.push(248 | record.bitDepthChromaMinus8 & 7);
+    bytes.push(record.sequenceParameterSetExt.length);
+    for (const spsExt of record.sequenceParameterSetExt) {
+      const length = spsExt.byteLength;
+      bytes.push(length >> 8);
+      bytes.push(length & 255);
+      for (let i = 0;i < length; i++) {
+        bytes.push(spsExt[i]);
+      }
+    }
+  }
+  return new Uint8Array(bytes);
+};
+var parseAvcSps = (sps) => {
+  try {
+    const bitstream = new Bitstream(removeEmulationPreventionBytes(sps));
+    bitstream.skipBits(1);
+    bitstream.skipBits(2);
+    const nalUnitType = bitstream.readBits(5);
+    if (nalUnitType !== 7) {
+      return null;
+    }
+    const profileIdc = bitstream.readAlignedByte();
+    const constraintFlags = bitstream.readAlignedByte();
+    const levelIdc = bitstream.readAlignedByte();
+    readExpGolomb(bitstream);
+    let chromaFormatIdc = 1;
+    let bitDepthLumaMinus8 = 0;
+    let bitDepthChromaMinus8 = 0;
+    let separateColourPlaneFlag = 0;
+    if (profileIdc === 100 || profileIdc === 110 || profileIdc === 122 || profileIdc === 244 || profileIdc === 44 || profileIdc === 83 || profileIdc === 86 || profileIdc === 118 || profileIdc === 128) {
+      chromaFormatIdc = readExpGolomb(bitstream);
+      if (chromaFormatIdc === 3) {
+        separateColourPlaneFlag = bitstream.readBits(1);
+      }
+      bitDepthLumaMinus8 = readExpGolomb(bitstream);
+      bitDepthChromaMinus8 = readExpGolomb(bitstream);
+      bitstream.skipBits(1);
+      const seqScalingMatrixPresentFlag = bitstream.readBits(1);
+      if (seqScalingMatrixPresentFlag) {
+        for (let i = 0;i < (chromaFormatIdc !== 3 ? 8 : 12); i++) {
+          const seqScalingListPresentFlag = bitstream.readBits(1);
+          if (seqScalingListPresentFlag) {
+            const sizeOfScalingList = i < 6 ? 16 : 64;
+            let lastScale = 8;
+            let nextScale = 8;
+            for (let j = 0;j < sizeOfScalingList; j++) {
+              if (nextScale !== 0) {
+                const deltaScale = readSignedExpGolomb(bitstream);
+                nextScale = (lastScale + deltaScale + 256) % 256;
+              }
+              lastScale = nextScale === 0 ? lastScale : nextScale;
+            }
+          }
+        }
+      }
+    }
+    readExpGolomb(bitstream);
+    const picOrderCntType = readExpGolomb(bitstream);
+    if (picOrderCntType === 0) {
+      readExpGolomb(bitstream);
+    } else if (picOrderCntType === 1) {
+      bitstream.skipBits(1);
+      readSignedExpGolomb(bitstream);
+      readSignedExpGolomb(bitstream);
+      const numRefFramesInPicOrderCntCycle = readExpGolomb(bitstream);
+      for (let i = 0;i < numRefFramesInPicOrderCntCycle; i++) {
+        readSignedExpGolomb(bitstream);
+      }
+    }
+    readExpGolomb(bitstream);
+    bitstream.skipBits(1);
+    const picWidthInMbsMinus1 = readExpGolomb(bitstream);
+    const picHeightInMapUnitsMinus1 = readExpGolomb(bitstream);
+    const codedWidth = 16 * (picWidthInMbsMinus1 + 1);
+    const codedHeight = 16 * (picHeightInMapUnitsMinus1 + 1);
+    let displayWidth = codedWidth;
+    let displayHeight = codedHeight;
+    const frameMbsOnlyFlag = bitstream.readBits(1);
+    if (!frameMbsOnlyFlag) {
+      bitstream.skipBits(1);
+    }
+    bitstream.skipBits(1);
+    const frameCroppingFlag = bitstream.readBits(1);
+    if (frameCroppingFlag) {
+      const frameCropLeftOffset = readExpGolomb(bitstream);
+      const frameCropRightOffset = readExpGolomb(bitstream);
+      const frameCropTopOffset = readExpGolomb(bitstream);
+      const frameCropBottomOffset = readExpGolomb(bitstream);
+      let cropUnitX;
+      let cropUnitY;
+      const chromaArrayType = separateColourPlaneFlag === 0 ? chromaFormatIdc : 0;
+      if (chromaArrayType === 0) {
+        cropUnitX = 1;
+        cropUnitY = 2 - frameMbsOnlyFlag;
+      } else {
+        const subWidthC = chromaFormatIdc === 3 ? 1 : 2;
+        const subHeightC = chromaFormatIdc === 1 ? 2 : 1;
+        cropUnitX = subWidthC;
+        cropUnitY = subHeightC * (2 - frameMbsOnlyFlag);
+      }
+      displayWidth -= cropUnitX * (frameCropLeftOffset + frameCropRightOffset);
+      displayHeight -= cropUnitY * (frameCropTopOffset + frameCropBottomOffset);
+    }
+    let colourPrimaries = 2;
+    let transferCharacteristics = 2;
+    let matrixCoefficients = 2;
+    let fullRangeFlag = 0;
+    let numReorderFrames = null;
+    let maxDecFrameBuffering = null;
+    const vuiParametersPresentFlag = bitstream.readBits(1);
+    if (vuiParametersPresentFlag) {
+      const aspectRatioInfoPresentFlag = bitstream.readBits(1);
+      if (aspectRatioInfoPresentFlag) {
+        const aspectRatioIdc = bitstream.readBits(8);
+        if (aspectRatioIdc === 255) {
+          bitstream.skipBits(16);
+          bitstream.skipBits(16);
+        }
+      }
+      const overscanInfoPresentFlag = bitstream.readBits(1);
+      if (overscanInfoPresentFlag) {
+        bitstream.skipBits(1);
+      }
+      const videoSignalTypePresentFlag = bitstream.readBits(1);
+      if (videoSignalTypePresentFlag) {
+        bitstream.skipBits(3);
+        fullRangeFlag = bitstream.readBits(1);
+        const colourDescriptionPresentFlag = bitstream.readBits(1);
+        if (colourDescriptionPresentFlag) {
+          colourPrimaries = bitstream.readBits(8);
+          transferCharacteristics = bitstream.readBits(8);
+          matrixCoefficients = bitstream.readBits(8);
+        }
+      }
+      const chromaLocInfoPresentFlag = bitstream.readBits(1);
+      if (chromaLocInfoPresentFlag) {
+        readExpGolomb(bitstream);
+        readExpGolomb(bitstream);
+      }
+      const timingInfoPresentFlag = bitstream.readBits(1);
+      if (timingInfoPresentFlag) {
+        bitstream.skipBits(32);
+        bitstream.skipBits(32);
+        bitstream.skipBits(1);
+      }
+      const nalHrdParametersPresentFlag = bitstream.readBits(1);
+      if (nalHrdParametersPresentFlag) {
+        skipAvcHrdParameters(bitstream);
+      }
+      const vclHrdParametersPresentFlag = bitstream.readBits(1);
+      if (vclHrdParametersPresentFlag) {
+        skipAvcHrdParameters(bitstream);
+      }
+      if (nalHrdParametersPresentFlag || vclHrdParametersPresentFlag) {
+        bitstream.skipBits(1);
+      }
+      bitstream.skipBits(1);
+      const bitstreamRestrictionFlag = bitstream.readBits(1);
+      if (bitstreamRestrictionFlag) {
+        bitstream.skipBits(1);
+        readExpGolomb(bitstream);
+        readExpGolomb(bitstream);
+        readExpGolomb(bitstream);
+        readExpGolomb(bitstream);
+        numReorderFrames = readExpGolomb(bitstream);
+        maxDecFrameBuffering = readExpGolomb(bitstream);
+      }
+    }
+    if (numReorderFrames === null) {
+      assert(maxDecFrameBuffering === null);
+      const constraintSet3Flag = constraintFlags & 16;
+      if ((profileIdc === 44 || profileIdc === 86 || profileIdc === 100 || profileIdc === 110 || profileIdc === 122 || profileIdc === 244) && constraintSet3Flag) {
+        numReorderFrames = 0;
+        maxDecFrameBuffering = 0;
+      } else {
+        const picWidthInMbs = picWidthInMbsMinus1 + 1;
+        const picHeightInMapUnits = picHeightInMapUnitsMinus1 + 1;
+        const frameHeightInMbs = (2 - frameMbsOnlyFlag) * picHeightInMapUnits;
+        const levelInfo = AVC_LEVEL_TABLE.find((x) => x.level >= levelIdc) ?? last(AVC_LEVEL_TABLE);
+        const maxDpbFrames = Math.min(Math.floor(levelInfo.maxDpbMbs / (picWidthInMbs * frameHeightInMbs)), 16);
+        numReorderFrames = maxDpbFrames;
+        maxDecFrameBuffering = maxDpbFrames;
+      }
+    }
+    assert(maxDecFrameBuffering !== null);
+    return {
+      profileIdc,
+      constraintFlags,
+      levelIdc,
+      frameMbsOnlyFlag,
+      chromaFormatIdc,
+      bitDepthLumaMinus8,
+      bitDepthChromaMinus8,
+      codedWidth,
+      codedHeight,
+      displayWidth,
+      displayHeight,
+      colourPrimaries,
+      matrixCoefficients,
+      transferCharacteristics,
+      fullRangeFlag,
+      numReorderFrames,
+      maxDecFrameBuffering
+    };
+  } catch (error) {
+    console.error("Error parsing AVC SPS:", error);
+    return null;
+  }
+};
+var skipAvcHrdParameters = (bitstream) => {
+  const cpb_cnt_minus1 = readExpGolomb(bitstream);
+  bitstream.skipBits(4);
+  bitstream.skipBits(4);
+  for (let i = 0;i <= cpb_cnt_minus1; i++) {
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    bitstream.skipBits(1);
+  }
+  bitstream.skipBits(5);
+  bitstream.skipBits(5);
+  bitstream.skipBits(5);
+  bitstream.skipBits(5);
+};
+var iterateHevcNalUnitsAnnexB = function* (packetData) {
+  yield* iterateNalUnitsInAnnexB(packetData);
+};
+var extractNalUnitTypeForHevc = (byte) => {
+  return byte >> 1 & 63;
+};
+var parseHevcSps = (sps) => {
+  try {
+    const bitstream = new Bitstream(removeEmulationPreventionBytes(sps));
+    bitstream.skipBits(16);
+    bitstream.readBits(4);
+    const spsMaxSubLayersMinus1 = bitstream.readBits(3);
+    const spsTemporalIdNestingFlag = bitstream.readBits(1);
+    const { general_profile_space, general_tier_flag, general_profile_idc, general_profile_compatibility_flags, general_constraint_indicator_flags, general_level_idc } = parseProfileTierLevel(bitstream, spsMaxSubLayersMinus1);
+    readExpGolomb(bitstream);
+    const chromaFormatIdc = readExpGolomb(bitstream);
+    let separateColourPlaneFlag = 0;
+    if (chromaFormatIdc === 3) {
+      separateColourPlaneFlag = bitstream.readBits(1);
+    }
+    const picWidthInLumaSamples = readExpGolomb(bitstream);
+    const picHeightInLumaSamples = readExpGolomb(bitstream);
+    let displayWidth = picWidthInLumaSamples;
+    let displayHeight = picHeightInLumaSamples;
+    if (bitstream.readBits(1)) {
+      const confWinLeftOffset = readExpGolomb(bitstream);
+      const confWinRightOffset = readExpGolomb(bitstream);
+      const confWinTopOffset = readExpGolomb(bitstream);
+      const confWinBottomOffset = readExpGolomb(bitstream);
+      let subWidthC = 1;
+      let subHeightC = 1;
+      const chromaArrayType = separateColourPlaneFlag === 0 ? chromaFormatIdc : 0;
+      if (chromaArrayType === 1) {
+        subWidthC = 2;
+        subHeightC = 2;
+      } else if (chromaArrayType === 2) {
+        subWidthC = 2;
+        subHeightC = 1;
+      }
+      displayWidth -= (confWinLeftOffset + confWinRightOffset) * subWidthC;
+      displayHeight -= (confWinTopOffset + confWinBottomOffset) * subHeightC;
+    }
+    const bitDepthLumaMinus8 = readExpGolomb(bitstream);
+    const bitDepthChromaMinus8 = readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    const spsSubLayerOrderingInfoPresentFlag = bitstream.readBits(1);
+    const startI = spsSubLayerOrderingInfoPresentFlag ? 0 : spsMaxSubLayersMinus1;
+    let spsMaxNumReorderPics = 0;
+    for (let i = startI;i <= spsMaxSubLayersMinus1; i++) {
+      readExpGolomb(bitstream);
+      spsMaxNumReorderPics = readExpGolomb(bitstream);
+      readExpGolomb(bitstream);
+    }
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    if (bitstream.readBits(1)) {
+      if (bitstream.readBits(1)) {
+        skipScalingListData(bitstream);
+      }
+    }
+    bitstream.skipBits(1);
+    bitstream.skipBits(1);
+    if (bitstream.readBits(1)) {
+      bitstream.skipBits(4);
+      bitstream.skipBits(4);
+      readExpGolomb(bitstream);
+      readExpGolomb(bitstream);
+      bitstream.skipBits(1);
+    }
+    const numShortTermRefPicSets = readExpGolomb(bitstream);
+    skipAllStRefPicSets(bitstream, numShortTermRefPicSets);
+    if (bitstream.readBits(1)) {
+      const numLongTermRefPicsSps = readExpGolomb(bitstream);
+      for (let i = 0;i < numLongTermRefPicsSps; i++) {
+        readExpGolomb(bitstream);
+        bitstream.skipBits(1);
+      }
+    }
+    bitstream.skipBits(1);
+    bitstream.skipBits(1);
+    let colourPrimaries = 2;
+    let transferCharacteristics = 2;
+    let matrixCoefficients = 2;
+    let fullRangeFlag = 0;
+    let minSpatialSegmentationIdc = 0;
+    if (bitstream.readBits(1)) {
+      const vui = parseHevcVui(bitstream, spsMaxSubLayersMinus1);
+      colourPrimaries = vui.colourPrimaries;
+      transferCharacteristics = vui.transferCharacteristics;
+      matrixCoefficients = vui.matrixCoefficients;
+      fullRangeFlag = vui.fullRangeFlag;
+      minSpatialSegmentationIdc = vui.minSpatialSegmentationIdc;
+    }
+    return {
+      displayWidth,
+      displayHeight,
+      colourPrimaries,
+      transferCharacteristics,
+      matrixCoefficients,
+      fullRangeFlag,
+      maxDecFrameBuffering: spsMaxNumReorderPics + 1,
+      spsMaxSubLayersMinus1,
+      spsTemporalIdNestingFlag,
+      generalProfileSpace: general_profile_space,
+      generalTierFlag: general_tier_flag,
+      generalProfileIdc: general_profile_idc,
+      generalProfileCompatibilityFlags: general_profile_compatibility_flags,
+      generalConstraintIndicatorFlags: general_constraint_indicator_flags,
+      generalLevelIdc: general_level_idc,
+      chromaFormatIdc,
+      bitDepthLumaMinus8,
+      bitDepthChromaMinus8,
+      minSpatialSegmentationIdc
+    };
+  } catch (error) {
+    console.error("Error parsing HEVC SPS:", error);
+    return null;
+  }
+};
+var extractHevcDecoderConfigurationRecord = (packetData) => {
+  try {
+    const vpsUnits = [];
+    const spsUnits = [];
+    const ppsUnits = [];
+    const seiUnits = [];
+    for (const loc of iterateHevcNalUnitsAnnexB(packetData)) {
+      const nalUnit = packetData.subarray(loc.offset, loc.offset + loc.length);
+      const type = extractNalUnitTypeForHevc(nalUnit[0]);
+      if (type === HevcNalUnitType.VPS_NUT) {
+        vpsUnits.push(nalUnit);
+      } else if (type === HevcNalUnitType.SPS_NUT) {
+        spsUnits.push(nalUnit);
+      } else if (type === HevcNalUnitType.PPS_NUT) {
+        ppsUnits.push(nalUnit);
+      } else if (type === HevcNalUnitType.PREFIX_SEI_NUT || type === HevcNalUnitType.SUFFIX_SEI_NUT) {
+        seiUnits.push(nalUnit);
+      }
+    }
+    if (spsUnits.length === 0 || ppsUnits.length === 0)
+      return null;
+    const spsInfo = parseHevcSps(spsUnits[0]);
+    if (!spsInfo)
+      return null;
+    let parallelismType = 0;
+    if (ppsUnits.length > 0) {
+      const pps = ppsUnits[0];
+      const ppsBitstream = new Bitstream(removeEmulationPreventionBytes(pps));
+      ppsBitstream.skipBits(16);
+      readExpGolomb(ppsBitstream);
+      readExpGolomb(ppsBitstream);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(3);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      readExpGolomb(ppsBitstream);
+      readExpGolomb(ppsBitstream);
+      readSignedExpGolomb(ppsBitstream);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      if (ppsBitstream.readBits(1)) {
+        readExpGolomb(ppsBitstream);
+      }
+      readSignedExpGolomb(ppsBitstream);
+      readSignedExpGolomb(ppsBitstream);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      ppsBitstream.skipBits(1);
+      const tiles_enabled_flag = ppsBitstream.readBits(1);
+      const entropy_coding_sync_enabled_flag = ppsBitstream.readBits(1);
+      if (!tiles_enabled_flag && !entropy_coding_sync_enabled_flag)
+        parallelismType = 0;
+      else if (tiles_enabled_flag && !entropy_coding_sync_enabled_flag)
+        parallelismType = 2;
+      else if (!tiles_enabled_flag && entropy_coding_sync_enabled_flag)
+        parallelismType = 3;
+      else
+        parallelismType = 0;
+    }
+    const arrays = [
+      ...vpsUnits.length ? [
+        {
+          arrayCompleteness: 1,
+          nalUnitType: HevcNalUnitType.VPS_NUT,
+          nalUnits: vpsUnits
+        }
+      ] : [],
+      ...spsUnits.length ? [
+        {
+          arrayCompleteness: 1,
+          nalUnitType: HevcNalUnitType.SPS_NUT,
+          nalUnits: spsUnits
+        }
+      ] : [],
+      ...ppsUnits.length ? [
+        {
+          arrayCompleteness: 1,
+          nalUnitType: HevcNalUnitType.PPS_NUT,
+          nalUnits: ppsUnits
+        }
+      ] : [],
+      ...seiUnits.length ? [
+        {
+          arrayCompleteness: 1,
+          nalUnitType: extractNalUnitTypeForHevc(seiUnits[0][0]),
+          nalUnits: seiUnits
+        }
+      ] : []
+    ];
+    const record = {
+      configurationVersion: 1,
+      generalProfileSpace: spsInfo.generalProfileSpace,
+      generalTierFlag: spsInfo.generalTierFlag,
+      generalProfileIdc: spsInfo.generalProfileIdc,
+      generalProfileCompatibilityFlags: spsInfo.generalProfileCompatibilityFlags,
+      generalConstraintIndicatorFlags: spsInfo.generalConstraintIndicatorFlags,
+      generalLevelIdc: spsInfo.generalLevelIdc,
+      minSpatialSegmentationIdc: spsInfo.minSpatialSegmentationIdc,
+      parallelismType,
+      chromaFormatIdc: spsInfo.chromaFormatIdc,
+      bitDepthLumaMinus8: spsInfo.bitDepthLumaMinus8,
+      bitDepthChromaMinus8: spsInfo.bitDepthChromaMinus8,
+      avgFrameRate: 0,
+      constantFrameRate: 0,
+      numTemporalLayers: spsInfo.spsMaxSubLayersMinus1 + 1,
+      temporalIdNested: spsInfo.spsTemporalIdNestingFlag,
+      lengthSizeMinusOne: 3,
+      arrays
+    };
+    return record;
+  } catch (error) {
+    console.error("Error building HEVC Decoder Configuration Record:", error);
+    return null;
+  }
+};
+var parseProfileTierLevel = (bitstream, maxNumSubLayersMinus1) => {
+  const general_profile_space = bitstream.readBits(2);
+  const general_tier_flag = bitstream.readBits(1);
+  const general_profile_idc = bitstream.readBits(5);
+  let general_profile_compatibility_flags = 0;
+  for (let i = 0;i < 32; i++) {
+    general_profile_compatibility_flags = general_profile_compatibility_flags << 1 | bitstream.readBits(1);
+  }
+  const general_constraint_indicator_flags = new Uint8Array(6);
+  for (let i = 0;i < 6; i++) {
+    general_constraint_indicator_flags[i] = bitstream.readBits(8);
+  }
+  const general_level_idc = bitstream.readBits(8);
+  const sub_layer_profile_present_flag = [];
+  const sub_layer_level_present_flag = [];
+  for (let i = 0;i < maxNumSubLayersMinus1; i++) {
+    sub_layer_profile_present_flag.push(bitstream.readBits(1));
+    sub_layer_level_present_flag.push(bitstream.readBits(1));
+  }
+  if (maxNumSubLayersMinus1 > 0) {
+    for (let i = maxNumSubLayersMinus1;i < 8; i++) {
+      bitstream.skipBits(2);
+    }
+  }
+  for (let i = 0;i < maxNumSubLayersMinus1; i++) {
+    if (sub_layer_profile_present_flag[i])
+      bitstream.skipBits(88);
+    if (sub_layer_level_present_flag[i])
+      bitstream.skipBits(8);
+  }
+  return {
+    general_profile_space,
+    general_tier_flag,
+    general_profile_idc,
+    general_profile_compatibility_flags,
+    general_constraint_indicator_flags,
+    general_level_idc
+  };
+};
+var skipScalingListData = (bitstream) => {
+  for (let sizeId = 0;sizeId < 4; sizeId++) {
+    for (let matrixId = 0;matrixId < (sizeId === 3 ? 2 : 6); matrixId++) {
+      const scaling_list_pred_mode_flag = bitstream.readBits(1);
+      if (!scaling_list_pred_mode_flag) {
+        readExpGolomb(bitstream);
+      } else {
+        const coefNum = Math.min(64, 1 << 4 + (sizeId << 1));
+        if (sizeId > 1) {
+          readSignedExpGolomb(bitstream);
+        }
+        for (let i = 0;i < coefNum; i++) {
+          readSignedExpGolomb(bitstream);
+        }
+      }
+    }
+  }
+};
+var skipAllStRefPicSets = (bitstream, num_short_term_ref_pic_sets) => {
+  const NumDeltaPocs = [];
+  for (let stRpsIdx = 0;stRpsIdx < num_short_term_ref_pic_sets; stRpsIdx++) {
+    NumDeltaPocs[stRpsIdx] = skipStRefPicSet(bitstream, stRpsIdx, num_short_term_ref_pic_sets, NumDeltaPocs);
+  }
+};
+var skipStRefPicSet = (bitstream, stRpsIdx, num_short_term_ref_pic_sets, NumDeltaPocs) => {
+  let NumDeltaPocsThis = 0;
+  let inter_ref_pic_set_prediction_flag = 0;
+  let RefRpsIdx = 0;
+  if (stRpsIdx !== 0) {
+    inter_ref_pic_set_prediction_flag = bitstream.readBits(1);
+  }
+  if (inter_ref_pic_set_prediction_flag) {
+    if (stRpsIdx === num_short_term_ref_pic_sets) {
+      const delta_idx_minus1 = readExpGolomb(bitstream);
+      RefRpsIdx = stRpsIdx - (delta_idx_minus1 + 1);
+    } else {
+      RefRpsIdx = stRpsIdx - 1;
+    }
+    bitstream.readBits(1);
+    readExpGolomb(bitstream);
+    const numDelta = NumDeltaPocs[RefRpsIdx] ?? 0;
+    for (let j = 0;j <= numDelta; j++) {
+      const used_by_curr_pic_flag = bitstream.readBits(1);
+      if (!used_by_curr_pic_flag) {
+        bitstream.readBits(1);
+      }
+    }
+    NumDeltaPocsThis = NumDeltaPocs[RefRpsIdx];
+  } else {
+    const num_negative_pics = readExpGolomb(bitstream);
+    const num_positive_pics = readExpGolomb(bitstream);
+    for (let i = 0;i < num_negative_pics; i++) {
+      readExpGolomb(bitstream);
+      bitstream.readBits(1);
+    }
+    for (let i = 0;i < num_positive_pics; i++) {
+      readExpGolomb(bitstream);
+      bitstream.readBits(1);
+    }
+    NumDeltaPocsThis = num_negative_pics + num_positive_pics;
+  }
+  return NumDeltaPocsThis;
+};
+var parseHevcVui = (bitstream, sps_max_sub_layers_minus1) => {
+  let colourPrimaries = 2;
+  let transferCharacteristics = 2;
+  let matrixCoefficients = 2;
+  let fullRangeFlag = 0;
+  let minSpatialSegmentationIdc = 0;
+  if (bitstream.readBits(1)) {
+    const aspect_ratio_idc = bitstream.readBits(8);
+    if (aspect_ratio_idc === 255) {
+      bitstream.readBits(16);
+      bitstream.readBits(16);
+    }
+  }
+  if (bitstream.readBits(1)) {
+    bitstream.readBits(1);
+  }
+  if (bitstream.readBits(1)) {
+    bitstream.readBits(3);
+    fullRangeFlag = bitstream.readBits(1);
+    if (bitstream.readBits(1)) {
+      colourPrimaries = bitstream.readBits(8);
+      transferCharacteristics = bitstream.readBits(8);
+      matrixCoefficients = bitstream.readBits(8);
+    }
+  }
+  if (bitstream.readBits(1)) {
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+  }
+  bitstream.readBits(1);
+  bitstream.readBits(1);
+  bitstream.readBits(1);
+  if (bitstream.readBits(1)) {
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+  }
+  if (bitstream.readBits(1)) {
+    bitstream.readBits(32);
+    bitstream.readBits(32);
+    if (bitstream.readBits(1)) {
+      readExpGolomb(bitstream);
+    }
+    if (bitstream.readBits(1)) {
+      skipHevcHrdParameters(bitstream, true, sps_max_sub_layers_minus1);
+    }
+  }
+  if (bitstream.readBits(1)) {
+    bitstream.readBits(1);
+    bitstream.readBits(1);
+    bitstream.readBits(1);
+    minSpatialSegmentationIdc = readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+  }
+  return {
+    colourPrimaries,
+    transferCharacteristics,
+    matrixCoefficients,
+    fullRangeFlag,
+    minSpatialSegmentationIdc
+  };
+};
+var skipHevcHrdParameters = (bitstream, commonInfPresentFlag, maxNumSubLayersMinus1) => {
+  let nal_hrd_parameters_present_flag = false;
+  let vcl_hrd_parameters_present_flag = false;
+  let sub_pic_hrd_params_present_flag = false;
+  if (commonInfPresentFlag) {
+    nal_hrd_parameters_present_flag = bitstream.readBits(1) === 1;
+    vcl_hrd_parameters_present_flag = bitstream.readBits(1) === 1;
+    if (nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag) {
+      sub_pic_hrd_params_present_flag = bitstream.readBits(1) === 1;
+      if (sub_pic_hrd_params_present_flag) {
+        bitstream.readBits(8);
+        bitstream.readBits(5);
+        bitstream.readBits(1);
+        bitstream.readBits(5);
+      }
+      bitstream.readBits(4);
+      bitstream.readBits(4);
+      if (sub_pic_hrd_params_present_flag) {
+        bitstream.readBits(4);
+      }
+      bitstream.readBits(5);
+      bitstream.readBits(5);
+      bitstream.readBits(5);
+    }
+  }
+  for (let i = 0;i <= maxNumSubLayersMinus1; i++) {
+    const fixed_pic_rate_general_flag = bitstream.readBits(1) === 1;
+    let fixed_pic_rate_within_cvs_flag = true;
+    if (!fixed_pic_rate_general_flag) {
+      fixed_pic_rate_within_cvs_flag = bitstream.readBits(1) === 1;
+    }
+    let low_delay_hrd_flag = false;
+    if (fixed_pic_rate_within_cvs_flag) {
+      readExpGolomb(bitstream);
+    } else {
+      low_delay_hrd_flag = bitstream.readBits(1) === 1;
+    }
+    let CpbCnt = 1;
+    if (!low_delay_hrd_flag) {
+      const cpb_cnt_minus1 = readExpGolomb(bitstream);
+      CpbCnt = cpb_cnt_minus1 + 1;
+    }
+    if (nal_hrd_parameters_present_flag) {
+      skipSubLayerHrdParameters(bitstream, CpbCnt, sub_pic_hrd_params_present_flag);
+    }
+    if (vcl_hrd_parameters_present_flag) {
+      skipSubLayerHrdParameters(bitstream, CpbCnt, sub_pic_hrd_params_present_flag);
+    }
+  }
+};
+var skipSubLayerHrdParameters = (bitstream, CpbCnt, sub_pic_hrd_params_present_flag) => {
+  for (let i = 0;i < CpbCnt; i++) {
+    readExpGolomb(bitstream);
+    readExpGolomb(bitstream);
+    if (sub_pic_hrd_params_present_flag) {
+      readExpGolomb(bitstream);
+      readExpGolomb(bitstream);
+    }
+    bitstream.readBits(1);
+  }
+};
+var serializeHevcDecoderConfigurationRecord = (record) => {
+  const bytes = [];
+  bytes.push(record.configurationVersion);
+  bytes.push((record.generalProfileSpace & 3) << 6 | (record.generalTierFlag & 1) << 5 | record.generalProfileIdc & 31);
+  bytes.push(record.generalProfileCompatibilityFlags >>> 24 & 255);
+  bytes.push(record.generalProfileCompatibilityFlags >>> 16 & 255);
+  bytes.push(record.generalProfileCompatibilityFlags >>> 8 & 255);
+  bytes.push(record.generalProfileCompatibilityFlags & 255);
+  bytes.push(...record.generalConstraintIndicatorFlags);
+  bytes.push(record.generalLevelIdc & 255);
+  bytes.push(240 | record.minSpatialSegmentationIdc >> 8 & 15);
+  bytes.push(record.minSpatialSegmentationIdc & 255);
+  bytes.push(252 | record.parallelismType & 3);
+  bytes.push(252 | record.chromaFormatIdc & 3);
+  bytes.push(248 | record.bitDepthLumaMinus8 & 7);
+  bytes.push(248 | record.bitDepthChromaMinus8 & 7);
+  bytes.push(record.avgFrameRate >> 8 & 255);
+  bytes.push(record.avgFrameRate & 255);
+  bytes.push((record.constantFrameRate & 3) << 6 | (record.numTemporalLayers & 7) << 3 | (record.temporalIdNested & 1) << 2 | record.lengthSizeMinusOne & 3);
+  bytes.push(record.arrays.length & 255);
+  for (const arr of record.arrays) {
+    bytes.push((arr.arrayCompleteness & 1) << 7 | 0 << 6 | arr.nalUnitType & 63);
+    bytes.push(arr.nalUnits.length >> 8 & 255);
+    bytes.push(arr.nalUnits.length & 255);
+    for (const nal of arr.nalUnits) {
+      bytes.push(nal.length >> 8 & 255);
+      bytes.push(nal.length & 255);
+      for (let i = 0;i < nal.length; i++) {
+        bytes.push(nal[i]);
+      }
+    }
+  }
+  return new Uint8Array(bytes);
+};
+var parseOpusIdentificationHeader = (bytes) => {
+  const view = toDataView(bytes);
+  const outputChannelCount = view.getUint8(9);
+  const preSkip = view.getUint16(10, true);
+  const inputSampleRate = view.getUint32(12, true);
+  const outputGain = view.getInt16(16, true);
+  const channelMappingFamily = view.getUint8(18);
+  let channelMappingTable = null;
+  if (channelMappingFamily) {
+    channelMappingTable = bytes.subarray(19, 19 + 2 + outputChannelCount);
+  }
+  return {
+    outputChannelCount,
+    preSkip,
+    inputSampleRate,
+    outputGain,
+    channelMappingFamily,
+    channelMappingTable
+  };
+};
+var FlacBlockType;
+(function(FlacBlockType2) {
+  FlacBlockType2[FlacBlockType2["STREAMINFO"] = 0] = "STREAMINFO";
+  FlacBlockType2[FlacBlockType2["VORBIS_COMMENT"] = 4] = "VORBIS_COMMENT";
+  FlacBlockType2[FlacBlockType2["PICTURE"] = 6] = "PICTURE";
+})(FlacBlockType || (FlacBlockType = {}));
+
+// ../node_modules/mediabunny/dist/modules/src/custom-coder.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var U6=[],q6=[];/*!
+ */
+var customVideoEncoders = [];
+var customAudioEncoders = [];
+
+// ../node_modules/mediabunny/dist/modules/src/packet.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var j6=new Uint8Array(0);class Z0{constructor($,J,Y,Z,G=-1,K,X){if(this.data=$,this.type=J,this.timestamp=Y,this.duration=Z,this.sequenceNumber=G,$===j6&&K===void 0)throw Error("Internal error: byteLength must be explicitly provided when constructing metadata-only packets.");if(K===void 0)K=$.byteLength;if(!($ instanceof Uint8Array))throw TypeError("data must be a Uint8Array.");if(J!=="key"&&J!=="delta")throw TypeError('type must be either "key" or "delta".');if(!Number.isFinite(Y))throw TypeError("timestamp must be a number.");if(!Number.isFinite(Z)||Z<0)throw TypeError("duration must be a non-negative number.");if(!Number.isFinite(G))throw TypeError("sequenceNumber must be a number.");if(!Number.isInteger(K)||K<0)throw TypeError("byteLength must be a non-negative integer.");if(X!==void 0&&(typeof X!=="object"||!X))throw TypeError("sideData, when provided, must be an object.");if(X?.alpha!==void 0&&!(X.alpha instanceof Uint8Array))throw TypeError("sideData.alpha, when provided, must be a Uint8Array.");if(X?.alphaByteLength!==void 0&&(!Number.isInteger(X.alphaByteLength)||X.alphaByteLength<0))throw TypeError("sideData.alphaByteLength, when provided, must be a non-negative integer.");if(this.byteLength=K,this.sideData=X??{},this.sideData.alpha&&this.sideData.alphaByteLength===void 0)this.sideData.alphaByteLength=this.sideData.alpha.byteLength}get isMetadataOnly(){return this.data===j6}get microsecondTimestamp(){return Math.trunc(i*this.timestamp)}get microsecondDuration(){return Math.trunc(i*this.duration)}toEncodedVideoChunk(){if(this.isMetadataOnly)throw TypeError("Metadata-only packets cannot be converted to a video chunk.");if(typeof EncodedVideoChunk>"u")throw Error("Your browser does not support EncodedVideoChunk.");return new EncodedVideoChunk({data:this.data,type:this.type,timestamp:this.microsecondTimestamp,duration:this.microsecondDuration})}alphaToEncodedVideoChunk($=this.type){if(!this.sideData.alpha)throw TypeError("This packet does not contain alpha side data.");if(this.isMetadataOnly)throw TypeError("Metadata-only packets cannot be converted to a video chunk.");if(typeof EncodedVideoChunk>"u")throw Error("Your browser does not support EncodedVideoChunk.");return new EncodedVideoChunk({data:this.sideData.alpha,type:$,timestamp:this.microsecondTimestamp,duration:this.microsecondDuration})}toEncodedAudioChunk(){if(this.isMetadataOnly)throw TypeError("Metadata-only packets cannot be converted to an audio chunk.");if(typeof EncodedAudioChunk>"u")throw Error("Your browser does not support EncodedAudioChunk.");return new EncodedAudioChunk({data:this.data,type:this.type,timestamp:this.microsecondTimestamp,duration:this.microsecondDuration})}static fromEncodedChunk($,J){if(!($ instanceof EncodedVideoChunk||$ instanceof EncodedAudioChunk))throw TypeError("chunk must be an EncodedVideoChunk or EncodedAudioChunk.");let Y=new Uint8Array($.byteLength);return $.copyTo(Y),new Z0(Y,$.type,$.timestamp/1e6,($.duration??0)/1e6,void 0,void 0,J)}clone($){if($!==void 0&&(typeof $!=="object"||$===null))throw TypeError("options, when provided, must be an object.");if($?.data!==void 0&&!($.data instanceof Uint8Array))throw TypeError("options.data, when provided, must be a Uint8Array.");if($?.type!==void 0&&$.type!=="key"&&$.type!=="delta")throw TypeError('options.type, when provided, must be either "key" or "delta".');if($?.timestamp!==void 0&&!Number.isFinite($.timestamp))throw TypeError("options.timestamp, when provided, must be a number.");if($?.duration!==void 0&&!Number.isFinite($.duration))throw TypeError("options.duration, when provided, must be a number.");if($?.sequenceNumber!==void 0&&!Number.isFinite($.sequenceNumber))throw TypeError("options.sequenceNumber, when provided, must be a number.");if($?.sideData!==void 0&&(typeof $.sideData!=="object"||$.sideData===null))throw TypeError("options.sideData, when provided, must be an object.");return new Z0($?.data??this.data,$?.type??this.type,$?.timestamp??this.timestamp,$?.duration??this.duration,$?.sequenceNumber??this.sequenceNumber,this.byteLength,$?.sideData??this.sideData)}}/*!
+ */
+var PLACEHOLDER_DATA = /* @__PURE__ */ new Uint8Array(0);
+
+class EncodedPacket {
+  constructor(data, type, timestamp, duration, sequenceNumber = -1, byteLength, sideData) {
+    this.data = data;
+    this.type = type;
+    this.timestamp = timestamp;
+    this.duration = duration;
+    this.sequenceNumber = sequenceNumber;
+    if (data === PLACEHOLDER_DATA && byteLength === undefined) {
+      throw new Error("Internal error: byteLength must be explicitly provided when constructing metadata-only packets.");
+    }
+    if (byteLength === undefined) {
+      byteLength = data.byteLength;
+    }
+    if (!(data instanceof Uint8Array)) {
+      throw new TypeError("data must be a Uint8Array.");
+    }
+    if (type !== "key" && type !== "delta") {
+      throw new TypeError('type must be either "key" or "delta".');
+    }
+    if (!Number.isFinite(timestamp)) {
+      throw new TypeError("timestamp must be a number.");
+    }
+    if (!Number.isFinite(duration) || duration < 0) {
+      throw new TypeError("duration must be a non-negative number.");
+    }
+    if (!Number.isFinite(sequenceNumber)) {
+      throw new TypeError("sequenceNumber must be a number.");
+    }
+    if (!Number.isInteger(byteLength) || byteLength < 0) {
+      throw new TypeError("byteLength must be a non-negative integer.");
+    }
+    if (sideData !== undefined && (typeof sideData !== "object" || !sideData)) {
+      throw new TypeError("sideData, when provided, must be an object.");
+    }
+    if (sideData?.alpha !== undefined && !(sideData.alpha instanceof Uint8Array)) {
+      throw new TypeError("sideData.alpha, when provided, must be a Uint8Array.");
+    }
+    if (sideData?.alphaByteLength !== undefined && (!Number.isInteger(sideData.alphaByteLength) || sideData.alphaByteLength < 0)) {
+      throw new TypeError("sideData.alphaByteLength, when provided, must be a non-negative integer.");
+    }
+    this.byteLength = byteLength;
+    this.sideData = sideData ?? {};
+    if (this.sideData.alpha && this.sideData.alphaByteLength === undefined) {
+      this.sideData.alphaByteLength = this.sideData.alpha.byteLength;
+    }
+  }
+  get isMetadataOnly() {
+    return this.data === PLACEHOLDER_DATA;
+  }
+  get microsecondTimestamp() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
+  }
+  get microsecondDuration() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
+  }
+  toEncodedVideoChunk() {
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
+    }
+    if (typeof EncodedVideoChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedVideoChunk.");
+    }
+    return new EncodedVideoChunk({
+      data: this.data,
+      type: this.type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  alphaToEncodedVideoChunk(type = this.type) {
+    if (!this.sideData.alpha) {
+      throw new TypeError("This packet does not contain alpha side data.");
+    }
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to a video chunk.");
+    }
+    if (typeof EncodedVideoChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedVideoChunk.");
+    }
+    return new EncodedVideoChunk({
+      data: this.sideData.alpha,
+      type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  toEncodedAudioChunk() {
+    if (this.isMetadataOnly) {
+      throw new TypeError("Metadata-only packets cannot be converted to an audio chunk.");
+    }
+    if (typeof EncodedAudioChunk === "undefined") {
+      throw new Error("Your browser does not support EncodedAudioChunk.");
+    }
+    return new EncodedAudioChunk({
+      data: this.data,
+      type: this.type,
+      timestamp: this.microsecondTimestamp,
+      duration: this.microsecondDuration
+    });
+  }
+  static fromEncodedChunk(chunk, sideData) {
+    if (!(chunk instanceof EncodedVideoChunk || chunk instanceof EncodedAudioChunk)) {
+      throw new TypeError("chunk must be an EncodedVideoChunk or EncodedAudioChunk.");
+    }
+    const data = new Uint8Array(chunk.byteLength);
+    chunk.copyTo(data);
+    return new EncodedPacket(data, chunk.type, chunk.timestamp / 1e6, (chunk.duration ?? 0) / 1e6, undefined, undefined, sideData);
+  }
+  clone(options) {
+    if (options !== undefined && (typeof options !== "object" || options === null)) {
+      throw new TypeError("options, when provided, must be an object.");
+    }
+    if (options?.data !== undefined && !(options.data instanceof Uint8Array)) {
+      throw new TypeError("options.data, when provided, must be a Uint8Array.");
+    }
+    if (options?.type !== undefined && options.type !== "key" && options.type !== "delta") {
+      throw new TypeError('options.type, when provided, must be either "key" or "delta".');
+    }
+    if (options?.timestamp !== undefined && !Number.isFinite(options.timestamp)) {
+      throw new TypeError("options.timestamp, when provided, must be a number.");
+    }
+    if (options?.duration !== undefined && !Number.isFinite(options.duration)) {
+      throw new TypeError("options.duration, when provided, must be a number.");
+    }
+    if (options?.sequenceNumber !== undefined && !Number.isFinite(options.sequenceNumber)) {
+      throw new TypeError("options.sequenceNumber, when provided, must be a number.");
+    }
+    if (options?.sideData !== undefined && (typeof options.sideData !== "object" || options.sideData === null)) {
+      throw new TypeError("options.sideData, when provided, must be an object.");
+    }
+    return new EncodedPacket(options?.data ?? this.data, options?.type ?? this.type, options?.timestamp ?? this.timestamp, options?.duration ?? this.duration, options?.sequenceNumber ?? this.sequenceNumber, this.byteLength, options?.sideData ?? this.sideData);
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/pcm.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var z6=($)=>{let Z=$,G=4096,K=0,X=12,Q=0;if(Z<0)Z=-Z,K=128;if(Z+=33,Z>8191)Z=8191;while((Z&G)!==G&&X>=5)G>>=1,X--;return Q=Z>>X-4&15,~(K|X-5<<4|Q)&255};var N6=($)=>{let Y=2048,Z=0,G=11,K=0,X=$;if(X<0)X=-X,Z=128;if(X>4095)X=4095;while((X&Y)!==Y&&G>=5)Y>>=1,G--;return K=X>>(G===4?1:G-4)&15,(Z|G-4<<4|K)^85};/*!
+ */
+var toUlaw = (s16) => {
+  const MULAW_MAX = 8191;
+  const MULAW_BIAS = 33;
+  let number = s16;
+  let mask = 4096;
+  let sign = 0;
+  let position = 12;
+  let lsb = 0;
+  if (number < 0) {
+    number = -number;
+    sign = 128;
+  }
+  number += MULAW_BIAS;
+  if (number > MULAW_MAX) {
+    number = MULAW_MAX;
+  }
+  while ((number & mask) !== mask && position >= 5) {
+    mask >>= 1;
+    position--;
+  }
+  lsb = number >> position - 4 & 15;
+  return ~(sign | position - 5 << 4 | lsb) & 255;
+};
+var toAlaw = (s16) => {
+  const ALAW_MAX = 4095;
+  let mask = 2048;
+  let sign = 0;
+  let position = 11;
+  let lsb = 0;
+  let number = s16;
+  if (number < 0) {
+    number = -number;
+    sign = 128;
+  }
+  if (number > ALAW_MAX) {
+    number = ALAW_MAX;
+  }
+  while ((number & mask) !== mask && position >= 5) {
+    mask >>= 1;
+    position--;
+  }
+  lsb = number >> (position === 4 ? 1 : position - 4) & 15;
+  return (sign | position - 4 << 4 | lsb) ^ 85;
+};
+
+// ../node_modules/mediabunny/dist/modules/src/sample.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */v1();var L6=-1/0,M6=-1/0,v0=null;if(typeof FinalizationRegistry<"u")v0=new FinalizationRegistry(($)=>{let J=Date.now();if($.type==="video"){if(J-L6>=1000)console.error("A VideoSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your VideoSamples as soon as you're done using them."),L6=J;if(typeof VideoFrame<"u"&&$.data instanceof VideoFrame)$.data.close()}else{if(J-M6>=1000)console.error("An AudioSample was garbage collected without first being closed. For proper resource management, make sure to call close() on all your AudioSamples as soon as you're done using them."),M6=J;if(typeof AudioData<"u"&&$.data instanceof AudioData)$.data.close()}});var W6=["I420","I420P10","I420P12","I420A","I420AP10","I420AP12","I422","I422P10","I422P12","I422A","I422AP10","I422AP12","I444","I444P10","I444P12","I444A","I444AP10","I444AP12","NV12","RGBA","RGBX","BGRA","BGRX"],W8=new Set(W6);class j0{get displayWidth(){return this.rotation%180===0?this.codedWidth:this.codedHeight}get displayHeight(){return this.rotation%180===0?this.codedHeight:this.codedWidth}get microsecondTimestamp(){return Math.trunc(i*this.timestamp)}get microsecondDuration(){return Math.trunc(i*this.duration)}get hasAlpha(){return this.format&&this.format.includes("A")}constructor($,J){if(this._closed=!1,$ instanceof ArrayBuffer||typeof SharedArrayBuffer<"u"&&$ instanceof SharedArrayBuffer||ArrayBuffer.isView($)){if(!J||typeof J!=="object")throw TypeError("init must be an object.");if(J.format===void 0||!W8.has(J.format))throw TypeError("init.format must be one of: "+W6.join(", "));if(!Number.isInteger(J.codedWidth)||J.codedWidth<=0)throw TypeError("init.codedWidth must be a positive integer.");if(!Number.isInteger(J.codedHeight)||J.codedHeight<=0)throw TypeError("init.codedHeight must be a positive integer.");if(J.rotation!==void 0&&![0,90,180,270].includes(J.rotation))throw TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");if(!Number.isFinite(J.timestamp))throw TypeError("init.timestamp must be a number.");if(J.duration!==void 0&&(!Number.isFinite(J.duration)||J.duration<0))throw TypeError("init.duration, when provided, must be a non-negative number.");this._data=u($).slice(),this._layout=J.layout??A8(J.format,J.codedWidth,J.codedHeight),this.format=J.format,this.codedWidth=J.codedWidth,this.codedHeight=J.codedHeight,this.rotation=J.rotation??0,this.timestamp=J.timestamp,this.duration=J.duration??0,this.colorSpace=new $1(J.colorSpace)}else if(typeof VideoFrame<"u"&&$ instanceof VideoFrame){if(J?.rotation!==void 0&&![0,90,180,270].includes(J.rotation))throw TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");if(J?.timestamp!==void 0&&!Number.isFinite(J?.timestamp))throw TypeError("init.timestamp, when provided, must be a number.");if(J?.duration!==void 0&&(!Number.isFinite(J.duration)||J.duration<0))throw TypeError("init.duration, when provided, must be a non-negative number.");this._data=$,this._layout=null,this.format=$.format,this.codedWidth=$.displayWidth,this.codedHeight=$.displayHeight,this.rotation=J?.rotation??0,this.timestamp=J?.timestamp??$.timestamp/1e6,this.duration=J?.duration??($.duration??0)/1e6,this.colorSpace=new $1($.colorSpace)}else if(typeof HTMLImageElement<"u"&&$ instanceof HTMLImageElement||typeof SVGImageElement<"u"&&$ instanceof SVGImageElement||typeof ImageBitmap<"u"&&$ instanceof ImageBitmap||typeof HTMLVideoElement<"u"&&$ instanceof HTMLVideoElement||typeof HTMLCanvasElement<"u"&&$ instanceof HTMLCanvasElement||typeof OffscreenCanvas<"u"&&$ instanceof OffscreenCanvas){if(!J||typeof J!=="object")throw TypeError("init must be an object.");if(J.rotation!==void 0&&![0,90,180,270].includes(J.rotation))throw TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");if(!Number.isFinite(J.timestamp))throw TypeError("init.timestamp must be a number.");if(J.duration!==void 0&&(!Number.isFinite(J.duration)||J.duration<0))throw TypeError("init.duration, when provided, must be a non-negative number.");if(typeof VideoFrame<"u")return new j0(new VideoFrame($,{timestamp:Math.trunc(J.timestamp*i),duration:Math.trunc((J.duration??0)*i)||void 0}),J);let Y=0,Z=0;if("naturalWidth"in $)Y=$.naturalWidth,Z=$.naturalHeight;else if("videoWidth"in $)Y=$.videoWidth,Z=$.videoHeight;else if("width"in $)Y=Number($.width),Z=Number($.height);if(!Y||!Z)throw TypeError("Could not determine dimensions.");let G=new OffscreenCanvas(Y,Z),K=G.getContext("2d",{alpha:S0(),willReadFrequently:!0});N(K),K.drawImage($,0,0),this._data=G,this._layout=null,this.format="RGBX",this.codedWidth=Y,this.codedHeight=Z,this.rotation=J.rotation??0,this.timestamp=J.timestamp,this.duration=J.duration??0,this.colorSpace=new $1({matrix:"rgb",primaries:"bt709",transfer:"iec61966-2-1",fullRange:!0})}else throw TypeError("Invalid data type: Must be a BufferSource or CanvasImageSource.");v0?.register(this,{type:"video",data:this._data},this)}clone(){if(this._closed)throw Error("VideoSample is closed.");if(N(this._data!==null),W0(this._data))return new j0(this._data.clone(),{timestamp:this.timestamp,duration:this.duration,rotation:this.rotation});else if(this._data instanceof Uint8Array)return N(this._layout),new j0(this._data,{format:this.format,layout:this._layout,codedWidth:this.codedWidth,codedHeight:this.codedHeight,timestamp:this.timestamp,duration:this.duration,colorSpace:this.colorSpace,rotation:this.rotation});else return new j0(this._data,{format:this.format,codedWidth:this.codedWidth,codedHeight:this.codedHeight,timestamp:this.timestamp,duration:this.duration,colorSpace:this.colorSpace,rotation:this.rotation})}close(){if(this._closed)return;if(v0?.unregister(this),W0(this._data))this._data.close();else this._data=null;this._closed=!0}allocationSize($={}){if(V6($),this._closed)throw Error("VideoSample is closed.");if(this.format===null)throw Error("Cannot get allocation size when format is null. Sorry!");if(N(this._data!==null),!W0(this._data)){if($.colorSpace||$.format&&$.format!==this.format||$.layout||$.rect){let J=this.toVideoFrame(),Y=J.allocationSize($);return J.close(),Y}}if(W0(this._data))return this._data.allocationSize($);else if(this._data instanceof Uint8Array)return this._data.byteLength;else return this.codedWidth*this.codedHeight*4}async copyTo($,J={}){if(!R0($))throw TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");if(V6(J),this._closed)throw Error("VideoSample is closed.");if(this.format===null)throw Error("Cannot copy video sample data when format is null. Sorry!");if(N(this._data!==null),!W0(this._data)){if(J.colorSpace||J.format&&J.format!==this.format||J.layout||J.rect){let Y=this.toVideoFrame(),Z=await Y.copyTo($,J);return Y.close(),Z}}if(W0(this._data))return this._data.copyTo($,J);else if(this._data instanceof Uint8Array)return N(this._layout),u($).set(this._data),this._layout;else{let Z=this._data.getContext("2d");N(Z);let G=Z.getImageData(0,0,this.codedWidth,this.codedHeight);return u($).set(G.data),[{offset:0,stride:4*this.codedWidth}]}}toVideoFrame(){if(this._closed)throw Error("VideoSample is closed.");if(N(this._data!==null),W0(this._data))return new VideoFrame(this._data,{timestamp:this.microsecondTimestamp,duration:this.microsecondDuration||void 0});else if(this._data instanceof Uint8Array)return new VideoFrame(this._data,{format:this.format,codedWidth:this.codedWidth,codedHeight:this.codedHeight,timestamp:this.microsecondTimestamp,duration:this.microsecondDuration||void 0,colorSpace:this.colorSpace});else return new VideoFrame(this._data,{timestamp:this.microsecondTimestamp,duration:this.microsecondDuration||void 0})}draw($,J,Y,Z,G,K,X,Q,U){let q=0,j=0,z=this.displayWidth,V=this.displayHeight,W=0,R=0,H=this.displayWidth,A=this.displayHeight;if(K!==void 0)if(q=J,j=Y,z=Z,V=G,W=K,R=X,Q!==void 0)H=Q,A=U;else H=z,A=V;else if(W=J,R=Y,Z!==void 0)H=Z,A=G;if(!(typeof CanvasRenderingContext2D<"u"&&$ instanceof CanvasRenderingContext2D||typeof OffscreenCanvasRenderingContext2D<"u"&&$ instanceof OffscreenCanvasRenderingContext2D))throw TypeError("context must be a CanvasRenderingContext2D or OffscreenCanvasRenderingContext2D.");if(!Number.isFinite(q))throw TypeError("sx must be a number.");if(!Number.isFinite(j))throw TypeError("sy must be a number.");if(!Number.isFinite(z)||z<0)throw TypeError("sWidth must be a non-negative number.");if(!Number.isFinite(V)||V<0)throw TypeError("sHeight must be a non-negative number.");if(!Number.isFinite(W))throw TypeError("dx must be a number.");if(!Number.isFinite(R))throw TypeError("dy must be a number.");if(!Number.isFinite(H)||H<0)throw TypeError("dWidth must be a non-negative number.");if(!Number.isFinite(A)||A<0)throw TypeError("dHeight must be a non-negative number.");if(this._closed)throw Error("VideoSample is closed.");({sx:q,sy:j,sWidth:z,sHeight:V}=this._rotateSourceRegion(q,j,z,V,this.rotation));let I=this.toCanvasImageSource();$.save();let F=W+H/2,T=R+A/2;$.translate(F,T),$.rotate(this.rotation*Math.PI/180);let v=this.rotation%180===0?1:H/A;$.scale(1/v,v),$.drawImage(I,q,j,z,V,-H/2,-A/2,H,A),$.restore()}drawWithFit($,J){if(!(typeof CanvasRenderingContext2D<"u"&&$ instanceof CanvasRenderingContext2D||typeof OffscreenCanvasRenderingContext2D<"u"&&$ instanceof OffscreenCanvasRenderingContext2D))throw TypeError("context must be a CanvasRenderingContext2D or OffscreenCanvasRenderingContext2D.");if(!J||typeof J!=="object")throw TypeError("options must be an object.");if(!["fill","contain","cover"].includes(J.fit))throw TypeError("options.fit must be 'fill', 'contain', or 'cover'.");if(J.rotation!==void 0&&![0,90,180,270].includes(J.rotation))throw TypeError("options.rotation, when provided, must be 0, 90, 180, or 270.");if(J.crop!==void 0)H8(J.crop,"options.");let Y=$.canvas.width,Z=$.canvas.height,G=J.rotation??this.rotation,[K,X]=G%180===0?[this.codedWidth,this.codedHeight]:[this.codedHeight,this.codedWidth];if(J.crop)_8(J.crop,K,X);let Q,U,q,j,{sx:z,sy:V,sWidth:W,sHeight:R}=this._rotateSourceRegion(J.crop?.left??0,J.crop?.top??0,J.crop?.width??K,J.crop?.height??X,G);if(J.fit==="fill")Q=0,U=0,q=Y,j=Z;else{let[A,I]=J.crop?[J.crop.width,J.crop.height]:[K,X],F=J.fit==="contain"?Math.min(Y/A,Z/I):Math.max(Y/A,Z/I);q=A*F,j=I*F,Q=(Y-q)/2,U=(Z-j)/2}$.save();let H=G%180===0?1:q/j;$.translate(Y/2,Z/2),$.rotate(G*Math.PI/180),$.scale(1/H,H),$.translate(-Y/2,-Z/2),$.drawImage(this.toCanvasImageSource(),z,V,W,R,Q,U,q,j),$.restore()}_rotateSourceRegion($,J,Y,Z,G){if(G===90)[$,J,Y,Z]=[J,this.codedHeight-$-Y,Z,Y];else if(G===180)[$,J]=[this.codedWidth-$-Y,this.codedHeight-J-Z];else if(G===270)[$,J,Y,Z]=[this.codedWidth-J-Z,$,Z,Y];return{sx:$,sy:J,sWidth:Y,sHeight:Z}}toCanvasImageSource(){if(this._closed)throw Error("VideoSample is closed.");if(N(this._data!==null),this._data instanceof Uint8Array){let $=this.toVideoFrame();return queueMicrotask(()=>$.close()),$}else return this._data}setRotation($){if(![0,90,180,270].includes($))throw TypeError("newRotation must be 0, 90, 180, or 270.");this.rotation=$}setTimestamp($){if(!Number.isFinite($))throw TypeError("newTimestamp must be a number.");this.timestamp=$}setDuration($){if(!Number.isFinite($)||$<0)throw TypeError("newDuration must be a non-negative number.");this.duration=$}[Symbol.dispose](){this.close()}}class $1{constructor($){this.primaries=$?.primaries??null,this.transfer=$?.transfer??null,this.matrix=$?.matrix??null,this.fullRange=$?.fullRange??null}toJSON(){return{primaries:this.primaries,transfer:this.transfer,matrix:this.matrix,fullRange:this.fullRange}}}var W0=($)=>{return typeof VideoFrame<"u"&&$ instanceof VideoFrame},_8=($,J,Y)=>{$.left=Math.min($.left,J),$.top=Math.min($.top,Y),$.width=Math.min($.width,J-$.left),$.height=Math.min($.height,Y-$.top),N($.width>=0),N($.height>=0)},H8=($,J)=>{if(!$||typeof $!=="object")throw TypeError(J+"crop, when provided, must be an object.");if(!Number.isInteger($.left)||$.left<0)throw TypeError(J+"crop.left must be a non-negative integer.");if(!Number.isInteger($.top)||$.top<0)throw TypeError(J+"crop.top must be a non-negative integer.");if(!Number.isInteger($.width)||$.width<0)throw TypeError(J+"crop.width must be a non-negative integer.");if(!Number.isInteger($.height)||$.height<0)throw TypeError(J+"crop.height must be a non-negative integer.")},V6=($)=>{if(!$||typeof $!=="object")throw TypeError("options must be an object.");if($.colorSpace!==void 0&&!["display-p3","srgb"].includes($.colorSpace))throw TypeError("options.colorSpace, when provided, must be 'display-p3' or 'srgb'.");if($.format!==void 0&&typeof $.format!=="string")throw TypeError("options.format, when provided, must be a string.");if($.layout!==void 0){if(!Array.isArray($.layout))throw TypeError("options.layout, when provided, must be an array.");for(let J of $.layout){if(!J||typeof J!=="object")throw TypeError("Each entry in options.layout must be an object.");if(!Number.isInteger(J.offset)||J.offset<0)throw TypeError("plane.offset must be a non-negative integer.");if(!Number.isInteger(J.stride)||J.stride<0)throw TypeError("plane.stride must be a non-negative integer.")}}if($.rect!==void 0){if(!$.rect||typeof $.rect!=="object")throw TypeError("options.rect, when provided, must be an object.");if($.rect.x!==void 0&&(!Number.isInteger($.rect.x)||$.rect.x<0))throw TypeError("options.rect.x, when provided, must be a non-negative integer.");if($.rect.y!==void 0&&(!Number.isInteger($.rect.y)||$.rect.y<0))throw TypeError("options.rect.y, when provided, must be a non-negative integer.");if($.rect.width!==void 0&&(!Number.isInteger($.rect.width)||$.rect.width<0))throw TypeError("options.rect.width, when provided, must be a non-negative integer.");if($.rect.height!==void 0&&(!Number.isInteger($.rect.height)||$.rect.height<0))throw TypeError("options.rect.height, when provided, must be a non-negative integer.")}},A8=($,J,Y)=>{let Z=E8($),G=[],K=0;for(let X of Z){let Q=Math.ceil(J/X.widthDivisor),U=Math.ceil(Y/X.heightDivisor),q=Q*X.sampleBytes,j=q*U;G.push({offset:K,stride:q}),K+=j}return G},E8=($)=>{let J=(Y,Z,G,K,X)=>{let Q=[{sampleBytes:Y,widthDivisor:1,heightDivisor:1},{sampleBytes:Z,widthDivisor:G,heightDivisor:K},{sampleBytes:Z,widthDivisor:G,heightDivisor:K}];if(X)Q.push({sampleBytes:Y,widthDivisor:1,heightDivisor:1});return Q};switch($){case"I420":return J(1,1,2,2,!1);case"I420P10":case"I420P12":return J(2,2,2,2,!1);case"I420A":return J(1,1,2,2,!0);case"I420AP10":case"I420AP12":return J(2,2,2,2,!0);case"I422":return J(1,1,2,1,!1);case"I422P10":case"I422P12":return J(2,2,2,1,!1);case"I422A":return J(1,1,2,1,!0);case"I422AP10":case"I422AP12":return J(2,2,2,1,!0);case"I444":return J(1,1,1,1,!1);case"I444P10":case"I444P12":return J(2,2,1,1,!1);case"I444A":return J(1,1,1,1,!0);case"I444AP10":case"I444AP12":return J(2,2,1,1,!0);case"NV12":return[{sampleBytes:1,widthDivisor:1,heightDivisor:1},{sampleBytes:2,widthDivisor:2,heightDivisor:2}];case"RGBA":case"RGBX":case"BGRA":case"BGRX":return[{sampleBytes:4,widthDivisor:1,heightDivisor:1}];default:q0($),N(!1)}},W1=new Set(["f32","f32-planar","s16","s16-planar","s32","s32-planar","u8","u8-planar"]);class G0{get microsecondTimestamp(){return Math.trunc(i*this.timestamp)}get microsecondDuration(){return Math.trunc(i*this.duration)}constructor($){if(this._closed=!1,k0($)){if($.format===null)throw TypeError("AudioData with null format is not supported.");this._data=$,this.format=$.format,this.sampleRate=$.sampleRate,this.numberOfFrames=$.numberOfFrames,this.numberOfChannels=$.numberOfChannels,this.timestamp=$.timestamp/1e6,this.duration=$.numberOfFrames/$.sampleRate}else{if(!$||typeof $!=="object")throw TypeError("Invalid AudioDataInit: must be an object.");if(!W1.has($.format))throw TypeError("Invalid AudioDataInit: invalid format.");if(!Number.isFinite($.sampleRate)||$.sampleRate<=0)throw TypeError("Invalid AudioDataInit: sampleRate must be > 0.");if(!Number.isInteger($.numberOfChannels)||$.numberOfChannels===0)throw TypeError("Invalid AudioDataInit: numberOfChannels must be an integer > 0.");if(!Number.isFinite($?.timestamp))throw TypeError("init.timestamp must be a number.");let J=$.data.byteLength/(_0($.format)*$.numberOfChannels);if(!Number.isInteger(J))throw TypeError("Invalid AudioDataInit: data size is not a multiple of frame size.");this.format=$.format,this.sampleRate=$.sampleRate,this.numberOfFrames=J,this.numberOfChannels=$.numberOfChannels,this.timestamp=$.timestamp,this.duration=J/$.sampleRate;let Y;if($.data instanceof ArrayBuffer)Y=new Uint8Array($.data);else if(ArrayBuffer.isView($.data))Y=new Uint8Array($.data.buffer,$.data.byteOffset,$.data.byteLength);else throw TypeError("Invalid AudioDataInit: data is not a BufferSource.");let Z=this.numberOfFrames*this.numberOfChannels*_0(this.format);if(Y.byteLength<Z)throw TypeError("Invalid AudioDataInit: insufficient data size.");this._data=Y}v0?.register(this,{type:"audio",data:this._data},this)}allocationSize($){if(!$||typeof $!=="object")throw TypeError("options must be an object.");if(!Number.isInteger($.planeIndex)||$.planeIndex<0)throw TypeError("planeIndex must be a non-negative integer.");if($.format!==void 0&&!W1.has($.format))throw TypeError("Invalid format.");if($.frameOffset!==void 0&&(!Number.isInteger($.frameOffset)||$.frameOffset<0))throw TypeError("frameOffset must be a non-negative integer.");if($.frameCount!==void 0&&(!Number.isInteger($.frameCount)||$.frameCount<0))throw TypeError("frameCount must be a non-negative integer.");if(this._closed)throw Error("AudioSample is closed.");let J=$.format??this.format,Y=$.frameOffset??0;if(Y>=this.numberOfFrames)throw RangeError("frameOffset out of range");let Z=$.frameCount!==void 0?$.frameCount:this.numberOfFrames-Y;if(Z>this.numberOfFrames-Y)throw RangeError("frameCount out of range");let G=_0(J),K=P0(J);if(K&&$.planeIndex>=this.numberOfChannels)throw RangeError("planeIndex out of range");if(!K&&$.planeIndex!==0)throw RangeError("planeIndex out of range");return(K?Z:Z*this.numberOfChannels)*G}copyTo($,J){if(!R0($))throw TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");if(!J||typeof J!=="object")throw TypeError("options must be an object.");if(!Number.isInteger(J.planeIndex)||J.planeIndex<0)throw TypeError("planeIndex must be a non-negative integer.");if(J.format!==void 0&&!W1.has(J.format))throw TypeError("Invalid format.");if(J.frameOffset!==void 0&&(!Number.isInteger(J.frameOffset)||J.frameOffset<0))throw TypeError("frameOffset must be a non-negative integer.");if(J.frameCount!==void 0&&(!Number.isInteger(J.frameCount)||J.frameCount<0))throw TypeError("frameCount must be a non-negative integer.");if(this._closed)throw Error("AudioSample is closed.");let{planeIndex:Y,format:Z,frameCount:G,frameOffset:K}=J,X=this.format,Q=Z??this.format;if(!Q)throw Error("Destination format not determined");let U=this.numberOfFrames,q=this.numberOfChannels,j=K??0;if(j>=U)throw RangeError("frameOffset out of range");let z=G!==void 0?G:U-j;if(z>U-j)throw RangeError("frameCount out of range");let V=_0(Q),W=P0(Q);if(W&&Y>=q)throw RangeError("planeIndex out of range");if(!W&&Y!==0)throw RangeError("planeIndex out of range");let H=(W?z:z*q)*V;if($.byteLength<H)throw RangeError("Destination buffer is too small");let A=d($),I=H6(Q);if(k0(this._data))if(k1()&&q>2&&Q!==X)R8(this._data,A,X,Q,q,Y,j,z);else this._data.copyTo($,{planeIndex:Y,frameOffset:j,frameCount:z,format:Q});else{let F=this._data,T=d(F),v=_6(X),g=_0(X),X0=P0(X);for(let S=0;S<z;S++)if(W){let b=S*V,Q0;if(X0)Q0=(Y*U+(S+j))*g;else Q0=((S+j)*q+Y)*g;let f=v(T,Q0);I(A,b,f)}else for(let b=0;b<q;b++){let f=(S*q+b)*V,w;if(X0)w=(b*U+(S+j))*g;else w=((S+j)*q+b)*g;let l=v(T,w);I(A,f,l)}}}clone(){if(this._closed)throw Error("AudioSample is closed.");if(k0(this._data)){let $=new G0(this._data.clone());return $.setTimestamp(this.timestamp),$}else return new G0({format:this.format,sampleRate:this.sampleRate,numberOfFrames:this.numberOfFrames,numberOfChannels:this.numberOfChannels,timestamp:this.timestamp,data:this._data})}close(){if(this._closed)return;if(v0?.unregister(this),k0(this._data))this._data.close();else this._data=new Uint8Array(0);this._closed=!0}toAudioData(){if(this._closed)throw Error("AudioSample is closed.");if(k0(this._data))if(this._data.timestamp===this.microsecondTimestamp)return this._data.clone();else if(P0(this.format)){let $=this.allocationSize({planeIndex:0,format:this.format}),J=new ArrayBuffer($*this.numberOfChannels);for(let Y=0;Y<this.numberOfChannels;Y++)this.copyTo(new Uint8Array(J,Y*$,$),{planeIndex:Y,format:this.format});return new AudioData({format:this.format,sampleRate:this.sampleRate,numberOfFrames:this.numberOfFrames,numberOfChannels:this.numberOfChannels,timestamp:this.microsecondTimestamp,data:J})}else{let $=new ArrayBuffer(this.allocationSize({planeIndex:0,format:this.format}));return this.copyTo($,{planeIndex:0,format:this.format}),new AudioData({format:this.format,sampleRate:this.sampleRate,numberOfFrames:this.numberOfFrames,numberOfChannels:this.numberOfChannels,timestamp:this.microsecondTimestamp,data:$})}else return new AudioData({format:this.format,sampleRate:this.sampleRate,numberOfFrames:this.numberOfFrames,numberOfChannels:this.numberOfChannels,timestamp:this.microsecondTimestamp,data:this._data.buffer instanceof ArrayBuffer?this._data.buffer:this._data.slice()})}toAudioBuffer(){if(this._closed)throw Error("AudioSample is closed.");let $=new AudioBuffer({numberOfChannels:this.numberOfChannels,length:this.numberOfFrames,sampleRate:this.sampleRate}),J=new Float32Array(this.allocationSize({planeIndex:0,format:"f32-planar"})/4);for(let Y=0;Y<this.numberOfChannels;Y++)this.copyTo(J,{planeIndex:Y,format:"f32-planar"}),$.copyToChannel(J,Y);return $}setTimestamp($){if(!Number.isFinite($))throw TypeError("newTimestamp must be a number.");this.timestamp=$}[Symbol.dispose](){this.close()}static*_fromAudioBuffer($,J){if(!($ instanceof AudioBuffer))throw TypeError("audioBuffer must be an AudioBuffer.");let Y=240000,Z=$.numberOfChannels,G=$.sampleRate,K=$.length,X=Math.floor(Y/Z),Q=0,U=K;while(U>0){let q=Math.min(X,U),j=new Float32Array(Z*q);for(let z=0;z<Z;z++)$.copyFromChannel(j.subarray(z*q,(z+1)*q),z,Q);yield new G0({format:"f32-planar",sampleRate:G,numberOfFrames:q,numberOfChannels:Z,timestamp:J+Q/G,data:j}),Q+=q,U-=q}}static fromAudioBuffer($,J){if(!($ instanceof AudioBuffer))throw TypeError("audioBuffer must be an AudioBuffer.");let Y=240000,Z=$.numberOfChannels,G=$.sampleRate,K=$.length,X=Math.floor(Y/Z),Q=0,U=K,q=[];while(U>0){let j=Math.min(X,U),z=new Float32Array(Z*j);for(let W=0;W<Z;W++)$.copyFromChannel(z.subarray(W*j,(W+1)*j),W,Q);let V=new G0({format:"f32-planar",sampleRate:G,numberOfFrames:j,numberOfChannels:Z,timestamp:J+Q/G,data:z});q.push(V),Q+=j,U-=j}return q}}var _0=($)=>{switch($){case"u8":case"u8-planar":return 1;case"s16":case"s16-planar":return 2;case"s32":case"s32-planar":return 4;case"f32":case"f32-planar":return 4;default:throw Error("Unknown AudioSampleFormat")}},P0=($)=>{switch($){case"u8-planar":case"s16-planar":case"s32-planar":case"f32-planar":return!0;default:return!1}},_6=($)=>{switch($){case"u8":case"u8-planar":return(J,Y)=>(J.getUint8(Y)-128)/128;case"s16":case"s16-planar":return(J,Y)=>J.getInt16(Y,!0)/32768;case"s32":case"s32-planar":return(J,Y)=>J.getInt32(Y,!0)/2147483648;case"f32":case"f32-planar":return(J,Y)=>J.getFloat32(Y,!0)}},H6=($)=>{switch($){case"u8":case"u8-planar":return(J,Y,Z)=>J.setUint8(Y,C((Z+1)*127.5,0,255));case"s16":case"s16-planar":return(J,Y,Z)=>J.setInt16(Y,C(Math.round(Z*32767),-32768,32767),!0);case"s32":case"s32-planar":return(J,Y,Z)=>J.setInt32(Y,C(Math.round(Z*2147483647),-2147483648,2147483647),!0);case"f32":case"f32-planar":return(J,Y,Z)=>J.setFloat32(Y,Z,!0)}},k0=($)=>{return typeof AudioData<"u"&&$ instanceof AudioData},R8=($,J,Y,Z,G,K,X,Q)=>{let U=_6(Y),q=H6(Z),j=_0(Y),z=_0(Z),V=P0(Y);if(P0(Z))if(V){let R=new ArrayBuffer(Q*j),H=d(R);$.copyTo(R,{planeIndex:K,frameOffset:X,frameCount:Q,format:Y});for(let A=0;A<Q;A++){let I=A*j,F=A*z,T=U(H,I);q(J,F,T)}}else{let R=new ArrayBuffer(Q*G*j),H=d(R);$.copyTo(R,{planeIndex:0,frameOffset:X,frameCount:Q,format:Y});for(let A=0;A<Q;A++){let I=(A*G+K)*j,F=A*z,T=U(H,I);q(J,F,T)}}else if(V){let R=Q*j,H=new ArrayBuffer(R),A=d(H);for(let I=0;I<G;I++){$.copyTo(H,{planeIndex:I,frameOffset:X,frameCount:Q,format:Y});for(let F=0;F<Q;F++){let T=F*j,v=(F*G+I)*z,g=U(A,T);q(J,v,g)}}}else{let R=new ArrayBuffer(Q*G*j),H=d(R);$.copyTo(R,{planeIndex:0,frameOffset:X,frameCount:Q,format:Y});for(let A=0;A<Q;A++)for(let I=0;I<G;I++){let F=A*G+I,T=F*j,v=F*z,g=U(H,T);q(J,v,g)}}};/*!
+ */
+polyfillSymbolDispose();
+var lastVideoGcErrorLog = -Infinity;
+var lastAudioGcErrorLog = -Infinity;
+var finalizationRegistry = null;
+if (typeof FinalizationRegistry !== "undefined") {
+  finalizationRegistry = new FinalizationRegistry((value) => {
+    const now = Date.now();
+    if (value.type === "video") {
+      if (now - lastVideoGcErrorLog >= 1000) {
+        console.error(`A VideoSample was garbage collected without first being closed. For proper resource management,` + ` make sure to call close() on all your VideoSamples as soon as you're done using them.`);
+        lastVideoGcErrorLog = now;
+      }
+      if (typeof VideoFrame !== "undefined" && value.data instanceof VideoFrame) {
+        value.data.close();
+      }
+    } else {
+      if (now - lastAudioGcErrorLog >= 1000) {
+        console.error(`An AudioSample was garbage collected without first being closed. For proper resource management,` + ` make sure to call close() on all your AudioSamples as soon as you're done using them.`);
+        lastAudioGcErrorLog = now;
+      }
+      if (typeof AudioData !== "undefined" && value.data instanceof AudioData) {
+        value.data.close();
+      }
+    }
+  });
+}
+var VIDEO_SAMPLE_PIXEL_FORMATS = [
+  "I420",
+  "I420P10",
+  "I420P12",
+  "I420A",
+  "I420AP10",
+  "I420AP12",
+  "I422",
+  "I422P10",
+  "I422P12",
+  "I422A",
+  "I422AP10",
+  "I422AP12",
+  "I444",
+  "I444P10",
+  "I444P12",
+  "I444A",
+  "I444AP10",
+  "I444AP12",
+  "NV12",
+  "RGBA",
+  "RGBX",
+  "BGRA",
+  "BGRX"
+];
+var VIDEO_SAMPLE_PIXEL_FORMATS_SET = new Set(VIDEO_SAMPLE_PIXEL_FORMATS);
+
+class VideoSample {
+  get displayWidth() {
+    return this.rotation % 180 === 0 ? this.codedWidth : this.codedHeight;
+  }
+  get displayHeight() {
+    return this.rotation % 180 === 0 ? this.codedHeight : this.codedWidth;
+  }
+  get microsecondTimestamp() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
+  }
+  get microsecondDuration() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
+  }
+  get hasAlpha() {
+    return this.format && this.format.includes("A");
+  }
+  constructor(data, init) {
+    this._closed = false;
+    if (data instanceof ArrayBuffer || typeof SharedArrayBuffer !== "undefined" && data instanceof SharedArrayBuffer || ArrayBuffer.isView(data)) {
+      if (!init || typeof init !== "object") {
+        throw new TypeError("init must be an object.");
+      }
+      if (init.format === undefined || !VIDEO_SAMPLE_PIXEL_FORMATS_SET.has(init.format)) {
+        throw new TypeError("init.format must be one of: " + VIDEO_SAMPLE_PIXEL_FORMATS.join(", "));
+      }
+      if (!Number.isInteger(init.codedWidth) || init.codedWidth <= 0) {
+        throw new TypeError("init.codedWidth must be a positive integer.");
+      }
+      if (!Number.isInteger(init.codedHeight) || init.codedHeight <= 0) {
+        throw new TypeError("init.codedHeight must be a positive integer.");
+      }
+      if (init.rotation !== undefined && ![0, 90, 180, 270].includes(init.rotation)) {
+        throw new TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");
+      }
+      if (!Number.isFinite(init.timestamp)) {
+        throw new TypeError("init.timestamp must be a number.");
+      }
+      if (init.duration !== undefined && (!Number.isFinite(init.duration) || init.duration < 0)) {
+        throw new TypeError("init.duration, when provided, must be a non-negative number.");
+      }
+      this._data = toUint8Array(data).slice();
+      this._layout = init.layout ?? createDefaultPlaneLayout(init.format, init.codedWidth, init.codedHeight);
+      this.format = init.format;
+      this.codedWidth = init.codedWidth;
+      this.codedHeight = init.codedHeight;
+      this.rotation = init.rotation ?? 0;
+      this.timestamp = init.timestamp;
+      this.duration = init.duration ?? 0;
+      this.colorSpace = new VideoSampleColorSpace(init.colorSpace);
+    } else if (typeof VideoFrame !== "undefined" && data instanceof VideoFrame) {
+      if (init?.rotation !== undefined && ![0, 90, 180, 270].includes(init.rotation)) {
+        throw new TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");
+      }
+      if (init?.timestamp !== undefined && !Number.isFinite(init?.timestamp)) {
+        throw new TypeError("init.timestamp, when provided, must be a number.");
+      }
+      if (init?.duration !== undefined && (!Number.isFinite(init.duration) || init.duration < 0)) {
+        throw new TypeError("init.duration, when provided, must be a non-negative number.");
+      }
+      this._data = data;
+      this._layout = null;
+      this.format = data.format;
+      this.codedWidth = data.displayWidth;
+      this.codedHeight = data.displayHeight;
+      this.rotation = init?.rotation ?? 0;
+      this.timestamp = init?.timestamp ?? data.timestamp / 1e6;
+      this.duration = init?.duration ?? (data.duration ?? 0) / 1e6;
+      this.colorSpace = new VideoSampleColorSpace(data.colorSpace);
+    } else if (typeof HTMLImageElement !== "undefined" && data instanceof HTMLImageElement || typeof SVGImageElement !== "undefined" && data instanceof SVGImageElement || typeof ImageBitmap !== "undefined" && data instanceof ImageBitmap || typeof HTMLVideoElement !== "undefined" && data instanceof HTMLVideoElement || typeof HTMLCanvasElement !== "undefined" && data instanceof HTMLCanvasElement || typeof OffscreenCanvas !== "undefined" && data instanceof OffscreenCanvas) {
+      if (!init || typeof init !== "object") {
+        throw new TypeError("init must be an object.");
+      }
+      if (init.rotation !== undefined && ![0, 90, 180, 270].includes(init.rotation)) {
+        throw new TypeError("init.rotation, when provided, must be 0, 90, 180, or 270.");
+      }
+      if (!Number.isFinite(init.timestamp)) {
+        throw new TypeError("init.timestamp must be a number.");
+      }
+      if (init.duration !== undefined && (!Number.isFinite(init.duration) || init.duration < 0)) {
+        throw new TypeError("init.duration, when provided, must be a non-negative number.");
+      }
+      if (typeof VideoFrame !== "undefined") {
+        return new VideoSample(new VideoFrame(data, {
+          timestamp: Math.trunc(init.timestamp * SECOND_TO_MICROSECOND_FACTOR),
+          duration: Math.trunc((init.duration ?? 0) * SECOND_TO_MICROSECOND_FACTOR) || undefined
+        }), init);
+      }
+      let width = 0;
+      let height = 0;
+      if ("naturalWidth" in data) {
+        width = data.naturalWidth;
+        height = data.naturalHeight;
+      } else if ("videoWidth" in data) {
+        width = data.videoWidth;
+        height = data.videoHeight;
+      } else if ("width" in data) {
+        width = Number(data.width);
+        height = Number(data.height);
+      }
+      if (!width || !height) {
+        throw new TypeError("Could not determine dimensions.");
+      }
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext("2d", {
+        alpha: isFirefox(),
+        willReadFrequently: true
+      });
+      assert(context);
+      context.drawImage(data, 0, 0);
+      this._data = canvas;
+      this._layout = null;
+      this.format = "RGBX";
+      this.codedWidth = width;
+      this.codedHeight = height;
+      this.rotation = init.rotation ?? 0;
+      this.timestamp = init.timestamp;
+      this.duration = init.duration ?? 0;
+      this.colorSpace = new VideoSampleColorSpace({
+        matrix: "rgb",
+        primaries: "bt709",
+        transfer: "iec61966-2-1",
+        fullRange: true
+      });
+    } else {
+      throw new TypeError("Invalid data type: Must be a BufferSource or CanvasImageSource.");
+    }
+    finalizationRegistry?.register(this, { type: "video", data: this._data }, this);
+  }
+  clone() {
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    assert(this._data !== null);
+    if (isVideoFrame(this._data)) {
+      return new VideoSample(this._data.clone(), {
+        timestamp: this.timestamp,
+        duration: this.duration,
+        rotation: this.rotation
+      });
+    } else if (this._data instanceof Uint8Array) {
+      assert(this._layout);
+      return new VideoSample(this._data, {
+        format: this.format,
+        layout: this._layout,
+        codedWidth: this.codedWidth,
+        codedHeight: this.codedHeight,
+        timestamp: this.timestamp,
+        duration: this.duration,
+        colorSpace: this.colorSpace,
+        rotation: this.rotation
+      });
+    } else {
+      return new VideoSample(this._data, {
+        format: this.format,
+        codedWidth: this.codedWidth,
+        codedHeight: this.codedHeight,
+        timestamp: this.timestamp,
+        duration: this.duration,
+        colorSpace: this.colorSpace,
+        rotation: this.rotation
+      });
+    }
+  }
+  close() {
+    if (this._closed) {
+      return;
+    }
+    finalizationRegistry?.unregister(this);
+    if (isVideoFrame(this._data)) {
+      this._data.close();
+    } else {
+      this._data = null;
+    }
+    this._closed = true;
+  }
+  allocationSize(options = {}) {
+    validateVideoFrameCopyToOptions(options);
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    if (this.format === null) {
+      throw new Error("Cannot get allocation size when format is null. Sorry!");
+    }
+    assert(this._data !== null);
+    if (!isVideoFrame(this._data)) {
+      if (options.colorSpace || options.format && options.format !== this.format || options.layout || options.rect) {
+        const videoFrame = this.toVideoFrame();
+        const size = videoFrame.allocationSize(options);
+        videoFrame.close();
+        return size;
+      }
+    }
+    if (isVideoFrame(this._data)) {
+      return this._data.allocationSize(options);
+    } else if (this._data instanceof Uint8Array) {
+      return this._data.byteLength;
+    } else {
+      return this.codedWidth * this.codedHeight * 4;
+    }
+  }
+  async copyTo(destination, options = {}) {
+    if (!isAllowSharedBufferSource(destination)) {
+      throw new TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");
+    }
+    validateVideoFrameCopyToOptions(options);
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    if (this.format === null) {
+      throw new Error("Cannot copy video sample data when format is null. Sorry!");
+    }
+    assert(this._data !== null);
+    if (!isVideoFrame(this._data)) {
+      if (options.colorSpace || options.format && options.format !== this.format || options.layout || options.rect) {
+        const videoFrame = this.toVideoFrame();
+        const layout = await videoFrame.copyTo(destination, options);
+        videoFrame.close();
+        return layout;
+      }
+    }
+    if (isVideoFrame(this._data)) {
+      return this._data.copyTo(destination, options);
+    } else if (this._data instanceof Uint8Array) {
+      assert(this._layout);
+      const dest = toUint8Array(destination);
+      dest.set(this._data);
+      return this._layout;
+    } else {
+      const canvas = this._data;
+      const context = canvas.getContext("2d");
+      assert(context);
+      const imageData = context.getImageData(0, 0, this.codedWidth, this.codedHeight);
+      const dest = toUint8Array(destination);
+      dest.set(imageData.data);
+      return [{
+        offset: 0,
+        stride: 4 * this.codedWidth
+      }];
+    }
+  }
+  toVideoFrame() {
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    assert(this._data !== null);
+    if (isVideoFrame(this._data)) {
+      return new VideoFrame(this._data, {
+        timestamp: this.microsecondTimestamp,
+        duration: this.microsecondDuration || undefined
+      });
+    } else if (this._data instanceof Uint8Array) {
+      return new VideoFrame(this._data, {
+        format: this.format,
+        codedWidth: this.codedWidth,
+        codedHeight: this.codedHeight,
+        timestamp: this.microsecondTimestamp,
+        duration: this.microsecondDuration || undefined,
+        colorSpace: this.colorSpace
+      });
+    } else {
+      return new VideoFrame(this._data, {
+        timestamp: this.microsecondTimestamp,
+        duration: this.microsecondDuration || undefined
+      });
+    }
+  }
+  draw(context, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+    let sx = 0;
+    let sy = 0;
+    let sWidth = this.displayWidth;
+    let sHeight = this.displayHeight;
+    let dx = 0;
+    let dy = 0;
+    let dWidth = this.displayWidth;
+    let dHeight = this.displayHeight;
+    if (arg5 !== undefined) {
+      sx = arg1;
+      sy = arg2;
+      sWidth = arg3;
+      sHeight = arg4;
+      dx = arg5;
+      dy = arg6;
+      if (arg7 !== undefined) {
+        dWidth = arg7;
+        dHeight = arg8;
+      } else {
+        dWidth = sWidth;
+        dHeight = sHeight;
+      }
+    } else {
+      dx = arg1;
+      dy = arg2;
+      if (arg3 !== undefined) {
+        dWidth = arg3;
+        dHeight = arg4;
+      }
+    }
+    if (!(typeof CanvasRenderingContext2D !== "undefined" && context instanceof CanvasRenderingContext2D || typeof OffscreenCanvasRenderingContext2D !== "undefined" && context instanceof OffscreenCanvasRenderingContext2D)) {
+      throw new TypeError("context must be a CanvasRenderingContext2D or OffscreenCanvasRenderingContext2D.");
+    }
+    if (!Number.isFinite(sx)) {
+      throw new TypeError("sx must be a number.");
+    }
+    if (!Number.isFinite(sy)) {
+      throw new TypeError("sy must be a number.");
+    }
+    if (!Number.isFinite(sWidth) || sWidth < 0) {
+      throw new TypeError("sWidth must be a non-negative number.");
+    }
+    if (!Number.isFinite(sHeight) || sHeight < 0) {
+      throw new TypeError("sHeight must be a non-negative number.");
+    }
+    if (!Number.isFinite(dx)) {
+      throw new TypeError("dx must be a number.");
+    }
+    if (!Number.isFinite(dy)) {
+      throw new TypeError("dy must be a number.");
+    }
+    if (!Number.isFinite(dWidth) || dWidth < 0) {
+      throw new TypeError("dWidth must be a non-negative number.");
+    }
+    if (!Number.isFinite(dHeight) || dHeight < 0) {
+      throw new TypeError("dHeight must be a non-negative number.");
+    }
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    ({ sx, sy, sWidth, sHeight } = this._rotateSourceRegion(sx, sy, sWidth, sHeight, this.rotation));
+    const source = this.toCanvasImageSource();
+    context.save();
+    const centerX = dx + dWidth / 2;
+    const centerY = dy + dHeight / 2;
+    context.translate(centerX, centerY);
+    context.rotate(this.rotation * Math.PI / 180);
+    const aspectRatioChange = this.rotation % 180 === 0 ? 1 : dWidth / dHeight;
+    context.scale(1 / aspectRatioChange, aspectRatioChange);
+    context.drawImage(source, sx, sy, sWidth, sHeight, -dWidth / 2, -dHeight / 2, dWidth, dHeight);
+    context.restore();
+  }
+  drawWithFit(context, options) {
+    if (!(typeof CanvasRenderingContext2D !== "undefined" && context instanceof CanvasRenderingContext2D || typeof OffscreenCanvasRenderingContext2D !== "undefined" && context instanceof OffscreenCanvasRenderingContext2D)) {
+      throw new TypeError("context must be a CanvasRenderingContext2D or OffscreenCanvasRenderingContext2D.");
+    }
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!["fill", "contain", "cover"].includes(options.fit)) {
+      throw new TypeError("options.fit must be 'fill', 'contain', or 'cover'.");
+    }
+    if (options.rotation !== undefined && ![0, 90, 180, 270].includes(options.rotation)) {
+      throw new TypeError("options.rotation, when provided, must be 0, 90, 180, or 270.");
+    }
+    if (options.crop !== undefined) {
+      validateCropRectangle(options.crop, "options.");
+    }
+    const canvasWidth = context.canvas.width;
+    const canvasHeight = context.canvas.height;
+    const rotation = options.rotation ?? this.rotation;
+    const [rotatedWidth, rotatedHeight] = rotation % 180 === 0 ? [this.codedWidth, this.codedHeight] : [this.codedHeight, this.codedWidth];
+    if (options.crop) {
+      clampCropRectangle(options.crop, rotatedWidth, rotatedHeight);
+    }
+    let dx;
+    let dy;
+    let newWidth;
+    let newHeight;
+    const { sx, sy, sWidth, sHeight } = this._rotateSourceRegion(options.crop?.left ?? 0, options.crop?.top ?? 0, options.crop?.width ?? rotatedWidth, options.crop?.height ?? rotatedHeight, rotation);
+    if (options.fit === "fill") {
+      dx = 0;
+      dy = 0;
+      newWidth = canvasWidth;
+      newHeight = canvasHeight;
+    } else {
+      const [sampleWidth, sampleHeight] = options.crop ? [options.crop.width, options.crop.height] : [rotatedWidth, rotatedHeight];
+      const scale = options.fit === "contain" ? Math.min(canvasWidth / sampleWidth, canvasHeight / sampleHeight) : Math.max(canvasWidth / sampleWidth, canvasHeight / sampleHeight);
+      newWidth = sampleWidth * scale;
+      newHeight = sampleHeight * scale;
+      dx = (canvasWidth - newWidth) / 2;
+      dy = (canvasHeight - newHeight) / 2;
+    }
+    context.save();
+    const aspectRatioChange = rotation % 180 === 0 ? 1 : newWidth / newHeight;
+    context.translate(canvasWidth / 2, canvasHeight / 2);
+    context.rotate(rotation * Math.PI / 180);
+    context.scale(1 / aspectRatioChange, aspectRatioChange);
+    context.translate(-canvasWidth / 2, -canvasHeight / 2);
+    context.drawImage(this.toCanvasImageSource(), sx, sy, sWidth, sHeight, dx, dy, newWidth, newHeight);
+    context.restore();
+  }
+  _rotateSourceRegion(sx, sy, sWidth, sHeight, rotation) {
+    if (rotation === 90) {
+      [sx, sy, sWidth, sHeight] = [
+        sy,
+        this.codedHeight - sx - sWidth,
+        sHeight,
+        sWidth
+      ];
+    } else if (rotation === 180) {
+      [sx, sy] = [
+        this.codedWidth - sx - sWidth,
+        this.codedHeight - sy - sHeight
+      ];
+    } else if (rotation === 270) {
+      [sx, sy, sWidth, sHeight] = [
+        this.codedWidth - sy - sHeight,
+        sx,
+        sHeight,
+        sWidth
+      ];
+    }
+    return { sx, sy, sWidth, sHeight };
+  }
+  toCanvasImageSource() {
+    if (this._closed) {
+      throw new Error("VideoSample is closed.");
+    }
+    assert(this._data !== null);
+    if (this._data instanceof Uint8Array) {
+      const videoFrame = this.toVideoFrame();
+      queueMicrotask(() => videoFrame.close());
+      return videoFrame;
+    } else {
+      return this._data;
+    }
+  }
+  setRotation(newRotation) {
+    if (![0, 90, 180, 270].includes(newRotation)) {
+      throw new TypeError("newRotation must be 0, 90, 180, or 270.");
+    }
+    this.rotation = newRotation;
+  }
+  setTimestamp(newTimestamp) {
+    if (!Number.isFinite(newTimestamp)) {
+      throw new TypeError("newTimestamp must be a number.");
+    }
+    this.timestamp = newTimestamp;
+  }
+  setDuration(newDuration) {
+    if (!Number.isFinite(newDuration) || newDuration < 0) {
+      throw new TypeError("newDuration must be a non-negative number.");
+    }
+    this.duration = newDuration;
+  }
+  [Symbol.dispose]() {
+    this.close();
+  }
+}
+
+class VideoSampleColorSpace {
+  constructor(init) {
+    this.primaries = init?.primaries ?? null;
+    this.transfer = init?.transfer ?? null;
+    this.matrix = init?.matrix ?? null;
+    this.fullRange = init?.fullRange ?? null;
+  }
+  toJSON() {
+    return {
+      primaries: this.primaries,
+      transfer: this.transfer,
+      matrix: this.matrix,
+      fullRange: this.fullRange
+    };
+  }
+}
+var isVideoFrame = (x) => {
+  return typeof VideoFrame !== "undefined" && x instanceof VideoFrame;
+};
+var clampCropRectangle = (crop, outerWidth, outerHeight) => {
+  crop.left = Math.min(crop.left, outerWidth);
+  crop.top = Math.min(crop.top, outerHeight);
+  crop.width = Math.min(crop.width, outerWidth - crop.left);
+  crop.height = Math.min(crop.height, outerHeight - crop.top);
+  assert(crop.width >= 0);
+  assert(crop.height >= 0);
+};
+var validateCropRectangle = (crop, prefix) => {
+  if (!crop || typeof crop !== "object") {
+    throw new TypeError(prefix + "crop, when provided, must be an object.");
+  }
+  if (!Number.isInteger(crop.left) || crop.left < 0) {
+    throw new TypeError(prefix + "crop.left must be a non-negative integer.");
+  }
+  if (!Number.isInteger(crop.top) || crop.top < 0) {
+    throw new TypeError(prefix + "crop.top must be a non-negative integer.");
+  }
+  if (!Number.isInteger(crop.width) || crop.width < 0) {
+    throw new TypeError(prefix + "crop.width must be a non-negative integer.");
+  }
+  if (!Number.isInteger(crop.height) || crop.height < 0) {
+    throw new TypeError(prefix + "crop.height must be a non-negative integer.");
+  }
+};
+var validateVideoFrameCopyToOptions = (options) => {
+  if (!options || typeof options !== "object") {
+    throw new TypeError("options must be an object.");
+  }
+  if (options.colorSpace !== undefined && !["display-p3", "srgb"].includes(options.colorSpace)) {
+    throw new TypeError("options.colorSpace, when provided, must be 'display-p3' or 'srgb'.");
+  }
+  if (options.format !== undefined && typeof options.format !== "string") {
+    throw new TypeError("options.format, when provided, must be a string.");
+  }
+  if (options.layout !== undefined) {
+    if (!Array.isArray(options.layout)) {
+      throw new TypeError("options.layout, when provided, must be an array.");
+    }
+    for (const plane of options.layout) {
+      if (!plane || typeof plane !== "object") {
+        throw new TypeError("Each entry in options.layout must be an object.");
+      }
+      if (!Number.isInteger(plane.offset) || plane.offset < 0) {
+        throw new TypeError("plane.offset must be a non-negative integer.");
+      }
+      if (!Number.isInteger(plane.stride) || plane.stride < 0) {
+        throw new TypeError("plane.stride must be a non-negative integer.");
+      }
+    }
+  }
+  if (options.rect !== undefined) {
+    if (!options.rect || typeof options.rect !== "object") {
+      throw new TypeError("options.rect, when provided, must be an object.");
+    }
+    if (options.rect.x !== undefined && (!Number.isInteger(options.rect.x) || options.rect.x < 0)) {
+      throw new TypeError("options.rect.x, when provided, must be a non-negative integer.");
+    }
+    if (options.rect.y !== undefined && (!Number.isInteger(options.rect.y) || options.rect.y < 0)) {
+      throw new TypeError("options.rect.y, when provided, must be a non-negative integer.");
+    }
+    if (options.rect.width !== undefined && (!Number.isInteger(options.rect.width) || options.rect.width < 0)) {
+      throw new TypeError("options.rect.width, when provided, must be a non-negative integer.");
+    }
+    if (options.rect.height !== undefined && (!Number.isInteger(options.rect.height) || options.rect.height < 0)) {
+      throw new TypeError("options.rect.height, when provided, must be a non-negative integer.");
+    }
+  }
+};
+var createDefaultPlaneLayout = (format, codedWidth, codedHeight) => {
+  const planes = getPlaneConfigs(format);
+  const layouts = [];
+  let currentOffset = 0;
+  for (const plane of planes) {
+    const planeWidth = Math.ceil(codedWidth / plane.widthDivisor);
+    const planeHeight = Math.ceil(codedHeight / plane.heightDivisor);
+    const stride = planeWidth * plane.sampleBytes;
+    const planeSize = stride * planeHeight;
+    layouts.push({
+      offset: currentOffset,
+      stride
+    });
+    currentOffset += planeSize;
+  }
+  return layouts;
+};
+var getPlaneConfigs = (format) => {
+  const yuv = (yBytes, uvBytes, subX, subY, hasAlpha) => {
+    const configs = [
+      { sampleBytes: yBytes, widthDivisor: 1, heightDivisor: 1 },
+      { sampleBytes: uvBytes, widthDivisor: subX, heightDivisor: subY },
+      { sampleBytes: uvBytes, widthDivisor: subX, heightDivisor: subY }
+    ];
+    if (hasAlpha) {
+      configs.push({ sampleBytes: yBytes, widthDivisor: 1, heightDivisor: 1 });
+    }
+    return configs;
+  };
+  switch (format) {
+    case "I420":
+      return yuv(1, 1, 2, 2, false);
+    case "I420P10":
+    case "I420P12":
+      return yuv(2, 2, 2, 2, false);
+    case "I420A":
+      return yuv(1, 1, 2, 2, true);
+    case "I420AP10":
+    case "I420AP12":
+      return yuv(2, 2, 2, 2, true);
+    case "I422":
+      return yuv(1, 1, 2, 1, false);
+    case "I422P10":
+    case "I422P12":
+      return yuv(2, 2, 2, 1, false);
+    case "I422A":
+      return yuv(1, 1, 2, 1, true);
+    case "I422AP10":
+    case "I422AP12":
+      return yuv(2, 2, 2, 1, true);
+    case "I444":
+      return yuv(1, 1, 1, 1, false);
+    case "I444P10":
+    case "I444P12":
+      return yuv(2, 2, 1, 1, false);
+    case "I444A":
+      return yuv(1, 1, 1, 1, true);
+    case "I444AP10":
+    case "I444AP12":
+      return yuv(2, 2, 1, 1, true);
+    case "NV12":
+      return [
+        { sampleBytes: 1, widthDivisor: 1, heightDivisor: 1 },
+        { sampleBytes: 2, widthDivisor: 2, heightDivisor: 2 }
+      ];
+    case "RGBA":
+    case "RGBX":
+    case "BGRA":
+    case "BGRX":
+      return [
+        { sampleBytes: 4, widthDivisor: 1, heightDivisor: 1 }
+      ];
+    default:
+      assertNever(format);
+      assert(false);
+  }
+};
+var AUDIO_SAMPLE_FORMATS = new Set(["f32", "f32-planar", "s16", "s16-planar", "s32", "s32-planar", "u8", "u8-planar"]);
+
+class AudioSample {
+  get microsecondTimestamp() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.timestamp);
+  }
+  get microsecondDuration() {
+    return Math.trunc(SECOND_TO_MICROSECOND_FACTOR * this.duration);
+  }
+  constructor(init) {
+    this._closed = false;
+    if (isAudioData(init)) {
+      if (init.format === null) {
+        throw new TypeError("AudioData with null format is not supported.");
+      }
+      this._data = init;
+      this.format = init.format;
+      this.sampleRate = init.sampleRate;
+      this.numberOfFrames = init.numberOfFrames;
+      this.numberOfChannels = init.numberOfChannels;
+      this.timestamp = init.timestamp / 1e6;
+      this.duration = init.numberOfFrames / init.sampleRate;
+    } else {
+      if (!init || typeof init !== "object") {
+        throw new TypeError("Invalid AudioDataInit: must be an object.");
+      }
+      if (!AUDIO_SAMPLE_FORMATS.has(init.format)) {
+        throw new TypeError("Invalid AudioDataInit: invalid format.");
+      }
+      if (!Number.isFinite(init.sampleRate) || init.sampleRate <= 0) {
+        throw new TypeError("Invalid AudioDataInit: sampleRate must be > 0.");
+      }
+      if (!Number.isInteger(init.numberOfChannels) || init.numberOfChannels === 0) {
+        throw new TypeError("Invalid AudioDataInit: numberOfChannels must be an integer > 0.");
+      }
+      if (!Number.isFinite(init?.timestamp)) {
+        throw new TypeError("init.timestamp must be a number.");
+      }
+      const numberOfFrames = init.data.byteLength / (getBytesPerSample(init.format) * init.numberOfChannels);
+      if (!Number.isInteger(numberOfFrames)) {
+        throw new TypeError("Invalid AudioDataInit: data size is not a multiple of frame size.");
+      }
+      this.format = init.format;
+      this.sampleRate = init.sampleRate;
+      this.numberOfFrames = numberOfFrames;
+      this.numberOfChannels = init.numberOfChannels;
+      this.timestamp = init.timestamp;
+      this.duration = numberOfFrames / init.sampleRate;
+      let dataBuffer;
+      if (init.data instanceof ArrayBuffer) {
+        dataBuffer = new Uint8Array(init.data);
+      } else if (ArrayBuffer.isView(init.data)) {
+        dataBuffer = new Uint8Array(init.data.buffer, init.data.byteOffset, init.data.byteLength);
+      } else {
+        throw new TypeError("Invalid AudioDataInit: data is not a BufferSource.");
+      }
+      const expectedSize = this.numberOfFrames * this.numberOfChannels * getBytesPerSample(this.format);
+      if (dataBuffer.byteLength < expectedSize) {
+        throw new TypeError("Invalid AudioDataInit: insufficient data size.");
+      }
+      this._data = dataBuffer;
+    }
+    finalizationRegistry?.register(this, { type: "audio", data: this._data }, this);
+  }
+  allocationSize(options) {
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
+      throw new TypeError("planeIndex must be a non-negative integer.");
+    }
+    if (options.format !== undefined && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
+      throw new TypeError("Invalid format.");
+    }
+    if (options.frameOffset !== undefined && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
+      throw new TypeError("frameOffset must be a non-negative integer.");
+    }
+    if (options.frameCount !== undefined && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
+      throw new TypeError("frameCount must be a non-negative integer.");
+    }
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const destFormat = options.format ?? this.format;
+    const frameOffset = options.frameOffset ?? 0;
+    if (frameOffset >= this.numberOfFrames) {
+      throw new RangeError("frameOffset out of range");
+    }
+    const copyFrameCount = options.frameCount !== undefined ? options.frameCount : this.numberOfFrames - frameOffset;
+    if (copyFrameCount > this.numberOfFrames - frameOffset) {
+      throw new RangeError("frameCount out of range");
+    }
+    const bytesPerSample = getBytesPerSample(destFormat);
+    const isPlanar = formatIsPlanar(destFormat);
+    if (isPlanar && options.planeIndex >= this.numberOfChannels) {
+      throw new RangeError("planeIndex out of range");
+    }
+    if (!isPlanar && options.planeIndex !== 0) {
+      throw new RangeError("planeIndex out of range");
+    }
+    const elementCount = isPlanar ? copyFrameCount : copyFrameCount * this.numberOfChannels;
+    return elementCount * bytesPerSample;
+  }
+  copyTo(destination, options) {
+    if (!isAllowSharedBufferSource(destination)) {
+      throw new TypeError("destination must be an ArrayBuffer or an ArrayBuffer view.");
+    }
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!Number.isInteger(options.planeIndex) || options.planeIndex < 0) {
+      throw new TypeError("planeIndex must be a non-negative integer.");
+    }
+    if (options.format !== undefined && !AUDIO_SAMPLE_FORMATS.has(options.format)) {
+      throw new TypeError("Invalid format.");
+    }
+    if (options.frameOffset !== undefined && (!Number.isInteger(options.frameOffset) || options.frameOffset < 0)) {
+      throw new TypeError("frameOffset must be a non-negative integer.");
+    }
+    if (options.frameCount !== undefined && (!Number.isInteger(options.frameCount) || options.frameCount < 0)) {
+      throw new TypeError("frameCount must be a non-negative integer.");
+    }
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const { planeIndex, format, frameCount: optFrameCount, frameOffset: optFrameOffset } = options;
+    const srcFormat = this.format;
+    const destFormat = format ?? this.format;
+    if (!destFormat)
+      throw new Error("Destination format not determined");
+    const numFrames = this.numberOfFrames;
+    const numChannels = this.numberOfChannels;
+    const frameOffset = optFrameOffset ?? 0;
+    if (frameOffset >= numFrames) {
+      throw new RangeError("frameOffset out of range");
+    }
+    const copyFrameCount = optFrameCount !== undefined ? optFrameCount : numFrames - frameOffset;
+    if (copyFrameCount > numFrames - frameOffset) {
+      throw new RangeError("frameCount out of range");
+    }
+    const destBytesPerSample = getBytesPerSample(destFormat);
+    const destIsPlanar = formatIsPlanar(destFormat);
+    if (destIsPlanar && planeIndex >= numChannels) {
+      throw new RangeError("planeIndex out of range");
+    }
+    if (!destIsPlanar && planeIndex !== 0) {
+      throw new RangeError("planeIndex out of range");
+    }
+    const destElementCount = destIsPlanar ? copyFrameCount : copyFrameCount * numChannels;
+    const requiredSize = destElementCount * destBytesPerSample;
+    if (destination.byteLength < requiredSize) {
+      throw new RangeError("Destination buffer is too small");
+    }
+    const destView = toDataView(destination);
+    const writeFn = getWriteFunction(destFormat);
+    if (isAudioData(this._data)) {
+      if (isWebKit() && numChannels > 2 && destFormat !== srcFormat) {
+        doAudioDataCopyToWebKitWorkaround(this._data, destView, srcFormat, destFormat, numChannels, planeIndex, frameOffset, copyFrameCount);
+      } else {
+        this._data.copyTo(destination, {
+          planeIndex,
+          frameOffset,
+          frameCount: copyFrameCount,
+          format: destFormat
+        });
+      }
+    } else {
+      const uint8Data = this._data;
+      const srcView = toDataView(uint8Data);
+      const readFn = getReadFunction(srcFormat);
+      const srcBytesPerSample = getBytesPerSample(srcFormat);
+      const srcIsPlanar = formatIsPlanar(srcFormat);
+      for (let i = 0;i < copyFrameCount; i++) {
+        if (destIsPlanar) {
+          const destOffset = i * destBytesPerSample;
+          let srcOffset;
+          if (srcIsPlanar) {
+            srcOffset = (planeIndex * numFrames + (i + frameOffset)) * srcBytesPerSample;
+          } else {
+            srcOffset = ((i + frameOffset) * numChannels + planeIndex) * srcBytesPerSample;
+          }
+          const normalized = readFn(srcView, srcOffset);
+          writeFn(destView, destOffset, normalized);
+        } else {
+          for (let ch = 0;ch < numChannels; ch++) {
+            const destIndex = i * numChannels + ch;
+            const destOffset = destIndex * destBytesPerSample;
+            let srcOffset;
+            if (srcIsPlanar) {
+              srcOffset = (ch * numFrames + (i + frameOffset)) * srcBytesPerSample;
+            } else {
+              srcOffset = ((i + frameOffset) * numChannels + ch) * srcBytesPerSample;
+            }
+            const normalized = readFn(srcView, srcOffset);
+            writeFn(destView, destOffset, normalized);
+          }
+        }
+      }
+    }
+  }
+  clone() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    if (isAudioData(this._data)) {
+      const sample = new AudioSample(this._data.clone());
+      sample.setTimestamp(this.timestamp);
+      return sample;
+    } else {
+      return new AudioSample({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.timestamp,
+        data: this._data
+      });
+    }
+  }
+  close() {
+    if (this._closed) {
+      return;
+    }
+    finalizationRegistry?.unregister(this);
+    if (isAudioData(this._data)) {
+      this._data.close();
+    } else {
+      this._data = new Uint8Array(0);
+    }
+    this._closed = true;
+  }
+  toAudioData() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    if (isAudioData(this._data)) {
+      if (this._data.timestamp === this.microsecondTimestamp) {
+        return this._data.clone();
+      } else {
+        if (formatIsPlanar(this.format)) {
+          const size = this.allocationSize({ planeIndex: 0, format: this.format });
+          const data = new ArrayBuffer(size * this.numberOfChannels);
+          for (let i = 0;i < this.numberOfChannels; i++) {
+            this.copyTo(new Uint8Array(data, i * size, size), { planeIndex: i, format: this.format });
+          }
+          return new AudioData({
+            format: this.format,
+            sampleRate: this.sampleRate,
+            numberOfFrames: this.numberOfFrames,
+            numberOfChannels: this.numberOfChannels,
+            timestamp: this.microsecondTimestamp,
+            data
+          });
+        } else {
+          const data = new ArrayBuffer(this.allocationSize({ planeIndex: 0, format: this.format }));
+          this.copyTo(data, { planeIndex: 0, format: this.format });
+          return new AudioData({
+            format: this.format,
+            sampleRate: this.sampleRate,
+            numberOfFrames: this.numberOfFrames,
+            numberOfChannels: this.numberOfChannels,
+            timestamp: this.microsecondTimestamp,
+            data
+          });
+        }
+      }
+    } else {
+      return new AudioData({
+        format: this.format,
+        sampleRate: this.sampleRate,
+        numberOfFrames: this.numberOfFrames,
+        numberOfChannels: this.numberOfChannels,
+        timestamp: this.microsecondTimestamp,
+        data: this._data.buffer instanceof ArrayBuffer ? this._data.buffer : this._data.slice()
+      });
+    }
+  }
+  toAudioBuffer() {
+    if (this._closed) {
+      throw new Error("AudioSample is closed.");
+    }
+    const audioBuffer = new AudioBuffer({
+      numberOfChannels: this.numberOfChannels,
+      length: this.numberOfFrames,
+      sampleRate: this.sampleRate
+    });
+    const dataBytes = new Float32Array(this.allocationSize({ planeIndex: 0, format: "f32-planar" }) / 4);
+    for (let i = 0;i < this.numberOfChannels; i++) {
+      this.copyTo(dataBytes, { planeIndex: i, format: "f32-planar" });
+      audioBuffer.copyToChannel(dataBytes, i);
+    }
+    return audioBuffer;
+  }
+  setTimestamp(newTimestamp) {
+    if (!Number.isFinite(newTimestamp)) {
+      throw new TypeError("newTimestamp must be a number.");
+    }
+    this.timestamp = newTimestamp;
+  }
+  [Symbol.dispose]() {
+    this.close();
+  }
+  static *_fromAudioBuffer(audioBuffer, timestamp) {
+    if (!(audioBuffer instanceof AudioBuffer)) {
+      throw new TypeError("audioBuffer must be an AudioBuffer.");
+    }
+    const MAX_FLOAT_COUNT = 48000 * 5;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const totalFrames = audioBuffer.length;
+    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
+    let currentRelativeFrame = 0;
+    let remainingFrames = totalFrames;
+    while (remainingFrames > 0) {
+      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
+      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
+      for (let channel = 0;channel < numberOfChannels; channel++) {
+        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
+      }
+      yield new AudioSample({
+        format: "f32-planar",
+        sampleRate,
+        numberOfFrames: framesToCopy,
+        numberOfChannels,
+        timestamp: timestamp + currentRelativeFrame / sampleRate,
+        data: chunkData
+      });
+      currentRelativeFrame += framesToCopy;
+      remainingFrames -= framesToCopy;
+    }
+  }
+  static fromAudioBuffer(audioBuffer, timestamp) {
+    if (!(audioBuffer instanceof AudioBuffer)) {
+      throw new TypeError("audioBuffer must be an AudioBuffer.");
+    }
+    const MAX_FLOAT_COUNT = 48000 * 5;
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const totalFrames = audioBuffer.length;
+    const maxFramesPerChunk = Math.floor(MAX_FLOAT_COUNT / numberOfChannels);
+    let currentRelativeFrame = 0;
+    let remainingFrames = totalFrames;
+    const result = [];
+    while (remainingFrames > 0) {
+      const framesToCopy = Math.min(maxFramesPerChunk, remainingFrames);
+      const chunkData = new Float32Array(numberOfChannels * framesToCopy);
+      for (let channel = 0;channel < numberOfChannels; channel++) {
+        audioBuffer.copyFromChannel(chunkData.subarray(channel * framesToCopy, (channel + 1) * framesToCopy), channel, currentRelativeFrame);
+      }
+      const audioSample = new AudioSample({
+        format: "f32-planar",
+        sampleRate,
+        numberOfFrames: framesToCopy,
+        numberOfChannels,
+        timestamp: timestamp + currentRelativeFrame / sampleRate,
+        data: chunkData
+      });
+      result.push(audioSample);
+      currentRelativeFrame += framesToCopy;
+      remainingFrames -= framesToCopy;
+    }
+    return result;
+  }
+}
+var getBytesPerSample = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return 1;
+    case "s16":
+    case "s16-planar":
+      return 2;
+    case "s32":
+    case "s32-planar":
+      return 4;
+    case "f32":
+    case "f32-planar":
+      return 4;
+    default:
+      throw new Error("Unknown AudioSampleFormat");
+  }
+};
+var formatIsPlanar = (format) => {
+  switch (format) {
+    case "u8-planar":
+    case "s16-planar":
+    case "s32-planar":
+    case "f32-planar":
+      return true;
+    default:
+      return false;
+  }
+};
+var getReadFunction = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return (view, offset) => (view.getUint8(offset) - 128) / 128;
+    case "s16":
+    case "s16-planar":
+      return (view, offset) => view.getInt16(offset, true) / 32768;
+    case "s32":
+    case "s32-planar":
+      return (view, offset) => view.getInt32(offset, true) / 2147483648;
+    case "f32":
+    case "f32-planar":
+      return (view, offset) => view.getFloat32(offset, true);
+  }
+};
+var getWriteFunction = (format) => {
+  switch (format) {
+    case "u8":
+    case "u8-planar":
+      return (view, offset, value) => view.setUint8(offset, clamp((value + 1) * 127.5, 0, 255));
+    case "s16":
+    case "s16-planar":
+      return (view, offset, value) => view.setInt16(offset, clamp(Math.round(value * 32767), -32768, 32767), true);
+    case "s32":
+    case "s32-planar":
+      return (view, offset, value) => view.setInt32(offset, clamp(Math.round(value * 2147483647), -2147483648, 2147483647), true);
+    case "f32":
+    case "f32-planar":
+      return (view, offset, value) => view.setFloat32(offset, value, true);
+  }
+};
+var isAudioData = (x) => {
+  return typeof AudioData !== "undefined" && x instanceof AudioData;
+};
+var doAudioDataCopyToWebKitWorkaround = (audioData, destView, srcFormat, destFormat, numChannels, planeIndex, frameOffset, copyFrameCount) => {
+  const readFn = getReadFunction(srcFormat);
+  const writeFn = getWriteFunction(destFormat);
+  const srcBytesPerSample = getBytesPerSample(srcFormat);
+  const destBytesPerSample = getBytesPerSample(destFormat);
+  const srcIsPlanar = formatIsPlanar(srcFormat);
+  const destIsPlanar = formatIsPlanar(destFormat);
+  if (destIsPlanar) {
+    if (srcIsPlanar) {
+      const data = new ArrayBuffer(copyFrameCount * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0;i < copyFrameCount; i++) {
+        const srcOffset = i * srcBytesPerSample;
+        const destOffset = i * destBytesPerSample;
+        const sample = readFn(dataView, srcOffset);
+        writeFn(destView, destOffset, sample);
+      }
+    } else {
+      const data = new ArrayBuffer(copyFrameCount * numChannels * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex: 0,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0;i < copyFrameCount; i++) {
+        const srcOffset = (i * numChannels + planeIndex) * srcBytesPerSample;
+        const destOffset = i * destBytesPerSample;
+        const sample = readFn(dataView, srcOffset);
+        writeFn(destView, destOffset, sample);
+      }
+    }
+  } else {
+    if (srcIsPlanar) {
+      const planeSize = copyFrameCount * srcBytesPerSample;
+      const data = new ArrayBuffer(planeSize);
+      const dataView = toDataView(data);
+      for (let ch = 0;ch < numChannels; ch++) {
+        audioData.copyTo(data, {
+          planeIndex: ch,
+          frameOffset,
+          frameCount: copyFrameCount,
+          format: srcFormat
+        });
+        for (let i = 0;i < copyFrameCount; i++) {
+          const srcOffset = i * srcBytesPerSample;
+          const destOffset = (i * numChannels + ch) * destBytesPerSample;
+          const sample = readFn(dataView, srcOffset);
+          writeFn(destView, destOffset, sample);
+        }
+      }
+    } else {
+      const data = new ArrayBuffer(copyFrameCount * numChannels * srcBytesPerSample);
+      const dataView = toDataView(data);
+      audioData.copyTo(data, {
+        planeIndex: 0,
+        frameOffset,
+        frameCount: copyFrameCount,
+        format: srcFormat
+      });
+      for (let i = 0;i < copyFrameCount; i++) {
+        for (let ch = 0;ch < numChannels; ch++) {
+          const idx = i * numChannels + ch;
+          const srcOffset = idx * srcBytesPerSample;
+          const destOffset = idx * destBytesPerSample;
+          const sample = readFn(dataView, srcOffset);
+          writeFn(destView, destOffset, sample);
+        }
+      }
+    }
+  }
+};
+
+// ../node_modules/mediabunny/dist/modules/src/isobmff/isobmff-misc.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var A6=($)=>{let Y=($.hasVideo?"video/":$.hasAudio?"audio/":"application/")+($.isQuickTime?"quicktime":"mp4");if($.codecStrings.length>0){let Z=[...new Set($.codecStrings)];Y+=`; codecs="${Z.join(", ")}"`}return Y};/*!
+ */
+var buildIsobmffMimeType = (info) => {
+  const base = info.hasVideo ? "video/" : info.hasAudio ? "audio/" : "application/";
+  let string = base + (info.isQuickTime ? "quicktime" : "mp4");
+  if (info.codecStrings.length > 0) {
+    const uniqueCodecMimeTypes = [...new Set(info.codecStrings)];
+    string += `; codecs="${uniqueCodecMimeTypes.join(", ")}"`;
+  }
+  return string;
+};
+
+// ../node_modules/mediabunny/dist/modules/src/isobmff/isobmff-reader.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var J1=8,_1=16;/*!
+ */
+var MIN_BOX_HEADER_SIZE = 8;
+var MAX_BOX_HEADER_SIZE = 16;
+
+// ../node_modules/mediabunny/dist/modules/src/adts/adts-reader.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var E6=7,R6=9,H1=($)=>{let J=$.filePos,Y=P6($,9),Z=new r(Y);if(Z.readBits(12)!==4095)return null;if(Z.skipBits(1),Z.readBits(2)!==0)return null;let X=Z.readBits(1),Q=Z.readBits(2)+1,U=Z.readBits(4);if(U===15)return null;Z.skipBits(1);let q=Z.readBits(3);if(q===0)throw Error("ADTS frames with channel configuration 0 are not supported.");Z.skipBits(1),Z.skipBits(1),Z.skipBits(1),Z.skipBits(1);let j=Z.readBits(13);Z.skipBits(11);let z=Z.readBits(2)+1;if(z!==1)throw Error("ADTS frames with more than one AAC frame are not supported.");let V=null;if(X===1)$.filePos-=2;else V=Z.readBits(16);return{objectType:Q,samplingFrequencyIndex:U,channelConfiguration:q,frameLength:j,numberOfAacFrames:z,crcCheck:V,startPos:J}};/*!
+ */
+var MIN_ADTS_FRAME_HEADER_SIZE = 7;
+var MAX_ADTS_FRAME_HEADER_SIZE = 9;
+var readAdtsFrameHeader = (slice) => {
+  const startPos = slice.filePos;
+  const bytes = readBytes(slice, 9);
+  const bitstream = new Bitstream(bytes);
+  const syncword = bitstream.readBits(12);
+  if (syncword !== 4095) {
+    return null;
+  }
+  bitstream.skipBits(1);
+  const layer = bitstream.readBits(2);
+  if (layer !== 0) {
+    return null;
+  }
+  const protectionAbsence = bitstream.readBits(1);
+  const objectType = bitstream.readBits(2) + 1;
+  const samplingFrequencyIndex = bitstream.readBits(4);
+  if (samplingFrequencyIndex === 15) {
+    return null;
+  }
+  bitstream.skipBits(1);
+  const channelConfiguration = bitstream.readBits(3);
+  if (channelConfiguration === 0) {
+    throw new Error("ADTS frames with channel configuration 0 are not supported.");
+  }
+  bitstream.skipBits(1);
+  bitstream.skipBits(1);
+  bitstream.skipBits(1);
+  bitstream.skipBits(1);
+  const frameLength = bitstream.readBits(13);
+  bitstream.skipBits(11);
+  const numberOfAacFrames = bitstream.readBits(2) + 1;
+  if (numberOfAacFrames !== 1) {
+    throw new Error("ADTS frames with more than one AAC frame are not supported.");
+  }
+  let crcCheck = null;
+  if (protectionAbsence === 1) {
+    slice.filePos -= 2;
+  } else {
+    crcCheck = bitstream.readBits(16);
+  }
+  return {
+    objectType,
+    samplingFrequencyIndex,
+    channelConfiguration,
+    frameLength,
+    numberOfAacFrames,
+    crcCheck,
+    startPos
+  };
+};
+
+// ../node_modules/mediabunny/dist/modules/src/reader.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class B0{constructor($,J,Y,Z,G){this.bytes=$,this.view=J,this.offset=Y,this.start=Z,this.end=G,this.bufferPos=Z-Y}static tempFromBytes($){return new B0($,d($),0,0,$.length)}get length(){return this.end-this.start}get filePos(){return this.offset+this.bufferPos}set filePos($){this.bufferPos=$-this.offset}get remainingLength(){return Math.max(this.end-this.filePos,0)}skip($){this.bufferPos+=$}slice($,J=this.end-$){if($<this.start||$+J>this.end)throw RangeError("Slicing outside of original slice.");return new B0(this.bytes,this.view,this.offset,$,$+J)}}var P8=($,J)=>{if($.filePos<$.start||$.filePos+J>$.end)throw RangeError(`Tried reading [${$.filePos}, ${$.filePos+J}), but slice is [${$.start}, ${$.end}). This is likely an internal error, please report it alongside the file that caused it.`)},P6=($,J)=>{P8($,J);let Y=$.bytes.subarray($.bufferPos,$.bufferPos+J);return $.bufferPos+=J,Y};/*!
+ */
+class FileSlice {
+  constructor(bytes, view, offset, start, end) {
+    this.bytes = bytes;
+    this.view = view;
+    this.offset = offset;
+    this.start = start;
+    this.end = end;
+    this.bufferPos = start - offset;
+  }
+  static tempFromBytes(bytes) {
+    return new FileSlice(bytes, toDataView(bytes), 0, 0, bytes.length);
+  }
+  get length() {
+    return this.end - this.start;
+  }
+  get filePos() {
+    return this.offset + this.bufferPos;
+  }
+  set filePos(value) {
+    this.bufferPos = value - this.offset;
+  }
+  get remainingLength() {
+    return Math.max(this.end - this.filePos, 0);
+  }
+  skip(byteCount) {
+    this.bufferPos += byteCount;
+  }
+  slice(filePos, length = this.end - filePos) {
+    if (filePos < this.start || filePos + length > this.end) {
+      throw new RangeError("Slicing outside of original slice.");
+    }
+    return new FileSlice(this.bytes, this.view, this.offset, filePos, filePos + length);
+  }
+}
+var checkIsInRange = (slice, bytesToRead) => {
+  if (slice.filePos < slice.start || slice.filePos + bytesToRead > slice.end) {
+    throw new RangeError(`Tried reading [${slice.filePos}, ${slice.filePos + bytesToRead}), but slice is` + ` [${slice.start}, ${slice.end}). This is likely an internal error, please report it alongside the file` + ` that caused it.`);
+  }
+};
+var readBytes = (slice, length) => {
+  checkIsInRange(slice, length);
+  const bytes = slice.bytes.subarray(slice.bufferPos, slice.bufferPos + length);
+  slice.bufferPos += length;
+  return bytes;
+};
+
+// ../node_modules/mediabunny/dist/modules/src/subtitles.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var A1=/<(?:(\d{2}):)?(\d{2}):(\d{2}).(\d{3})>/g;var B6=($)=>{let J=Math.floor($/3600000),Y=Math.floor($%3600000/60000),Z=Math.floor($%60000/1000),G=$%1000;return J.toString().padStart(2,"0")+":"+Y.toString().padStart(2,"0")+":"+Z.toString().padStart(2,"0")+"."+G.toString().padStart(3,"0")};/*!
+ */
+var inlineTimestampRegex = /<(?:(\d{2}):)?(\d{2}):(\d{2}).(\d{3})>/g;
+var formatSubtitleTimestamp = (timestamp) => {
+  const hours = Math.floor(timestamp / (60 * 60 * 1000));
+  const minutes = Math.floor(timestamp % (60 * 60 * 1000) / (60 * 1000));
+  const seconds = Math.floor(timestamp % (60 * 1000) / 1000);
+  const milliseconds = timestamp % 1000;
+  return hours.toString().padStart(2, "0") + ":" + minutes.toString().padStart(2, "0") + ":" + seconds.toString().padStart(2, "0") + "." + milliseconds.toString().padStart(3, "0");
+};
+
+// ../node_modules/mediabunny/dist/modules/src/isobmff/isobmff-boxes.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class Z1{constructor($){this.writer=$,this.helper=new Uint8Array(8),this.helperView=new DataView(this.helper.buffer),this.offsets=new WeakMap}writeU32($){this.helperView.setUint32(0,$,!1),this.writer.write(this.helper.subarray(0,4))}writeU64($){this.helperView.setUint32(0,Math.floor($/4294967296),!1),this.helperView.setUint32(4,$,!1),this.writer.write(this.helper.subarray(0,8))}writeAscii($){for(let J=0;J<$.length;J++)if(this.helperView.setUint8(J%8,$.charCodeAt(J)),J%8===7)this.writer.write(this.helper);if($.length%8!==0)this.writer.write(this.helper.subarray(0,$.length%8))}writeBox($){if(this.offsets.set($,this.writer.getPos()),$.contents&&!$.children)this.writeBoxHeader($,$.size??$.contents.byteLength+8),this.writer.write($.contents);else{let J=this.writer.getPos();if(this.writeBoxHeader($,0),$.contents)this.writer.write($.contents);if($.children){for(let G of $.children)if(G)this.writeBox(G)}let Y=this.writer.getPos(),Z=$.size??Y-J;this.writer.seek(J),this.writeBoxHeader($,Z),this.writer.seek(Y)}}writeBoxHeader($,J){if(this.writeU32($.largeSize?1:J),this.writeAscii($.type),$.largeSize)this.writeU64(J)}measureBoxHeader($){return 8+($.largeSize?8:0)}patchBox($){let J=this.offsets.get($);N(J!==void 0);let Y=this.writer.getPos();this.writer.seek(J),this.writeBox($),this.writer.seek(Y)}measureBox($){if($.contents&&!$.children)return this.measureBoxHeader($)+$.contents.byteLength;else{let J=this.measureBoxHeader($);if($.contents)J+=$.contents.byteLength;if($.children){for(let Y of $.children)if(Y)J+=this.measureBox(Y)}return J}}}var P=new Uint8Array(8),$0=new DataView(P.buffer),O=($)=>{return[($%256+256)%256]},_=($)=>{return $0.setUint16(0,$,!1),[P[0],P[1]]},O6=($)=>{return $0.setInt16(0,$,!1),[P[0],P[1]]},F6=($)=>{return $0.setUint32(0,$,!1),[P[1],P[2],P[3]]},L=($)=>{return $0.setUint32(0,$,!1),[P[0],P[1],P[2],P[3]]},N0=($)=>{return $0.setInt32(0,$,!1),[P[0],P[1],P[2],P[3]]},H0=($)=>{return $0.setUint32(0,Math.floor($/4294967296),!1),$0.setUint32(4,$,!1),[P[0],P[1],P[2],P[3],P[4],P[5],P[6],P[7]]},D6=($)=>{return $0.setInt16(0,256*$,!1),[P[0],P[1]]},K0=($)=>{return $0.setInt32(0,65536*$,!1),[P[0],P[1],P[2],P[3]]},E1=($)=>{return $0.setInt32(0,1073741824*$,!1),[P[0],P[1],P[2],P[3]]},R1=($,J)=>{let Y=[],Z=$;do{let G=Z&127;if(Z>>=7,Y.length>0)G|=128;if(Y.push(G),J!==void 0)J--}while(Z>0||J);return Y.reverse()},k=($,J=!1)=>{let Y=Array($.length).fill(null).map((Z,G)=>$.charCodeAt(G));if(J)Y.push(0);return Y},B1=($)=>{let J=null;for(let Y of $)if(!J||Y.timestamp>J.timestamp)J=Y;return J},T6=($)=>{let J=$*(Math.PI/180),Y=Math.round(Math.cos(J)),Z=Math.round(Math.sin(J));return[Y,Z,0,-Z,Y,0,0,0,1]},x6=T6(0),S6=($)=>{return[K0($[0]),K0($[1]),E1($[2]),K0($[3]),K0($[4]),E1($[5]),K0($[6]),K0($[7]),E1($[8])]},E=($,J,Y)=>({type:$,contents:J&&new Uint8Array(J.flat(10)),children:Y}),B=($,J,Y,Z,G)=>E($,[O(J),F6(Y),Z??[]],G),b6=($)=>{if($.isQuickTime)return E("ftyp",[k("qt  "),L(512),k("qt  ")]);if($.fragmented)return E("ftyp",[k("iso5"),L(512),k("iso5"),k("iso6"),k("mp41")]);return E("ftyp",[k("isom"),L(512),k("isom"),$.holdsAvc?k("avc1"):[],k("mp41")])},h0=($)=>({type:"mdat",largeSize:$}),y6=($)=>({type:"free",size:$}),I0=($)=>E("moov",void 0,[B8($.creationTime,$.trackDatas),...$.trackDatas.map((J)=>I8(J,$.creationTime)),$.isFragmented?K2($.trackDatas):null,M2($)]),B8=($,J)=>{let Y=D(Math.max(0,...J.filter((X)=>X.samples.length>0).map((X)=>{let Q=B1(X.samples);return Q.timestamp+Q.duration})),Y1),Z=Math.max(0,...J.map((X)=>X.track.id))+1,G=!M0($)||!M0(Y),K=G?H0:L;return B("mvhd",+G,0,[K($),K($),L(Y1),K(Y),K0(1),D6(1),Array(10).fill(0),S6(x6),Array(24).fill(0),L(Z)])},I8=($,J)=>{let Y=p6($);return E("trak",void 0,[w8($,J),O8($,J),Y.name!==void 0?E("udta",void 0,[E("name",[...c.encode(Y.name)])]):null])},w8=($,J)=>{let Y=B1($.samples),Z=D(Y?Y.timestamp+Y.duration:0,Y1),G=!M0(J)||!M0(Z),K=G?H0:L,X;if($.type==="video"){let U=$.track.metadata.rotation;X=T6(U??0)}else X=x6;let Q=2;if($.track.metadata.disposition?.default!==!1)Q|=1;return B("tkhd",+G,Q,[K(J),K(J),L($.track.id),L(0),K(Z),Array(8).fill(0),_(0),_($.track.id),D6($.type==="audio"?1:0),_(0),S6(X),K0($.type==="video"?$.info.width:0),K0($.type==="video"?$.info.height:0)])},O8=($,J)=>E("mdia",void 0,[F8($,J),I1(!0,D8[$.type],T8[$.type]),x8($)]),F8=($,J)=>{let Y=B1($.samples),Z=D(Y?Y.timestamp+Y.duration:0,$.timescale),G=!M0(J)||!M0(Z),K=G?H0:L;return B("mdhd",+G,0,[K(J),K(J),L($.timescale),K(Z),_(l6($.track.metadata.languageCode??b1)),_(0)])},D8={video:"vide",audio:"soun",subtitle:"text"},T8={video:"MediabunnyVideoHandler",audio:"MediabunnySoundHandler",subtitle:"MediabunnyTextHandler"},I1=($,J,Y,Z="\x00\x00\x00\x00")=>B("hdlr",0,0,[$?k("mhlr"):L(0),k(J),k(Z),L(0),L(0),k(Y,!0)]),x8=($)=>E("minf",void 0,[C8[$.type](),k8(),f8($)]),S8=()=>B("vmhd",0,1,[_(0),_(0),_(0),_(0)]),b8=()=>B("smhd",0,0,[_(0),_(0)]),y8=()=>B("nmhd",0,0),C8={video:S8,audio:b8,subtitle:y8},k8=()=>E("dinf",void 0,[v8()]),v8=()=>B("dref",0,0,[L(1)],[h8()]),h8=()=>B("url ",0,1),f8=($)=>{let J=$.compositionTimeOffsetTable.length>1||$.compositionTimeOffsetTable.some((Y)=>Y.sampleCompositionTimeOffset!==0);return E("stbl",void 0,[g8($),t8($),J?Z2($):null,J?G2($):null,$2($),J2($),Y2($),e8($)])},g8=($)=>{let J;if($.type==="video")J=u8(H2($.track.source._codec,$.info.decoderConfig.codec),$);else if($.type==="audio"){let Y=u6($.track.source._codec,$.muxer.isQuickTime);N(Y),J=c8(Y,$)}else if($.type==="subtitle")J=o8(R2[$.track.source._codec],$);return N(J),B("stsd",0,0,[L(1)],[J])},u8=($,J)=>E($,[Array(6).fill(0),_(1),_(0),_(0),Array(12).fill(0),_(J.info.width),_(J.info.height),L(4718592),L(4718592),L(0),_(1),Array(32).fill(0),_(24),O6(65535)],[A2[J.track.source._codec](J),x1(J.info.decoderConfig.colorSpace)?l8(J):null]),l8=($)=>E("colr",[k("nclx"),_(O0[$.info.decoderConfig.colorSpace.primaries]),_(F0[$.info.decoderConfig.colorSpace.transfer]),_(D0[$.info.decoderConfig.colorSpace.matrix]),O(($.info.decoderConfig.colorSpace.fullRange?1:0)<<7)]),p8=($)=>$.info.decoderConfig&&E("avcC",[...u($.info.decoderConfig.description)]),m8=($)=>$.info.decoderConfig&&E("hvcC",[...u($.info.decoderConfig.description)]),I6=($)=>{if(!$.info.decoderConfig)return null;let J=$.info.decoderConfig,Y=J.codec.split("."),Z=Number(Y[1]),G=Number(Y[2]),K=Number(Y[3]),X=Y[4]?Number(Y[4]):1,Q=Y[8]?Number(Y[8]):Number(J.colorSpace?.fullRange??0),U=(K<<4)+(X<<1)+Q,q=Y[5]?Number(Y[5]):J.colorSpace?.primaries?O0[J.colorSpace.primaries]:2,j=Y[6]?Number(Y[6]):J.colorSpace?.transfer?F0[J.colorSpace.transfer]:2,z=Y[7]?Number(Y[7]):J.colorSpace?.matrix?D0[J.colorSpace.matrix]:2;return B("vpcC",1,0,[O(Z),O(G),O(U),O(q),O(j),O(z),_(0)])},d8=($)=>{return E("av1C",m1($.info.decoderConfig.codec))},c8=($,J)=>{let Y=0,Z,G=16;if(h.includes(J.track.source._codec)){let K=J.track.source._codec,{sampleSize:X}=Y0(K);if(G=8*X,G>16)Y=1}if(Y===0)Z=[Array(6).fill(0),_(1),_(Y),_(0),L(0),_(J.info.numberOfChannels),_(G),_(0),_(0),_(J.info.sampleRate<65536?J.info.sampleRate:0),_(0)];else Z=[Array(6).fill(0),_(1),_(Y),_(0),L(0),_(J.info.numberOfChannels),_(Math.min(G,16)),_(0),_(0),_(J.info.sampleRate<65536?J.info.sampleRate:0),_(0),L(1),L(G/8),L(J.info.numberOfChannels*G/8),L(2)];return E($,Z,[E2(J.track.source._codec,J.muxer.isQuickTime)?.(J)??null])},P1=($)=>{let J;switch($.track.source._codec){case"aac":J=64;break;case"mp3":J=107;break;case"vorbis":J=221;break;default:throw Error(`Unhandled audio codec: ${$.track.source._codec}`)}let Y=[...O(J),...O(21),...F6(0),...L(0),...L(0)];if($.info.decoderConfig.description){let Z=u($.info.decoderConfig.description);Y=[...Y,...O(5),...R1(Z.byteLength),...Z]}return Y=[..._(1),...O(0),...O(4),...R1(Y.length),...Y,...O(6),...O(1),...O(2)],Y=[...O(3),...R1(Y.length),...Y],B("esds",0,0,Y)},z0=($)=>{return E("wave",void 0,[r8($),n8($),E("\x00\x00\x00\x00")])},r8=($)=>{return E("frma",[k(u6($.track.source._codec,$.muxer.isQuickTime))])},n8=($)=>{let{littleEndian:J}=Y0($.track.source._codec);return E("enda",[_(+J)])},s8=($)=>{let J=$.info.numberOfChannels,Y=3840,Z=$.info.sampleRate,G=0,K=0,X=new Uint8Array(0),Q=$.info.decoderConfig?.description;if(Q){N(Q.byteLength>=18);let U=u(Q),q=Q6(U);if(J=q.outputChannelCount,Y=q.preSkip,Z=q.inputSampleRate,G=q.outputGain,K=q.channelMappingFamily,q.channelMappingTable)X=q.channelMappingTable}return E("dOps",[O(0),O(J),_(Y),L(Z),O6(G),O(K),...X])},i8=($)=>{let J=$.info.decoderConfig?.description;N(J);let Y=u(J);return B("dfLa",0,0,[...Y.subarray(4)])},t=($)=>{let{littleEndian:J,sampleSize:Y}=Y0($.track.source._codec),Z=+J;return B("pcmC",0,0,[O(Z),O(8*Y)])},o8=($,J)=>E($,[Array(6).fill(0),_(1)],[P2[J.track.source._codec](J)]),a8=($)=>E("vttC",[...c.encode($.info.config.description)]);var t8=($)=>{return B("stts",0,0,[L($.timeToSampleTable.length),$.timeToSampleTable.map((J)=>[L(J.sampleCount),L(J.sampleDelta)])])},e8=($)=>{if($.samples.every((Y)=>Y.type==="key"))return null;let J=[...$.samples.entries()].filter(([,Y])=>Y.type==="key");return B("stss",0,0,[L(J.length),J.map(([Y])=>L(Y+1))])},$2=($)=>{return B("stsc",0,0,[L($.compactlyCodedChunkTable.length),$.compactlyCodedChunkTable.map((J)=>[L(J.firstChunk),L(J.samplesPerChunk),L(1)])])},J2=($)=>{if($.type==="audio"&&$.info.requiresPcmTransformation){let{sampleSize:J}=Y0($.track.source._codec);return B("stsz",0,0,[L(J*$.info.numberOfChannels),L($.samples.reduce((Y,Z)=>Y+D(Z.duration,$.timescale),0))])}return B("stsz",0,0,[L(0),L($.samples.length),$.samples.map((J)=>L(J.size))])},Y2=($)=>{if($.finalizedChunks.length>0&&y($.finalizedChunks).offset>=4294967296)return B("co64",0,0,[L($.finalizedChunks.length),$.finalizedChunks.map((J)=>H0(J.offset))]);return B("stco",0,0,[L($.finalizedChunks.length),$.finalizedChunks.map((J)=>L(J.offset))])},Z2=($)=>{return B("ctts",1,0,[L($.compositionTimeOffsetTable.length),$.compositionTimeOffsetTable.map((J)=>[L(J.sampleCount),N0(J.sampleCompositionTimeOffset)])])},G2=($)=>{let J=1/0,Y=-1/0,Z=1/0,G=-1/0;N($.compositionTimeOffsetTable.length>0),N($.samples.length>0);for(let X=0;X<$.compositionTimeOffsetTable.length;X++){let Q=$.compositionTimeOffsetTable[X];J=Math.min(J,Q.sampleCompositionTimeOffset),Y=Math.max(Y,Q.sampleCompositionTimeOffset)}for(let X=0;X<$.samples.length;X++){let Q=$.samples[X];Z=Math.min(Z,D(Q.timestamp,$.timescale)),G=Math.max(G,D(Q.timestamp+Q.duration,$.timescale))}let K=Math.max(-J,0);if(G>=2147483648)return null;return B("cslg",0,0,[N0(K),N0(J),N0(Y),N0(Z),N0(G)])},K2=($)=>{return E("mvex",void 0,$.map(X2))},X2=($)=>{return B("trex",0,0,[L($.track.id),L(1),L(0),L(0),L(0)])},w1=($,J)=>{return E("moof",void 0,[Q2($),...J.map(U2)])},Q2=($)=>{return B("mfhd",0,0,[L($)])},C6=($)=>{let J=0,Y=0,Z=0,G=0,K=$.type==="delta";if(Y|=+K,K)J|=1;else J|=2;return J<<24|Y<<16|Z<<8|G},U2=($)=>{return E("traf",void 0,[q2($),j2($),z2($)])},q2=($)=>{N($.currentChunk);let J=0;J|=8,J|=16,J|=32,J|=131072;let Y=$.currentChunk.samples[1]??$.currentChunk.samples[0],Z={duration:Y.timescaleUnitsToNextSample,size:Y.size,flags:C6(Y)};return B("tfhd",0,J,[L($.track.id),L(Z.duration),L(Z.size),L(Z.flags)])},j2=($)=>{return N($.currentChunk),B("tfdt",1,0,[H0(D($.currentChunk.startTimestamp,$.timescale))])},z2=($)=>{N($.currentChunk);let J=$.currentChunk.samples.map((H)=>H.timescaleUnitsToNextSample),Y=$.currentChunk.samples.map((H)=>H.size),Z=$.currentChunk.samples.map(C6),G=$.currentChunk.samples.map((H)=>D(H.timestamp-H.decodeTimestamp,$.timescale)),K=new Set(J),X=new Set(Y),Q=new Set(Z),U=new Set(G),q=Q.size===2&&Z[0]!==Z[1],j=K.size>1,z=X.size>1,V=!q&&Q.size>1,W=U.size>1||[...U].some((H)=>H!==0),R=0;return R|=1,R|=4*+q,R|=256*+j,R|=512*+z,R|=1024*+V,R|=2048*+W,B("trun",1,R,[L($.currentChunk.samples.length),L($.currentChunk.offset-$.currentChunk.moofOffset||0),q?L(Z[0]):[],$.currentChunk.samples.map((H,A)=>[j?L(J[A]):[],z?L(Y[A]):[],V?L(Z[A]):[],W?N0(G[A]):[]])])},k6=($)=>{return E("mfra",void 0,[...$.map(N2),L2()])},N2=($,J)=>{return B("tfra",1,0,[L($.track.id),L(63),L($.finalizedChunks.length),$.finalizedChunks.map((Z)=>[H0(D(Z.samples[0].timestamp,$.timescale)),H0(Z.moofOffset),L(J+1),L(1),L(1)])])},L2=()=>{return B("mfro",0,0,[L(0)])},v6=()=>E("vtte"),h6=($,J,Y,Z,G)=>E("vttc",void 0,[G!==null?E("vsid",[N0(G)]):null,Y!==null?E("iden",[...c.encode(Y)]):null,J!==null?E("ctim",[...c.encode(B6(J))]):null,Z!==null?E("sttg",[...c.encode(Z)]):null,E("payl",[...c.encode($)])]),f6=($)=>E("vtta",[...c.encode($)]),M2=($)=>{let J=[],Y=$.format._options.metadataFormat??"auto",Z=$.output._metadataTags;if(Y==="mdir"||Y==="auto"&&!$.isQuickTime){let G=W2(Z);if(G)J.push(G)}else if(Y==="mdta"){let G=_2(Z);if(G)J.push(G)}else if(Y==="udta"||Y==="auto"&&$.isQuickTime)V2(J,$.output._metadataTags);if(J.length===0)return null;return E("udta",void 0,J)},V2=($,J)=>{for(let{key:Y,value:Z}of i0(J))switch(Y){case"title":$.push(e("©nam",Z));break;case"description":$.push(e("©des",Z));break;case"artist":$.push(e("©ART",Z));break;case"album":$.push(e("©alb",Z));break;case"albumArtist":$.push(e("albr",Z));break;case"genre":$.push(e("©gen",Z));break;case"date":$.push(e("©day",Z.toISOString().slice(0,10)));break;case"comment":$.push(e("©cmt",Z));break;case"lyrics":$.push(e("©lyr",Z));break;case"raw":break;case"discNumber":case"discsTotal":case"trackNumber":case"tracksTotal":case"images":break;default:q0(Y)}if(J.raw)for(let Y in J.raw){let Z=J.raw[Y];if(Z==null||Y.length!==4||$.some((G)=>G.type===Y))continue;if(typeof Z==="string")$.push(e(Y,Z));else if(Z instanceof Uint8Array)$.push(E(Y,Array.from(Z)))}},e=($,J)=>{let Y=c.encode(J);return E($,[_(Y.length),_(l6("und")),Array.from(Y)])},w6={"image/jpeg":13,"image/png":14,"image/bmp":27},g6=($,J)=>{let Y=[];for(let{key:Z,value:G}of i0($))switch(Z){case"title":Y.push({key:J?"title":"©nam",value:n(G)});break;case"description":Y.push({key:J?"description":"©des",value:n(G)});break;case"artist":Y.push({key:J?"artist":"©ART",value:n(G)});break;case"album":Y.push({key:J?"album":"©alb",value:n(G)});break;case"albumArtist":Y.push({key:J?"album_artist":"aART",value:n(G)});break;case"comment":Y.push({key:J?"comment":"©cmt",value:n(G)});break;case"genre":Y.push({key:J?"genre":"©gen",value:n(G)});break;case"lyrics":Y.push({key:J?"lyrics":"©lyr",value:n(G)});break;case"date":Y.push({key:J?"date":"©day",value:n(G.toISOString().slice(0,10))});break;case"images":for(let K of G){if(K.kind!=="coverFront")continue;Y.push({key:"covr",value:E("data",[L(w6[K.mimeType]??0),L(0),Array.from(K.data)])})}break;case"trackNumber":if(J){let K=$.tracksTotal!==void 0?`${G}/${$.tracksTotal}`:G.toString();Y.push({key:"track",value:n(K)})}else Y.push({key:"trkn",value:E("data",[L(0),L(0),_(0),_(G),_($.tracksTotal??0),_(0)])});break;case"discNumber":if(!J)Y.push({key:"disc",value:E("data",[L(0),L(0),_(0),_(G),_($.discsTotal??0),_(0)])});break;case"tracksTotal":case"discsTotal":break;case"raw":break;default:q0(Z)}if($.raw)for(let Z in $.raw){let G=$.raw[Z];if(G==null||!J&&Z.length!==4||Y.some((K)=>K.key===Z))continue;if(typeof G==="string")Y.push({key:Z,value:n(G)});else if(G instanceof Uint8Array)Y.push({key:Z,value:E("data",[L(0),L(0),Array.from(G)])});else if(G instanceof o0)Y.push({key:Z,value:E("data",[L(w6[G.mimeType]??0),L(0),Array.from(G.data)])})}return Y},W2=($)=>{let J=g6($,!1);if(J.length===0)return null;return B("meta",0,0,void 0,[I1(!1,"mdir","","appl"),E("ilst",void 0,J.map((Y)=>E(Y.key,void 0,[Y.value])))])},_2=($)=>{let J=g6($,!0);if(J.length===0)return null;return E("meta",void 0,[I1(!1,"mdta",""),B("keys",0,0,[L(J.length)],J.map((Y)=>E("mdta",[...c.encode(Y.key)]))),E("ilst",void 0,J.map((Y,Z)=>{let G=String.fromCharCode(...L(Z+1));return E(G,void 0,[Y.value])}))])},n=($)=>{return E("data",[L(1),L(0),...c.encode($)])},H2=($,J)=>{switch($){case"avc":return J.startsWith("avc3")?"avc3":"avc1";case"hevc":return"hvc1";case"vp8":return"vp08";case"vp9":return"vp09";case"av1":return"av01"}},A2={avc:p8,hevc:m8,vp8:I6,vp9:I6,av1:d8},u6=($,J)=>{switch($){case"aac":return"mp4a";case"mp3":return"mp4a";case"opus":return"Opus";case"vorbis":return"mp4a";case"flac":return"fLaC";case"ulaw":return"ulaw";case"alaw":return"alaw";case"pcm-u8":return"raw ";case"pcm-s8":return"sowt"}if(J)switch($){case"pcm-s16":return"sowt";case"pcm-s16be":return"twos";case"pcm-s24":return"in24";case"pcm-s24be":return"in24";case"pcm-s32":return"in32";case"pcm-s32be":return"in32";case"pcm-f32":return"fl32";case"pcm-f32be":return"fl32";case"pcm-f64":return"fl64";case"pcm-f64be":return"fl64"}else switch($){case"pcm-s16":return"ipcm";case"pcm-s16be":return"ipcm";case"pcm-s24":return"ipcm";case"pcm-s24be":return"ipcm";case"pcm-s32":return"ipcm";case"pcm-s32be":return"ipcm";case"pcm-f32":return"fpcm";case"pcm-f32be":return"fpcm";case"pcm-f64":return"fpcm";case"pcm-f64be":return"fpcm"}},E2=($,J)=>{switch($){case"aac":return P1;case"mp3":return P1;case"opus":return s8;case"vorbis":return P1;case"flac":return i8}if(J)switch($){case"pcm-s24":return z0;case"pcm-s24be":return z0;case"pcm-s32":return z0;case"pcm-s32be":return z0;case"pcm-f32":return z0;case"pcm-f32be":return z0;case"pcm-f64":return z0;case"pcm-f64be":return z0}else switch($){case"pcm-s16":return t;case"pcm-s16be":return t;case"pcm-s24":return t;case"pcm-s24be":return t;case"pcm-s32":return t;case"pcm-s32be":return t;case"pcm-f32":return t;case"pcm-f32be":return t;case"pcm-f64":return t;case"pcm-f64be":return t}return null},R2={webvtt:"wvtt"},P2={webvtt:a8},l6=($)=>{N($.length===3);let J=0;for(let Y=0;Y<3;Y++)J<<=5,J+=$.charCodeAt(Y)-96;return J};/*!
+ */
+
+class IsobmffBoxWriter {
+  constructor(writer) {
+    this.writer = writer;
+    this.helper = new Uint8Array(8);
+    this.helperView = new DataView(this.helper.buffer);
+    this.offsets = new WeakMap;
+  }
+  writeU32(value) {
+    this.helperView.setUint32(0, value, false);
+    this.writer.write(this.helper.subarray(0, 4));
+  }
+  writeU64(value) {
+    this.helperView.setUint32(0, Math.floor(value / 2 ** 32), false);
+    this.helperView.setUint32(4, value, false);
+    this.writer.write(this.helper.subarray(0, 8));
+  }
+  writeAscii(text) {
+    for (let i = 0;i < text.length; i++) {
+      this.helperView.setUint8(i % 8, text.charCodeAt(i));
+      if (i % 8 === 7)
+        this.writer.write(this.helper);
+    }
+    if (text.length % 8 !== 0) {
+      this.writer.write(this.helper.subarray(0, text.length % 8));
+    }
+  }
+  writeBox(box) {
+    this.offsets.set(box, this.writer.getPos());
+    if (box.contents && !box.children) {
+      this.writeBoxHeader(box, box.size ?? box.contents.byteLength + 8);
+      this.writer.write(box.contents);
+    } else {
+      const startPos = this.writer.getPos();
+      this.writeBoxHeader(box, 0);
+      if (box.contents)
+        this.writer.write(box.contents);
+      if (box.children) {
+        for (const child of box.children)
+          if (child)
+            this.writeBox(child);
+      }
+      const endPos = this.writer.getPos();
+      const size = box.size ?? endPos - startPos;
+      this.writer.seek(startPos);
+      this.writeBoxHeader(box, size);
+      this.writer.seek(endPos);
+    }
+  }
+  writeBoxHeader(box, size) {
+    this.writeU32(box.largeSize ? 1 : size);
+    this.writeAscii(box.type);
+    if (box.largeSize)
+      this.writeU64(size);
+  }
+  measureBoxHeader(box) {
+    return 8 + (box.largeSize ? 8 : 0);
+  }
+  patchBox(box) {
+    const boxOffset = this.offsets.get(box);
+    assert(boxOffset !== undefined);
+    const endPos = this.writer.getPos();
+    this.writer.seek(boxOffset);
+    this.writeBox(box);
+    this.writer.seek(endPos);
+  }
+  measureBox(box) {
+    if (box.contents && !box.children) {
+      const headerSize = this.measureBoxHeader(box);
+      return headerSize + box.contents.byteLength;
+    } else {
+      let result = this.measureBoxHeader(box);
+      if (box.contents)
+        result += box.contents.byteLength;
+      if (box.children) {
+        for (const child of box.children)
+          if (child)
+            result += this.measureBox(child);
+      }
+      return result;
+    }
+  }
+}
+var bytes = /* @__PURE__ */ new Uint8Array(8);
+var view = /* @__PURE__ */ new DataView(bytes.buffer);
+var u8 = (value) => {
+  return [(value % 256 + 256) % 256];
+};
+var u16 = (value) => {
+  view.setUint16(0, value, false);
+  return [bytes[0], bytes[1]];
+};
+var i16 = (value) => {
+  view.setInt16(0, value, false);
+  return [bytes[0], bytes[1]];
+};
+var u24 = (value) => {
+  view.setUint32(0, value, false);
+  return [bytes[1], bytes[2], bytes[3]];
+};
+var u32 = (value) => {
+  view.setUint32(0, value, false);
+  return [bytes[0], bytes[1], bytes[2], bytes[3]];
+};
+var i32 = (value) => {
+  view.setInt32(0, value, false);
+  return [bytes[0], bytes[1], bytes[2], bytes[3]];
+};
+var u64 = (value) => {
+  view.setUint32(0, Math.floor(value / 2 ** 32), false);
+  view.setUint32(4, value, false);
+  return [bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7]];
+};
+var fixed_8_8 = (value) => {
+  view.setInt16(0, 2 ** 8 * value, false);
+  return [bytes[0], bytes[1]];
+};
+var fixed_16_16 = (value) => {
+  view.setInt32(0, 2 ** 16 * value, false);
+  return [bytes[0], bytes[1], bytes[2], bytes[3]];
+};
+var fixed_2_30 = (value) => {
+  view.setInt32(0, 2 ** 30 * value, false);
+  return [bytes[0], bytes[1], bytes[2], bytes[3]];
+};
+var variableUnsignedInt = (value, byteLength) => {
+  const bytes2 = [];
+  let remaining = value;
+  do {
+    let byte = remaining & 127;
+    remaining >>= 7;
+    if (bytes2.length > 0) {
+      byte |= 128;
+    }
+    bytes2.push(byte);
+    if (byteLength !== undefined) {
+      byteLength--;
+    }
+  } while (remaining > 0 || byteLength);
+  return bytes2.reverse();
+};
+var ascii = (text, nullTerminated = false) => {
+  const bytes2 = Array(text.length).fill(null).map((_, i) => text.charCodeAt(i));
+  if (nullTerminated)
+    bytes2.push(0);
+  return bytes2;
+};
+var lastPresentedSample = (samples) => {
+  let result = null;
+  for (const sample of samples) {
+    if (!result || sample.timestamp > result.timestamp) {
+      result = sample;
+    }
+  }
+  return result;
+};
+var rotationMatrix = (rotationInDegrees) => {
+  const theta = rotationInDegrees * (Math.PI / 180);
+  const cosTheta = Math.round(Math.cos(theta));
+  const sinTheta = Math.round(Math.sin(theta));
+  return [
+    cosTheta,
+    sinTheta,
+    0,
+    -sinTheta,
+    cosTheta,
+    0,
+    0,
+    0,
+    1
+  ];
+};
+var IDENTITY_MATRIX = /* @__PURE__ */ rotationMatrix(0);
+var matrixToBytes = (matrix) => {
+  return [
+    fixed_16_16(matrix[0]),
+    fixed_16_16(matrix[1]),
+    fixed_2_30(matrix[2]),
+    fixed_16_16(matrix[3]),
+    fixed_16_16(matrix[4]),
+    fixed_2_30(matrix[5]),
+    fixed_16_16(matrix[6]),
+    fixed_16_16(matrix[7]),
+    fixed_2_30(matrix[8])
+  ];
+};
+var box = (type, contents, children) => ({
+  type,
+  contents: contents && new Uint8Array(contents.flat(10)),
+  children
+});
+var fullBox = (type, version, flags, contents, children) => box(type, [u8(version), u24(flags), contents ?? []], children);
+var ftyp = (details) => {
+  const minorVersion = 512;
+  if (details.isQuickTime) {
+    return box("ftyp", [
+      ascii("qt  "),
+      u32(minorVersion),
+      ascii("qt  ")
+    ]);
+  }
+  if (details.fragmented) {
+    return box("ftyp", [
+      ascii("iso5"),
+      u32(minorVersion),
+      ascii("iso5"),
+      ascii("iso6"),
+      ascii("mp41")
+    ]);
+  }
+  return box("ftyp", [
+    ascii("isom"),
+    u32(minorVersion),
+    ascii("isom"),
+    details.holdsAvc ? ascii("avc1") : [],
+    ascii("mp41")
+  ]);
+};
+var mdat = (reserveLargeSize) => ({ type: "mdat", largeSize: reserveLargeSize });
+var free = (size) => ({ type: "free", size });
+var moov = (muxer) => box("moov", undefined, [
+  mvhd(muxer.creationTime, muxer.trackDatas),
+  ...muxer.trackDatas.map((x) => trak(x, muxer.creationTime)),
+  muxer.isFragmented ? mvex(muxer.trackDatas) : null,
+  udta(muxer)
+]);
+var mvhd = (creationTime, trackDatas) => {
+  const duration = intoTimescale(Math.max(0, ...trackDatas.filter((x) => x.samples.length > 0).map((x) => {
+    const lastSample = lastPresentedSample(x.samples);
+    return lastSample.timestamp + lastSample.duration;
+  })), GLOBAL_TIMESCALE);
+  const nextTrackId = Math.max(0, ...trackDatas.map((x) => x.track.id)) + 1;
+  const needsU64 = !isU32(creationTime) || !isU32(duration);
+  const u32OrU64 = needsU64 ? u64 : u32;
+  return fullBox("mvhd", +needsU64, 0, [
+    u32OrU64(creationTime),
+    u32OrU64(creationTime),
+    u32(GLOBAL_TIMESCALE),
+    u32OrU64(duration),
+    fixed_16_16(1),
+    fixed_8_8(1),
+    Array(10).fill(0),
+    matrixToBytes(IDENTITY_MATRIX),
+    Array(24).fill(0),
+    u32(nextTrackId)
+  ]);
+};
+var trak = (trackData, creationTime) => {
+  const trackMetadata = getTrackMetadata(trackData);
+  return box("trak", undefined, [
+    tkhd(trackData, creationTime),
+    mdia(trackData, creationTime),
+    trackMetadata.name !== undefined ? box("udta", undefined, [
+      box("name", [
+        ...textEncoder.encode(trackMetadata.name)
+      ])
+    ]) : null
+  ]);
+};
+var tkhd = (trackData, creationTime) => {
+  const lastSample = lastPresentedSample(trackData.samples);
+  const durationInGlobalTimescale = intoTimescale(lastSample ? lastSample.timestamp + lastSample.duration : 0, GLOBAL_TIMESCALE);
+  const needsU64 = !isU32(creationTime) || !isU32(durationInGlobalTimescale);
+  const u32OrU64 = needsU64 ? u64 : u32;
+  let matrix;
+  if (trackData.type === "video") {
+    const rotation = trackData.track.metadata.rotation;
+    matrix = rotationMatrix(rotation ?? 0);
+  } else {
+    matrix = IDENTITY_MATRIX;
+  }
+  let flags = 2;
+  if (trackData.track.metadata.disposition?.default !== false) {
+    flags |= 1;
+  }
+  return fullBox("tkhd", +needsU64, flags, [
+    u32OrU64(creationTime),
+    u32OrU64(creationTime),
+    u32(trackData.track.id),
+    u32(0),
+    u32OrU64(durationInGlobalTimescale),
+    Array(8).fill(0),
+    u16(0),
+    u16(trackData.track.id),
+    fixed_8_8(trackData.type === "audio" ? 1 : 0),
+    u16(0),
+    matrixToBytes(matrix),
+    fixed_16_16(trackData.type === "video" ? trackData.info.width : 0),
+    fixed_16_16(trackData.type === "video" ? trackData.info.height : 0)
+  ]);
+};
+var mdia = (trackData, creationTime) => box("mdia", undefined, [
+  mdhd(trackData, creationTime),
+  hdlr(true, TRACK_TYPE_TO_COMPONENT_SUBTYPE[trackData.type], TRACK_TYPE_TO_HANDLER_NAME[trackData.type]),
+  minf(trackData)
+]);
+var mdhd = (trackData, creationTime) => {
+  const lastSample = lastPresentedSample(trackData.samples);
+  const localDuration = intoTimescale(lastSample ? lastSample.timestamp + lastSample.duration : 0, trackData.timescale);
+  const needsU64 = !isU32(creationTime) || !isU32(localDuration);
+  const u32OrU64 = needsU64 ? u64 : u32;
+  return fullBox("mdhd", +needsU64, 0, [
+    u32OrU64(creationTime),
+    u32OrU64(creationTime),
+    u32(trackData.timescale),
+    u32OrU64(localDuration),
+    u16(getLanguageCodeInt(trackData.track.metadata.languageCode ?? UNDETERMINED_LANGUAGE)),
+    u16(0)
+  ]);
+};
+var TRACK_TYPE_TO_COMPONENT_SUBTYPE = {
+  video: "vide",
+  audio: "soun",
+  subtitle: "text"
+};
+var TRACK_TYPE_TO_HANDLER_NAME = {
+  video: "MediabunnyVideoHandler",
+  audio: "MediabunnySoundHandler",
+  subtitle: "MediabunnyTextHandler"
+};
+var hdlr = (hasComponentType, handlerType, name, manufacturer = "\x00\x00\x00\x00") => fullBox("hdlr", 0, 0, [
+  hasComponentType ? ascii("mhlr") : u32(0),
+  ascii(handlerType),
+  ascii(manufacturer),
+  u32(0),
+  u32(0),
+  ascii(name, true)
+]);
+var minf = (trackData) => box("minf", undefined, [
+  TRACK_TYPE_TO_HEADER_BOX[trackData.type](),
+  dinf(),
+  stbl(trackData)
+]);
+var vmhd = () => fullBox("vmhd", 0, 1, [
+  u16(0),
+  u16(0),
+  u16(0),
+  u16(0)
+]);
+var smhd = () => fullBox("smhd", 0, 0, [
+  u16(0),
+  u16(0)
+]);
+var nmhd = () => fullBox("nmhd", 0, 0);
+var TRACK_TYPE_TO_HEADER_BOX = {
+  video: vmhd,
+  audio: smhd,
+  subtitle: nmhd
+};
+var dinf = () => box("dinf", undefined, [
+  dref()
+]);
+var dref = () => fullBox("dref", 0, 0, [
+  u32(1)
+], [
+  url()
+]);
+var url = () => fullBox("url ", 0, 1);
+var stbl = (trackData) => {
+  const needsCtts = trackData.compositionTimeOffsetTable.length > 1 || trackData.compositionTimeOffsetTable.some((x) => x.sampleCompositionTimeOffset !== 0);
+  return box("stbl", undefined, [
+    stsd(trackData),
+    stts(trackData),
+    needsCtts ? ctts(trackData) : null,
+    needsCtts ? cslg(trackData) : null,
+    stsc(trackData),
+    stsz(trackData),
+    stco(trackData),
+    stss(trackData)
+  ]);
+};
+var stsd = (trackData) => {
+  let sampleDescription;
+  if (trackData.type === "video") {
+    sampleDescription = videoSampleDescription(videoCodecToBoxName(trackData.track.source._codec, trackData.info.decoderConfig.codec), trackData);
+  } else if (trackData.type === "audio") {
+    const boxName = audioCodecToBoxName(trackData.track.source._codec, trackData.muxer.isQuickTime);
+    assert(boxName);
+    sampleDescription = soundSampleDescription(boxName, trackData);
+  } else if (trackData.type === "subtitle") {
+    sampleDescription = subtitleSampleDescription(SUBTITLE_CODEC_TO_BOX_NAME[trackData.track.source._codec], trackData);
+  }
+  assert(sampleDescription);
+  return fullBox("stsd", 0, 0, [
+    u32(1)
+  ], [
+    sampleDescription
+  ]);
+};
+var videoSampleDescription = (compressionType, trackData) => box(compressionType, [
+  Array(6).fill(0),
+  u16(1),
+  u16(0),
+  u16(0),
+  Array(12).fill(0),
+  u16(trackData.info.width),
+  u16(trackData.info.height),
+  u32(4718592),
+  u32(4718592),
+  u32(0),
+  u16(1),
+  Array(32).fill(0),
+  u16(24),
+  i16(65535)
+], [
+  VIDEO_CODEC_TO_CONFIGURATION_BOX[trackData.track.source._codec](trackData),
+  colorSpaceIsComplete(trackData.info.decoderConfig.colorSpace) ? colr(trackData) : null
+]);
+var colr = (trackData) => box("colr", [
+  ascii("nclx"),
+  u16(COLOR_PRIMARIES_MAP[trackData.info.decoderConfig.colorSpace.primaries]),
+  u16(TRANSFER_CHARACTERISTICS_MAP[trackData.info.decoderConfig.colorSpace.transfer]),
+  u16(MATRIX_COEFFICIENTS_MAP[trackData.info.decoderConfig.colorSpace.matrix]),
+  u8((trackData.info.decoderConfig.colorSpace.fullRange ? 1 : 0) << 7)
+]);
+var avcC = (trackData) => trackData.info.decoderConfig && box("avcC", [
+  ...toUint8Array(trackData.info.decoderConfig.description)
+]);
+var hvcC = (trackData) => trackData.info.decoderConfig && box("hvcC", [
+  ...toUint8Array(trackData.info.decoderConfig.description)
+]);
+var vpcC = (trackData) => {
+  if (!trackData.info.decoderConfig) {
+    return null;
+  }
+  const decoderConfig = trackData.info.decoderConfig;
+  const parts = decoderConfig.codec.split(".");
+  const profile = Number(parts[1]);
+  const level = Number(parts[2]);
+  const bitDepth = Number(parts[3]);
+  const chromaSubsampling = parts[4] ? Number(parts[4]) : 1;
+  const videoFullRangeFlag = parts[8] ? Number(parts[8]) : Number(decoderConfig.colorSpace?.fullRange ?? 0);
+  const thirdByte = (bitDepth << 4) + (chromaSubsampling << 1) + videoFullRangeFlag;
+  const colourPrimaries = parts[5] ? Number(parts[5]) : decoderConfig.colorSpace?.primaries ? COLOR_PRIMARIES_MAP[decoderConfig.colorSpace.primaries] : 2;
+  const transferCharacteristics = parts[6] ? Number(parts[6]) : decoderConfig.colorSpace?.transfer ? TRANSFER_CHARACTERISTICS_MAP[decoderConfig.colorSpace.transfer] : 2;
+  const matrixCoefficients = parts[7] ? Number(parts[7]) : decoderConfig.colorSpace?.matrix ? MATRIX_COEFFICIENTS_MAP[decoderConfig.colorSpace.matrix] : 2;
+  return fullBox("vpcC", 1, 0, [
+    u8(profile),
+    u8(level),
+    u8(thirdByte),
+    u8(colourPrimaries),
+    u8(transferCharacteristics),
+    u8(matrixCoefficients),
+    u16(0)
+  ]);
+};
+var av1C = (trackData) => {
+  return box("av1C", generateAv1CodecConfigurationFromCodecString(trackData.info.decoderConfig.codec));
+};
+var soundSampleDescription = (compressionType, trackData) => {
+  let version = 0;
+  let contents;
+  let sampleSizeInBits = 16;
+  if (PCM_AUDIO_CODECS.includes(trackData.track.source._codec)) {
+    const codec = trackData.track.source._codec;
+    const { sampleSize } = parsePcmCodec(codec);
+    sampleSizeInBits = 8 * sampleSize;
+    if (sampleSizeInBits > 16) {
+      version = 1;
+    }
+  }
+  if (version === 0) {
+    contents = [
+      Array(6).fill(0),
+      u16(1),
+      u16(version),
+      u16(0),
+      u32(0),
+      u16(trackData.info.numberOfChannels),
+      u16(sampleSizeInBits),
+      u16(0),
+      u16(0),
+      u16(trackData.info.sampleRate < 2 ** 16 ? trackData.info.sampleRate : 0),
+      u16(0)
+    ];
+  } else {
+    contents = [
+      Array(6).fill(0),
+      u16(1),
+      u16(version),
+      u16(0),
+      u32(0),
+      u16(trackData.info.numberOfChannels),
+      u16(Math.min(sampleSizeInBits, 16)),
+      u16(0),
+      u16(0),
+      u16(trackData.info.sampleRate < 2 ** 16 ? trackData.info.sampleRate : 0),
+      u16(0),
+      u32(1),
+      u32(sampleSizeInBits / 8),
+      u32(trackData.info.numberOfChannels * sampleSizeInBits / 8),
+      u32(2)
+    ];
+  }
+  return box(compressionType, contents, [
+    audioCodecToConfigurationBox(trackData.track.source._codec, trackData.muxer.isQuickTime)?.(trackData) ?? null
+  ]);
+};
+var esds = (trackData) => {
+  let objectTypeIndication;
+  switch (trackData.track.source._codec) {
+    case "aac":
+      {
+        objectTypeIndication = 64;
+      }
+      ;
+      break;
+    case "mp3":
+      {
+        objectTypeIndication = 107;
+      }
+      ;
+      break;
+    case "vorbis":
+      {
+        objectTypeIndication = 221;
+      }
+      ;
+      break;
+    default:
+      throw new Error(`Unhandled audio codec: ${trackData.track.source._codec}`);
+  }
+  let bytes2 = [
+    ...u8(objectTypeIndication),
+    ...u8(21),
+    ...u24(0),
+    ...u32(0),
+    ...u32(0)
+  ];
+  if (trackData.info.decoderConfig.description) {
+    const description = toUint8Array(trackData.info.decoderConfig.description);
+    bytes2 = [
+      ...bytes2,
+      ...u8(5),
+      ...variableUnsignedInt(description.byteLength),
+      ...description
+    ];
+  }
+  bytes2 = [
+    ...u16(1),
+    ...u8(0),
+    ...u8(4),
+    ...variableUnsignedInt(bytes2.length),
+    ...bytes2,
+    ...u8(6),
+    ...u8(1),
+    ...u8(2)
+  ];
+  bytes2 = [
+    ...u8(3),
+    ...variableUnsignedInt(bytes2.length),
+    ...bytes2
+  ];
+  return fullBox("esds", 0, 0, bytes2);
+};
+var wave = (trackData) => {
+  return box("wave", undefined, [
+    frma(trackData),
+    enda(trackData),
+    box("\x00\x00\x00\x00")
+  ]);
+};
+var frma = (trackData) => {
+  return box("frma", [
+    ascii(audioCodecToBoxName(trackData.track.source._codec, trackData.muxer.isQuickTime))
+  ]);
+};
+var enda = (trackData) => {
+  const { littleEndian } = parsePcmCodec(trackData.track.source._codec);
+  return box("enda", [
+    u16(+littleEndian)
+  ]);
+};
+var dOps = (trackData) => {
+  let outputChannelCount = trackData.info.numberOfChannels;
+  let preSkip = 3840;
+  let inputSampleRate = trackData.info.sampleRate;
+  let outputGain = 0;
+  let channelMappingFamily = 0;
+  let channelMappingTable = new Uint8Array(0);
+  const description = trackData.info.decoderConfig?.description;
+  if (description) {
+    assert(description.byteLength >= 18);
+    const bytes2 = toUint8Array(description);
+    const header = parseOpusIdentificationHeader(bytes2);
+    outputChannelCount = header.outputChannelCount;
+    preSkip = header.preSkip;
+    inputSampleRate = header.inputSampleRate;
+    outputGain = header.outputGain;
+    channelMappingFamily = header.channelMappingFamily;
+    if (header.channelMappingTable) {
+      channelMappingTable = header.channelMappingTable;
+    }
+  }
+  return box("dOps", [
+    u8(0),
+    u8(outputChannelCount),
+    u16(preSkip),
+    u32(inputSampleRate),
+    i16(outputGain),
+    u8(channelMappingFamily),
+    ...channelMappingTable
+  ]);
+};
+var dfLa = (trackData) => {
+  const description = trackData.info.decoderConfig?.description;
+  assert(description);
+  const bytes2 = toUint8Array(description);
+  return fullBox("dfLa", 0, 0, [
+    ...bytes2.subarray(4)
+  ]);
+};
+var pcmC = (trackData) => {
+  const { littleEndian, sampleSize } = parsePcmCodec(trackData.track.source._codec);
+  const formatFlags = +littleEndian;
+  return fullBox("pcmC", 0, 0, [
+    u8(formatFlags),
+    u8(8 * sampleSize)
+  ]);
+};
+var subtitleSampleDescription = (compressionType, trackData) => box(compressionType, [
+  Array(6).fill(0),
+  u16(1)
+], [
+  SUBTITLE_CODEC_TO_CONFIGURATION_BOX[trackData.track.source._codec](trackData)
+]);
+var vttC = (trackData) => box("vttC", [
+  ...textEncoder.encode(trackData.info.config.description)
+]);
+var stts = (trackData) => {
+  return fullBox("stts", 0, 0, [
+    u32(trackData.timeToSampleTable.length),
+    trackData.timeToSampleTable.map((x) => [
+      u32(x.sampleCount),
+      u32(x.sampleDelta)
+    ])
+  ]);
+};
+var stss = (trackData) => {
+  if (trackData.samples.every((x) => x.type === "key"))
+    return null;
+  const keySamples = [...trackData.samples.entries()].filter(([, sample]) => sample.type === "key");
+  return fullBox("stss", 0, 0, [
+    u32(keySamples.length),
+    keySamples.map(([index]) => u32(index + 1))
+  ]);
+};
+var stsc = (trackData) => {
+  return fullBox("stsc", 0, 0, [
+    u32(trackData.compactlyCodedChunkTable.length),
+    trackData.compactlyCodedChunkTable.map((x) => [
+      u32(x.firstChunk),
+      u32(x.samplesPerChunk),
+      u32(1)
+    ])
+  ]);
+};
+var stsz = (trackData) => {
+  if (trackData.type === "audio" && trackData.info.requiresPcmTransformation) {
+    const { sampleSize } = parsePcmCodec(trackData.track.source._codec);
+    return fullBox("stsz", 0, 0, [
+      u32(sampleSize * trackData.info.numberOfChannels),
+      u32(trackData.samples.reduce((acc, x) => acc + intoTimescale(x.duration, trackData.timescale), 0))
+    ]);
+  }
+  return fullBox("stsz", 0, 0, [
+    u32(0),
+    u32(trackData.samples.length),
+    trackData.samples.map((x) => u32(x.size))
+  ]);
+};
+var stco = (trackData) => {
+  if (trackData.finalizedChunks.length > 0 && last(trackData.finalizedChunks).offset >= 2 ** 32) {
+    return fullBox("co64", 0, 0, [
+      u32(trackData.finalizedChunks.length),
+      trackData.finalizedChunks.map((x) => u64(x.offset))
+    ]);
+  }
+  return fullBox("stco", 0, 0, [
+    u32(trackData.finalizedChunks.length),
+    trackData.finalizedChunks.map((x) => u32(x.offset))
+  ]);
+};
+var ctts = (trackData) => {
+  return fullBox("ctts", 1, 0, [
+    u32(trackData.compositionTimeOffsetTable.length),
+    trackData.compositionTimeOffsetTable.map((x) => [
+      u32(x.sampleCount),
+      i32(x.sampleCompositionTimeOffset)
+    ])
+  ]);
+};
+var cslg = (trackData) => {
+  let leastDecodeToDisplayDelta = Infinity;
+  let greatestDecodeToDisplayDelta = -Infinity;
+  let compositionStartTime = Infinity;
+  let compositionEndTime = -Infinity;
+  assert(trackData.compositionTimeOffsetTable.length > 0);
+  assert(trackData.samples.length > 0);
+  for (let i = 0;i < trackData.compositionTimeOffsetTable.length; i++) {
+    const entry = trackData.compositionTimeOffsetTable[i];
+    leastDecodeToDisplayDelta = Math.min(leastDecodeToDisplayDelta, entry.sampleCompositionTimeOffset);
+    greatestDecodeToDisplayDelta = Math.max(greatestDecodeToDisplayDelta, entry.sampleCompositionTimeOffset);
+  }
+  for (let i = 0;i < trackData.samples.length; i++) {
+    const sample = trackData.samples[i];
+    compositionStartTime = Math.min(compositionStartTime, intoTimescale(sample.timestamp, trackData.timescale));
+    compositionEndTime = Math.max(compositionEndTime, intoTimescale(sample.timestamp + sample.duration, trackData.timescale));
+  }
+  const compositionToDtsShift = Math.max(-leastDecodeToDisplayDelta, 0);
+  if (compositionEndTime >= 2 ** 31) {
+    return null;
+  }
+  return fullBox("cslg", 0, 0, [
+    i32(compositionToDtsShift),
+    i32(leastDecodeToDisplayDelta),
+    i32(greatestDecodeToDisplayDelta),
+    i32(compositionStartTime),
+    i32(compositionEndTime)
+  ]);
+};
+var mvex = (trackDatas) => {
+  return box("mvex", undefined, trackDatas.map(trex));
+};
+var trex = (trackData) => {
+  return fullBox("trex", 0, 0, [
+    u32(trackData.track.id),
+    u32(1),
+    u32(0),
+    u32(0),
+    u32(0)
+  ]);
+};
+var moof = (sequenceNumber, trackDatas) => {
+  return box("moof", undefined, [
+    mfhd(sequenceNumber),
+    ...trackDatas.map(traf)
+  ]);
+};
+var mfhd = (sequenceNumber) => {
+  return fullBox("mfhd", 0, 0, [
+    u32(sequenceNumber)
+  ]);
+};
+var fragmentSampleFlags = (sample) => {
+  let byte1 = 0;
+  let byte2 = 0;
+  const byte3 = 0;
+  const byte4 = 0;
+  const sampleIsDifferenceSample = sample.type === "delta";
+  byte2 |= +sampleIsDifferenceSample;
+  if (sampleIsDifferenceSample) {
+    byte1 |= 1;
+  } else {
+    byte1 |= 2;
+  }
+  return byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4;
+};
+var traf = (trackData) => {
+  return box("traf", undefined, [
+    tfhd(trackData),
+    tfdt(trackData),
+    trun(trackData)
+  ]);
+};
+var tfhd = (trackData) => {
+  assert(trackData.currentChunk);
+  let tfFlags = 0;
+  tfFlags |= 8;
+  tfFlags |= 16;
+  tfFlags |= 32;
+  tfFlags |= 131072;
+  const referenceSample = trackData.currentChunk.samples[1] ?? trackData.currentChunk.samples[0];
+  const referenceSampleInfo = {
+    duration: referenceSample.timescaleUnitsToNextSample,
+    size: referenceSample.size,
+    flags: fragmentSampleFlags(referenceSample)
+  };
+  return fullBox("tfhd", 0, tfFlags, [
+    u32(trackData.track.id),
+    u32(referenceSampleInfo.duration),
+    u32(referenceSampleInfo.size),
+    u32(referenceSampleInfo.flags)
+  ]);
+};
+var tfdt = (trackData) => {
+  assert(trackData.currentChunk);
+  return fullBox("tfdt", 1, 0, [
+    u64(intoTimescale(trackData.currentChunk.startTimestamp, trackData.timescale))
+  ]);
+};
+var trun = (trackData) => {
+  assert(trackData.currentChunk);
+  const allSampleDurations = trackData.currentChunk.samples.map((x) => x.timescaleUnitsToNextSample);
+  const allSampleSizes = trackData.currentChunk.samples.map((x) => x.size);
+  const allSampleFlags = trackData.currentChunk.samples.map(fragmentSampleFlags);
+  const allSampleCompositionTimeOffsets = trackData.currentChunk.samples.map((x) => intoTimescale(x.timestamp - x.decodeTimestamp, trackData.timescale));
+  const uniqueSampleDurations = new Set(allSampleDurations);
+  const uniqueSampleSizes = new Set(allSampleSizes);
+  const uniqueSampleFlags = new Set(allSampleFlags);
+  const uniqueSampleCompositionTimeOffsets = new Set(allSampleCompositionTimeOffsets);
+  const firstSampleFlagsPresent = uniqueSampleFlags.size === 2 && allSampleFlags[0] !== allSampleFlags[1];
+  const sampleDurationPresent = uniqueSampleDurations.size > 1;
+  const sampleSizePresent = uniqueSampleSizes.size > 1;
+  const sampleFlagsPresent = !firstSampleFlagsPresent && uniqueSampleFlags.size > 1;
+  const sampleCompositionTimeOffsetsPresent = uniqueSampleCompositionTimeOffsets.size > 1 || [...uniqueSampleCompositionTimeOffsets].some((x) => x !== 0);
+  let flags = 0;
+  flags |= 1;
+  flags |= 4 * +firstSampleFlagsPresent;
+  flags |= 256 * +sampleDurationPresent;
+  flags |= 512 * +sampleSizePresent;
+  flags |= 1024 * +sampleFlagsPresent;
+  flags |= 2048 * +sampleCompositionTimeOffsetsPresent;
+  return fullBox("trun", 1, flags, [
+    u32(trackData.currentChunk.samples.length),
+    u32(trackData.currentChunk.offset - trackData.currentChunk.moofOffset || 0),
+    firstSampleFlagsPresent ? u32(allSampleFlags[0]) : [],
+    trackData.currentChunk.samples.map((_, i) => [
+      sampleDurationPresent ? u32(allSampleDurations[i]) : [],
+      sampleSizePresent ? u32(allSampleSizes[i]) : [],
+      sampleFlagsPresent ? u32(allSampleFlags[i]) : [],
+      sampleCompositionTimeOffsetsPresent ? i32(allSampleCompositionTimeOffsets[i]) : []
+    ])
+  ]);
+};
+var mfra = (trackDatas) => {
+  return box("mfra", undefined, [
+    ...trackDatas.map(tfra),
+    mfro()
+  ]);
+};
+var tfra = (trackData, trackIndex) => {
+  const version = 1;
+  return fullBox("tfra", version, 0, [
+    u32(trackData.track.id),
+    u32(63),
+    u32(trackData.finalizedChunks.length),
+    trackData.finalizedChunks.map((chunk) => [
+      u64(intoTimescale(chunk.samples[0].timestamp, trackData.timescale)),
+      u64(chunk.moofOffset),
+      u32(trackIndex + 1),
+      u32(1),
+      u32(1)
+    ])
+  ]);
+};
+var mfro = () => {
+  return fullBox("mfro", 0, 0, [
+    u32(0)
+  ]);
+};
+var vtte = () => box("vtte");
+var vttc = (payload, timestamp, identifier, settings, sourceId) => box("vttc", undefined, [
+  sourceId !== null ? box("vsid", [i32(sourceId)]) : null,
+  identifier !== null ? box("iden", [...textEncoder.encode(identifier)]) : null,
+  timestamp !== null ? box("ctim", [...textEncoder.encode(formatSubtitleTimestamp(timestamp))]) : null,
+  settings !== null ? box("sttg", [...textEncoder.encode(settings)]) : null,
+  box("payl", [...textEncoder.encode(payload)])
+]);
+var vtta = (notes) => box("vtta", [...textEncoder.encode(notes)]);
+var udta = (muxer) => {
+  const boxes = [];
+  const metadataFormat = muxer.format._options.metadataFormat ?? "auto";
+  const metadataTags = muxer.output._metadataTags;
+  if (metadataFormat === "mdir" || metadataFormat === "auto" && !muxer.isQuickTime) {
+    const metaBox = metaMdir(metadataTags);
+    if (metaBox)
+      boxes.push(metaBox);
+  } else if (metadataFormat === "mdta") {
+    const metaBox = metaMdta(metadataTags);
+    if (metaBox)
+      boxes.push(metaBox);
+  } else if (metadataFormat === "udta" || metadataFormat === "auto" && muxer.isQuickTime) {
+    addQuickTimeMetadataTagBoxes(boxes, muxer.output._metadataTags);
+  }
+  if (boxes.length === 0) {
+    return null;
+  }
+  return box("udta", undefined, boxes);
+};
+var addQuickTimeMetadataTagBoxes = (boxes, tags) => {
+  for (const { key, value } of keyValueIterator(tags)) {
+    switch (key) {
+      case "title":
+        {
+          boxes.push(metadataTagStringBoxShort("©nam", value));
+        }
+        ;
+        break;
+      case "description":
+        {
+          boxes.push(metadataTagStringBoxShort("©des", value));
+        }
+        ;
+        break;
+      case "artist":
+        {
+          boxes.push(metadataTagStringBoxShort("©ART", value));
+        }
+        ;
+        break;
+      case "album":
+        {
+          boxes.push(metadataTagStringBoxShort("©alb", value));
+        }
+        ;
+        break;
+      case "albumArtist":
+        {
+          boxes.push(metadataTagStringBoxShort("albr", value));
+        }
+        ;
+        break;
+      case "genre":
+        {
+          boxes.push(metadataTagStringBoxShort("©gen", value));
+        }
+        ;
+        break;
+      case "date":
+        {
+          boxes.push(metadataTagStringBoxShort("©day", value.toISOString().slice(0, 10)));
+        }
+        ;
+        break;
+      case "comment":
+        {
+          boxes.push(metadataTagStringBoxShort("©cmt", value));
+        }
+        ;
+        break;
+      case "lyrics":
+        {
+          boxes.push(metadataTagStringBoxShort("©lyr", value));
+        }
+        ;
+        break;
+      case "raw":
+        {}
+        ;
+        break;
+      case "discNumber":
+      case "discsTotal":
+      case "trackNumber":
+      case "tracksTotal":
+      case "images":
+        {}
+        ;
+        break;
+      default:
+        assertNever(key);
+    }
+  }
+  if (tags.raw) {
+    for (const key in tags.raw) {
+      const value = tags.raw[key];
+      if (value == null || key.length !== 4 || boxes.some((x) => x.type === key)) {
+        continue;
+      }
+      if (typeof value === "string") {
+        boxes.push(metadataTagStringBoxShort(key, value));
+      } else if (value instanceof Uint8Array) {
+        boxes.push(box(key, Array.from(value)));
+      }
+    }
+  }
+};
+var metadataTagStringBoxShort = (name, value) => {
+  const encoded = textEncoder.encode(value);
+  return box(name, [
+    u16(encoded.length),
+    u16(getLanguageCodeInt("und")),
+    Array.from(encoded)
+  ]);
+};
+var DATA_BOX_MIME_TYPE_MAP = {
+  "image/jpeg": 13,
+  "image/png": 14,
+  "image/bmp": 27
+};
+var generateMetadataPairs = (tags, isMdta) => {
+  const pairs = [];
+  for (const { key, value } of keyValueIterator(tags)) {
+    switch (key) {
+      case "title":
+        {
+          pairs.push({ key: isMdta ? "title" : "©nam", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "description":
+        {
+          pairs.push({ key: isMdta ? "description" : "©des", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "artist":
+        {
+          pairs.push({ key: isMdta ? "artist" : "©ART", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "album":
+        {
+          pairs.push({ key: isMdta ? "album" : "©alb", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "albumArtist":
+        {
+          pairs.push({ key: isMdta ? "album_artist" : "aART", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "comment":
+        {
+          pairs.push({ key: isMdta ? "comment" : "©cmt", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "genre":
+        {
+          pairs.push({ key: isMdta ? "genre" : "©gen", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "lyrics":
+        {
+          pairs.push({ key: isMdta ? "lyrics" : "©lyr", value: dataStringBoxLong(value) });
+        }
+        ;
+        break;
+      case "date":
+        {
+          pairs.push({
+            key: isMdta ? "date" : "©day",
+            value: dataStringBoxLong(value.toISOString().slice(0, 10))
+          });
+        }
+        ;
+        break;
+      case "images":
+        {
+          for (const image of value) {
+            if (image.kind !== "coverFront") {
+              continue;
+            }
+            pairs.push({ key: "covr", value: box("data", [
+              u32(DATA_BOX_MIME_TYPE_MAP[image.mimeType] ?? 0),
+              u32(0),
+              Array.from(image.data)
+            ]) });
+          }
+        }
+        ;
+        break;
+      case "trackNumber":
+        {
+          if (isMdta) {
+            const string = tags.tracksTotal !== undefined ? `${value}/${tags.tracksTotal}` : value.toString();
+            pairs.push({ key: "track", value: dataStringBoxLong(string) });
+          } else {
+            pairs.push({ key: "trkn", value: box("data", [
+              u32(0),
+              u32(0),
+              u16(0),
+              u16(value),
+              u16(tags.tracksTotal ?? 0),
+              u16(0)
+            ]) });
+          }
+        }
+        ;
+        break;
+      case "discNumber":
+        {
+          if (!isMdta) {
+            pairs.push({ key: "disc", value: box("data", [
+              u32(0),
+              u32(0),
+              u16(0),
+              u16(value),
+              u16(tags.discsTotal ?? 0),
+              u16(0)
+            ]) });
+          }
+        }
+        ;
+        break;
+      case "tracksTotal":
+      case "discsTotal":
+        {}
+        ;
+        break;
+      case "raw":
+        {}
+        ;
+        break;
+      default:
+        assertNever(key);
+    }
+  }
+  if (tags.raw) {
+    for (const key in tags.raw) {
+      const value = tags.raw[key];
+      if (value == null || !isMdta && key.length !== 4 || pairs.some((x) => x.key === key)) {
+        continue;
+      }
+      if (typeof value === "string") {
+        pairs.push({ key, value: dataStringBoxLong(value) });
+      } else if (value instanceof Uint8Array) {
+        pairs.push({ key, value: box("data", [
+          u32(0),
+          u32(0),
+          Array.from(value)
+        ]) });
+      } else if (value instanceof RichImageData) {
+        pairs.push({ key, value: box("data", [
+          u32(DATA_BOX_MIME_TYPE_MAP[value.mimeType] ?? 0),
+          u32(0),
+          Array.from(value.data)
+        ]) });
+      }
+    }
+  }
+  return pairs;
+};
+var metaMdir = (tags) => {
+  const pairs = generateMetadataPairs(tags, false);
+  if (pairs.length === 0) {
+    return null;
+  }
+  return fullBox("meta", 0, 0, undefined, [
+    hdlr(false, "mdir", "", "appl"),
+    box("ilst", undefined, pairs.map((pair) => box(pair.key, undefined, [pair.value])))
+  ]);
+};
+var metaMdta = (tags) => {
+  const pairs = generateMetadataPairs(tags, true);
+  if (pairs.length === 0) {
+    return null;
+  }
+  return box("meta", undefined, [
+    hdlr(false, "mdta", ""),
+    fullBox("keys", 0, 0, [
+      u32(pairs.length)
+    ], pairs.map((pair) => box("mdta", [
+      ...textEncoder.encode(pair.key)
+    ]))),
+    box("ilst", undefined, pairs.map((pair, i) => {
+      const boxName = String.fromCharCode(...u32(i + 1));
+      return box(boxName, undefined, [pair.value]);
+    }))
+  ]);
+};
+var dataStringBoxLong = (value) => {
+  return box("data", [
+    u32(1),
+    u32(0),
+    ...textEncoder.encode(value)
+  ]);
+};
+var videoCodecToBoxName = (codec, fullCodecString) => {
+  switch (codec) {
+    case "avc":
+      return fullCodecString.startsWith("avc3") ? "avc3" : "avc1";
+    case "hevc":
+      return "hvc1";
+    case "vp8":
+      return "vp08";
+    case "vp9":
+      return "vp09";
+    case "av1":
+      return "av01";
+  }
+};
+var VIDEO_CODEC_TO_CONFIGURATION_BOX = {
+  avc: avcC,
+  hevc: hvcC,
+  vp8: vpcC,
+  vp9: vpcC,
+  av1: av1C
+};
+var audioCodecToBoxName = (codec, isQuickTime) => {
+  switch (codec) {
+    case "aac":
+      return "mp4a";
+    case "mp3":
+      return "mp4a";
+    case "opus":
+      return "Opus";
+    case "vorbis":
+      return "mp4a";
+    case "flac":
+      return "fLaC";
+    case "ulaw":
+      return "ulaw";
+    case "alaw":
+      return "alaw";
+    case "pcm-u8":
+      return "raw ";
+    case "pcm-s8":
+      return "sowt";
+  }
+  if (isQuickTime) {
+    switch (codec) {
+      case "pcm-s16":
+        return "sowt";
+      case "pcm-s16be":
+        return "twos";
+      case "pcm-s24":
+        return "in24";
+      case "pcm-s24be":
+        return "in24";
+      case "pcm-s32":
+        return "in32";
+      case "pcm-s32be":
+        return "in32";
+      case "pcm-f32":
+        return "fl32";
+      case "pcm-f32be":
+        return "fl32";
+      case "pcm-f64":
+        return "fl64";
+      case "pcm-f64be":
+        return "fl64";
+    }
+  } else {
+    switch (codec) {
+      case "pcm-s16":
+        return "ipcm";
+      case "pcm-s16be":
+        return "ipcm";
+      case "pcm-s24":
+        return "ipcm";
+      case "pcm-s24be":
+        return "ipcm";
+      case "pcm-s32":
+        return "ipcm";
+      case "pcm-s32be":
+        return "ipcm";
+      case "pcm-f32":
+        return "fpcm";
+      case "pcm-f32be":
+        return "fpcm";
+      case "pcm-f64":
+        return "fpcm";
+      case "pcm-f64be":
+        return "fpcm";
+    }
+  }
+};
+var audioCodecToConfigurationBox = (codec, isQuickTime) => {
+  switch (codec) {
+    case "aac":
+      return esds;
+    case "mp3":
+      return esds;
+    case "opus":
+      return dOps;
+    case "vorbis":
+      return esds;
+    case "flac":
+      return dfLa;
+  }
+  if (isQuickTime) {
+    switch (codec) {
+      case "pcm-s24":
+        return wave;
+      case "pcm-s24be":
+        return wave;
+      case "pcm-s32":
+        return wave;
+      case "pcm-s32be":
+        return wave;
+      case "pcm-f32":
+        return wave;
+      case "pcm-f32be":
+        return wave;
+      case "pcm-f64":
+        return wave;
+      case "pcm-f64be":
+        return wave;
+    }
+  } else {
+    switch (codec) {
+      case "pcm-s16":
+        return pcmC;
+      case "pcm-s16be":
+        return pcmC;
+      case "pcm-s24":
+        return pcmC;
+      case "pcm-s24be":
+        return pcmC;
+      case "pcm-s32":
+        return pcmC;
+      case "pcm-s32be":
+        return pcmC;
+      case "pcm-f32":
+        return pcmC;
+      case "pcm-f32be":
+        return pcmC;
+      case "pcm-f64":
+        return pcmC;
+      case "pcm-f64be":
+        return pcmC;
+    }
+  }
+  return null;
+};
+var SUBTITLE_CODEC_TO_BOX_NAME = {
+  webvtt: "wvtt"
+};
+var SUBTITLE_CODEC_TO_CONFIGURATION_BOX = {
+  webvtt: vttC
+};
+var getLanguageCodeInt = (code) => {
+  assert(code.length === 3);
+  let language = 0;
+  for (let i = 0;i < 3; i++) {
+    language <<= 5;
+    language += code.charCodeAt(i) - 96;
+  }
+  return language;
+};
+
+// ../node_modules/mediabunny/dist/modules/src/writer.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class m6{constructor(){this.ensureMonotonicity=!1,this.trackedWrites=null,this.trackedStart=-1,this.trackedEnd=-1}start(){}maybeTrackWrites($){if(!this.trackedWrites)return;let J=this.getPos();if(J<this.trackedStart){if(J+$.byteLength<=this.trackedStart)return;$=$.subarray(this.trackedStart-J),J=0}let Y=J+$.byteLength-this.trackedStart,Z=this.trackedWrites.byteLength;while(Z<Y)Z*=2;if(Z!==this.trackedWrites.byteLength){let G=new Uint8Array(Z);G.set(this.trackedWrites,0),this.trackedWrites=G}this.trackedWrites.set($,J-this.trackedStart),this.trackedEnd=Math.max(this.trackedEnd,J+$.byteLength)}startTrackingWrites(){this.trackedWrites=new Uint8Array(1024),this.trackedStart=this.getPos(),this.trackedEnd=this.trackedStart}stopTrackingWrites(){if(!this.trackedWrites)throw Error("Internal error: Can't get tracked writes since nothing was tracked.");let J={data:this.trackedWrites.subarray(0,this.trackedEnd-this.trackedStart),start:this.trackedStart,end:this.trackedEnd};return this.trackedWrites=null,J}}var O1=65536,F1=4294967296;class f0 extends m6{constructor($){super();if(this.pos=0,this.maxPos=0,this.target=$,this.supportsResize="resize"in new ArrayBuffer(0),this.supportsResize)try{this.buffer=new ArrayBuffer(O1,{maxByteLength:F1})}catch{this.buffer=new ArrayBuffer(O1),this.supportsResize=!1}else this.buffer=new ArrayBuffer(O1);this.bytes=new Uint8Array(this.buffer)}ensureSize($){let J=this.buffer.byteLength;while(J<$)J*=2;if(J===this.buffer.byteLength)return;if(J>F1)throw Error(`ArrayBuffer exceeded maximum size of ${F1} bytes. Please consider using another target.`);if(this.supportsResize)this.buffer.resize(J);else{let Y=new ArrayBuffer(J),Z=new Uint8Array(Y);Z.set(this.bytes,0),this.buffer=Y,this.bytes=Z}}write($){this.maybeTrackWrites($),this.ensureSize(this.pos+$.byteLength),this.bytes.set($,this.pos),this.target.onwrite?.(this.pos,this.pos+$.byteLength),this.pos+=$.byteLength,this.maxPos=Math.max(this.maxPos,this.pos)}seek($){this.pos=$}getPos(){return this.pos}async flush(){}async finalize(){this.ensureSize(this.pos),this.target.buffer=this.buffer.slice(0,Math.max(this.maxPos,this.pos))}async close(){}getSlice($,J){return this.bytes.slice($,J)}}var _$=(()=>({}));/*!
+ */
+
+class Writer {
+  constructor() {
+    this.ensureMonotonicity = false;
+    this.trackedWrites = null;
+    this.trackedStart = -1;
+    this.trackedEnd = -1;
+  }
+  start() {}
+  maybeTrackWrites(data) {
+    if (!this.trackedWrites) {
+      return;
+    }
+    let pos = this.getPos();
+    if (pos < this.trackedStart) {
+      if (pos + data.byteLength <= this.trackedStart) {
+        return;
+      }
+      data = data.subarray(this.trackedStart - pos);
+      pos = 0;
+    }
+    const neededSize = pos + data.byteLength - this.trackedStart;
+    let newLength = this.trackedWrites.byteLength;
+    while (newLength < neededSize) {
+      newLength *= 2;
+    }
+    if (newLength !== this.trackedWrites.byteLength) {
+      const copy = new Uint8Array(newLength);
+      copy.set(this.trackedWrites, 0);
+      this.trackedWrites = copy;
+    }
+    this.trackedWrites.set(data, pos - this.trackedStart);
+    this.trackedEnd = Math.max(this.trackedEnd, pos + data.byteLength);
+  }
+  startTrackingWrites() {
+    this.trackedWrites = new Uint8Array(2 ** 10);
+    this.trackedStart = this.getPos();
+    this.trackedEnd = this.trackedStart;
+  }
+  stopTrackingWrites() {
+    if (!this.trackedWrites) {
+      throw new Error("Internal error: Can't get tracked writes since nothing was tracked.");
+    }
+    const slice = this.trackedWrites.subarray(0, this.trackedEnd - this.trackedStart);
+    const result = {
+      data: slice,
+      start: this.trackedStart,
+      end: this.trackedEnd
+    };
+    this.trackedWrites = null;
+    return result;
+  }
+}
+var ARRAY_BUFFER_INITIAL_SIZE = 2 ** 16;
+var ARRAY_BUFFER_MAX_SIZE = 2 ** 32;
+
+class BufferTargetWriter extends Writer {
+  constructor(target) {
+    super();
+    this.pos = 0;
+    this.maxPos = 0;
+    this.target = target;
+    this.supportsResize = "resize" in new ArrayBuffer(0);
+    if (this.supportsResize) {
+      try {
+        this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE, { maxByteLength: ARRAY_BUFFER_MAX_SIZE });
+      } catch {
+        this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE);
+        this.supportsResize = false;
+      }
+    } else {
+      this.buffer = new ArrayBuffer(ARRAY_BUFFER_INITIAL_SIZE);
+    }
+    this.bytes = new Uint8Array(this.buffer);
+  }
+  ensureSize(size) {
+    let newLength = this.buffer.byteLength;
+    while (newLength < size)
+      newLength *= 2;
+    if (newLength === this.buffer.byteLength)
+      return;
+    if (newLength > ARRAY_BUFFER_MAX_SIZE) {
+      throw new Error(`ArrayBuffer exceeded maximum size of ${ARRAY_BUFFER_MAX_SIZE} bytes. Please consider using another` + ` target.`);
+    }
+    if (this.supportsResize) {
+      this.buffer.resize(newLength);
+    } else {
+      const newBuffer = new ArrayBuffer(newLength);
+      const newBytes = new Uint8Array(newBuffer);
+      newBytes.set(this.bytes, 0);
+      this.buffer = newBuffer;
+      this.bytes = newBytes;
+    }
+  }
+  write(data) {
+    this.maybeTrackWrites(data);
+    this.ensureSize(this.pos + data.byteLength);
+    this.bytes.set(data, this.pos);
+    this.target.onwrite?.(this.pos, this.pos + data.byteLength);
+    this.pos += data.byteLength;
+    this.maxPos = Math.max(this.maxPos, this.pos);
+  }
+  seek(newPos) {
+    this.pos = newPos;
+  }
+  getPos() {
+    return this.pos;
+  }
+  async flush() {}
+  async finalize() {
+    this.ensureSize(this.pos);
+    this.target.buffer = this.buffer.slice(0, Math.max(this.maxPos, this.pos));
+  }
+  async close() {}
+  getSlice(start, end) {
+    return this.bytes.slice(start, end);
+  }
+}
+var DEFAULT_CHUNK_SIZE = 2 ** 24;
+
+// ../node_modules/mediabunny/dist/modules/src/target.js
+var nodeAlias = (() => ({}));
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class g0{constructor(){this._output=null,this.onwrite=null}}class A0 extends g0{constructor(){super(...arguments);this.buffer=null}_createWriter(){return new f0(this)}}/*!
+ */
+class Target {
+  constructor() {
+    this._output = null;
+    this.onwrite = null;
+  }
+}
+
+class BufferTarget extends Target {
+  constructor() {
+    super(...arguments);
+    this.buffer = null;
+  }
+  _createWriter() {
+    return new BufferTargetWriter(this);
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/isobmff/isobmff-muxer.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var Y1=1000,B2=2082844800,p6=($)=>{let J={},Y=$.track;if(Y.metadata.name!==void 0)J.name=Y.metadata.name;return J},D=($,J,Y=!0)=>{let Z=$*J;return Y?Math.round(Z):Z};class D1 extends M1{constructor($,J){super($);this.auxTarget=new A0,this.auxWriter=this.auxTarget._createWriter(),this.auxBoxWriter=new Z1(this.auxWriter),this.mdat=null,this.ftypSize=null,this.trackDatas=[],this.allTracksKnown=n0(),this.creationTime=Math.floor(Date.now()/1000)+B2,this.finalizedChunks=[],this.nextFragmentNumber=1,this.maxWrittenTimestamp=-1/0,this.format=J,this.writer=$._writer,this.boxWriter=new Z1(this.writer),this.isQuickTime=J instanceof u0;let Y=this.writer instanceof f0?"in-memory":!1;if(this.fastStart=J._options.fastStart??Y,this.isFragmented=this.fastStart==="fragmented",this.fastStart==="in-memory"||this.isFragmented)this.writer.ensureMonotonicity=!0;this.minimumFragmentDuration=J._options.minimumFragmentDuration??1}async start(){let $=await this.mutex.acquire(),J=this.output._tracks.some((Y)=>Y.type==="video"&&Y.source._codec==="avc");{if(this.format._options.onFtyp)this.writer.startTrackingWrites();if(this.boxWriter.writeBox(b6({isQuickTime:this.isQuickTime,holdsAvc:J,fragmented:this.isFragmented})),this.format._options.onFtyp){let{data:Y,start:Z}=this.writer.stopTrackingWrites();this.format._options.onFtyp(Y,Z)}}if(this.ftypSize=this.writer.getPos(),this.fastStart==="in-memory");else if(this.fastStart==="reserve"){for(let Y of this.output._tracks)if(Y.metadata.maximumPacketCount===void 0)throw Error("All tracks must specify maximumPacketCount in their metadata when using fastStart: 'reserve'.")}else if(this.isFragmented);else{if(this.format._options.onMdat)this.writer.startTrackingWrites();this.mdat=h0(!0),this.boxWriter.writeBox(this.mdat)}await this.writer.flush(),$()}allTracksAreKnown(){for(let $ of this.output._tracks)if(!$.source._closed&&!this.trackDatas.some((J)=>J.track===$))return!1;return!0}async getMimeType(){await this.allTracksKnown.promise;let $=this.trackDatas.map((J)=>{if(J.type==="video")return J.info.decoderConfig.codec;else if(J.type==="audio")return J.info.decoderConfig.codec;else return{webvtt:"wvtt"}[J.track.source._codec]});return A6({isQuickTime:this.isQuickTime,hasVideo:this.trackDatas.some((J)=>J.type==="video"),hasAudio:this.trackDatas.some((J)=>J.type==="audio"),codecStrings:$})}getVideoTrackData($,J,Y){let Z=this.trackDatas.find((U)=>U.track===$);if(Z)return Z;i1(Y),N(Y),N(Y.decoderConfig);let G={...Y.decoderConfig};N(G.codedWidth!==void 0),N(G.codedHeight!==void 0);let K=!1;if($.source._codec==="avc"&&!G.description){let U=Z6(J.data);if(!U)throw Error("Couldn't extract an AVCDecoderConfigurationRecord from the AVC packet. Make sure the packets are in Annex B format (as specified in ITU-T-REC-H.264) when not providing a description, or provide a description (must be an AVCDecoderConfigurationRecord as specified in ISO 14496-15) and ensure the packets are in AVCC format.");G.description=G6(U),K=!0}else if($.source._codec==="hevc"&&!G.description){let U=K6(J.data);if(!U)throw Error("Couldn't extract an HEVCDecoderConfigurationRecord from the HEVC packet. Make sure the packets are in Annex B format (as specified in ITU-T-REC-H.265) when not providing a description, or provide a description (must be an HEVCDecoderConfigurationRecord as specified in ISO 14496-15) and ensure the packets are in HEVC format.");G.description=X6(U),K=!0}let X=C1(1/($.metadata.frameRate??57600),1e6).denominator,Q={muxer:this,track:$,type:"video",info:{width:G.codedWidth,height:G.codedHeight,decoderConfig:G,requiresAnnexBTransformation:K},timescale:X,samples:[],sampleQueue:[],timestampProcessingQueue:[],timeToSampleTable:[],compositionTimeOffsetTable:[],lastTimescaleUnits:null,lastSample:null,finalizedChunks:[],currentChunk:null,compactlyCodedChunkTable:[]};if(this.trackDatas.push(Q),this.trackDatas.sort((U,q)=>U.track.id-q.track.id),this.allTracksAreKnown())this.allTracksKnown.resolve();return Q}getAudioTrackData($,J,Y){let Z=this.trackDatas.find((Q)=>Q.track===$);if(Z)return Z;o1(Y),N(Y),N(Y.decoderConfig);let G={...Y.decoderConfig},K=!1;if($.source._codec==="aac"&&!G.description){let Q=H1(B0.tempFromBytes(J.data));if(!Q)throw Error("Couldn't parse ADTS header from the AAC packet. Make sure the packets are in ADTS format (as specified in ISO 13818-7) when not providing a description, or provide a description (must be an AudioSpecificConfig as specified in ISO 14496-3) and ensure the packets are raw AAC data.");let U=y0[Q.samplingFrequencyIndex],q=a0[Q.channelConfiguration];if(U===void 0||q===void 0)throw Error("Invalid ADTS frame header.");G.description=t0({objectType:Q.objectType,sampleRate:U,numberOfChannels:q}),K=!0}let X={muxer:this,track:$,type:"audio",info:{numberOfChannels:Y.decoderConfig.numberOfChannels,sampleRate:Y.decoderConfig.sampleRate,decoderConfig:G,requiresPcmTransformation:!this.isFragmented&&h.includes($.source._codec),requiresAdtsStripping:K},timescale:Y.decoderConfig.sampleRate,samples:[],sampleQueue:[],timestampProcessingQueue:[],timeToSampleTable:[],compositionTimeOffsetTable:[],lastTimescaleUnits:null,lastSample:null,finalizedChunks:[],currentChunk:null,compactlyCodedChunkTable:[]};if(this.trackDatas.push(X),this.trackDatas.sort((Q,U)=>Q.track.id-U.track.id),this.allTracksAreKnown())this.allTracksKnown.resolve();return X}getSubtitleTrackData($,J){let Y=this.trackDatas.find((G)=>G.track===$);if(Y)return Y;a1(J),N(J),N(J.config);let Z={muxer:this,track:$,type:"subtitle",info:{config:J.config},timescale:1000,samples:[],sampleQueue:[],timestampProcessingQueue:[],timeToSampleTable:[],compositionTimeOffsetTable:[],lastTimescaleUnits:null,lastSample:null,finalizedChunks:[],currentChunk:null,compactlyCodedChunkTable:[],lastCueEndTimestamp:0,cueQueue:[],nextSourceId:0,cueToSourceId:new WeakMap};if(this.trackDatas.push(Z),this.trackDatas.sort((G,K)=>G.track.id-K.track.id),this.allTracksAreKnown())this.allTracksKnown.resolve();return Z}async addEncodedVideoPacket($,J,Y){let Z=await this.mutex.acquire();try{let G=this.getVideoTrackData($,J,Y),K=J.data;if(G.info.requiresAnnexBTransformation){let U=[...e0(K)].map((q)=>K.subarray(q.offset,q.offset+q.length));if(U.length===0)throw Error("Failed to transform packet data. Make sure all packets are provided in Annex B format, as specified in ITU-T-REC-H.264 and ITU-T-REC-H.265.");K=Y6(U,4)}let X=this.validateAndNormalizeTimestamp(G.track,J.timestamp,J.type==="key"),Q=this.createSampleForTrack(G,K,X,J.duration,J.type);await this.registerSample(G,Q)}finally{Z()}}async addEncodedAudioPacket($,J,Y){let Z=await this.mutex.acquire();try{let G=this.getAudioTrackData($,J,Y),K=J.data;if(G.info.requiresAdtsStripping){let U=H1(B0.tempFromBytes(K));if(!U)throw Error("Expected ADTS frame, didn't get one.");let q=U.crcCheck===null?E6:R6;K=K.subarray(q)}let X=this.validateAndNormalizeTimestamp(G.track,J.timestamp,J.type==="key"),Q=this.createSampleForTrack(G,K,X,J.duration,J.type);if(G.info.requiresPcmTransformation)await this.maybePadWithSilence(G,X);await this.registerSample(G,Q)}finally{Z()}}async maybePadWithSilence($,J){let Y=y($.samples),Z=Y?Y.timestamp+Y.duration:0,G=J-Z,K=D(G,$.timescale);if(K>0){let{sampleSize:X,silentValue:Q}=Y0($.info.decoderConfig.codec),U=K*$.info.numberOfChannels,q=new Uint8Array(X*U).fill(Q),j=this.createSampleForTrack($,new Uint8Array(q.buffer),Z,G,"key");await this.registerSample($,j)}}async addSubtitleCue($,J,Y){let Z=await this.mutex.acquire();try{let G=this.getSubtitleTrackData($,Y);if(this.validateAndNormalizeTimestamp(G.track,J.timestamp,!0),$.source._codec==="webvtt")G.cueQueue.push(J),await this.processWebVTTCues(G,J.timestamp)}finally{Z()}}async processWebVTTCues($,J){while($.cueQueue.length>0){let Y=new Set([]);for(let U of $.cueQueue)N(U.timestamp<=J),N($.lastCueEndTimestamp<=U.timestamp+U.duration),Y.add(Math.max(U.timestamp,$.lastCueEndTimestamp)),Y.add(U.timestamp+U.duration);let Z=[...Y].sort((U,q)=>U-q),G=Z[0],K=Z[1]??G;if(J<K)break;if($.lastCueEndTimestamp<G){this.auxWriter.seek(0);let U=v6();this.auxBoxWriter.writeBox(U);let q=this.auxWriter.getSlice(0,this.auxWriter.getPos()),j=this.createSampleForTrack($,q,$.lastCueEndTimestamp,G-$.lastCueEndTimestamp,"key");await this.registerSample($,j),$.lastCueEndTimestamp=G}this.auxWriter.seek(0);for(let U=0;U<$.cueQueue.length;U++){let q=$.cueQueue[U];if(q.timestamp>=K)break;A1.lastIndex=0;let j=A1.test(q.text),z=q.timestamp+q.duration,V=$.cueToSourceId.get(q);if(V===void 0&&K<z)V=$.nextSourceId++,$.cueToSourceId.set(q,V);if(q.notes){let R=f6(q.notes);this.auxBoxWriter.writeBox(R)}let W=h6(q.text,j?G:null,q.identifier??null,q.settings??null,V??null);if(this.auxBoxWriter.writeBox(W),z===K)$.cueQueue.splice(U--,1)}let X=this.auxWriter.getSlice(0,this.auxWriter.getPos()),Q=this.createSampleForTrack($,X,G,K-G,"key");await this.registerSample($,Q),$.lastCueEndTimestamp=K}}createSampleForTrack($,J,Y,Z,G){return{timestamp:Y,decodeTimestamp:Y,duration:Z,data:J,size:J.byteLength,type:G,timescaleUnitsToNextSample:D(Z,$.timescale)}}processTimestamps($,J){if($.timestampProcessingQueue.length===0)return;if($.type==="audio"&&$.info.requiresPcmTransformation){let Z=0;for(let G=0;G<$.timestampProcessingQueue.length;G++){let K=$.timestampProcessingQueue[G],X=D(K.duration,$.timescale);Z+=X}if($.timeToSampleTable.length===0)$.timeToSampleTable.push({sampleCount:Z,sampleDelta:1});else{let G=y($.timeToSampleTable);G.sampleCount+=Z}$.timestampProcessingQueue.length=0;return}let Y=$.timestampProcessingQueue.map((Z)=>Z.timestamp).sort((Z,G)=>Z-G);for(let Z=0;Z<$.timestampProcessingQueue.length;Z++){let G=$.timestampProcessingQueue[Z];if(G.decodeTimestamp=Y[Z],!this.isFragmented&&$.lastTimescaleUnits===null)G.decodeTimestamp=0;let K=D(G.timestamp-G.decodeTimestamp,$.timescale),X=D(G.duration,$.timescale);if($.lastTimescaleUnits!==null){N($.lastSample);let Q=D(G.decodeTimestamp,$.timescale,!1),U=Math.round(Q-$.lastTimescaleUnits);if(N(U>=0),$.lastTimescaleUnits+=U,$.lastSample.timescaleUnitsToNextSample=U,!this.isFragmented){let q=y($.timeToSampleTable);if(N(q),q.sampleCount===1){q.sampleDelta=U;let z=$.timeToSampleTable[$.timeToSampleTable.length-2];if(z&&z.sampleDelta===U)z.sampleCount++,$.timeToSampleTable.pop(),q=z}else if(q.sampleDelta!==U)q.sampleCount--,$.timeToSampleTable.push(q={sampleCount:1,sampleDelta:U});if(q.sampleDelta===X)q.sampleCount++;else $.timeToSampleTable.push({sampleCount:1,sampleDelta:X});let j=y($.compositionTimeOffsetTable);if(N(j),j.sampleCompositionTimeOffset===K)j.sampleCount++;else $.compositionTimeOffsetTable.push({sampleCount:1,sampleCompositionTimeOffset:K})}}else if($.lastTimescaleUnits=D(G.decodeTimestamp,$.timescale,!1),!this.isFragmented)$.timeToSampleTable.push({sampleCount:1,sampleDelta:X}),$.compositionTimeOffsetTable.push({sampleCount:1,sampleCompositionTimeOffset:K});$.lastSample=G}if($.timestampProcessingQueue.length=0,N($.lastSample),N($.lastTimescaleUnits!==null),J!==void 0&&$.lastSample.timescaleUnitsToNextSample===0){N(J.type==="key");let Z=D(J.timestamp,$.timescale,!1),G=Math.round(Z-$.lastTimescaleUnits);$.lastSample.timescaleUnitsToNextSample=G}}async registerSample($,J){if(J.type==="key")this.processTimestamps($,J);if($.timestampProcessingQueue.push(J),this.isFragmented)$.sampleQueue.push(J),await this.interleaveSamples();else if(this.fastStart==="reserve")await this.registerSampleFastStartReserve($,J);else await this.addSampleToTrack($,J)}async addSampleToTrack($,J){if(!this.isFragmented){if($.samples.push(J),this.fastStart==="reserve"){let Z=$.track.metadata.maximumPacketCount;if(N(Z!==void 0),$.samples.length>Z)throw Error(`Track #${$.track.id} has already reached the maximum packet count (${Z}). Either add less packets or increase the maximum packet count.`)}}let Y=!1;if(!$.currentChunk)Y=!0;else{$.currentChunk.startTimestamp=Math.min($.currentChunk.startTimestamp,J.timestamp);let Z=J.timestamp-$.currentChunk.startTimestamp;if(this.isFragmented){let G=this.trackDatas.every((K)=>{if($===K)return J.type==="key";let X=K.sampleQueue[0];if(X)return X.type==="key";return K.track.source._closed});if(Z>=this.minimumFragmentDuration&&G&&J.timestamp>this.maxWrittenTimestamp)Y=!0,await this.finalizeFragment()}else Y=Z>=0.5}if(Y){if($.currentChunk)await this.finalizeCurrentChunk($);$.currentChunk={startTimestamp:J.timestamp,samples:[],offset:null,moofOffset:null}}if(N($.currentChunk),$.currentChunk.samples.push(J),this.isFragmented)this.maxWrittenTimestamp=Math.max(this.maxWrittenTimestamp,J.timestamp)}async finalizeCurrentChunk($){if(N(!this.isFragmented),!$.currentChunk)return;$.finalizedChunks.push($.currentChunk),this.finalizedChunks.push($.currentChunk);let J=$.currentChunk.samples.length;if($.type==="audio"&&$.info.requiresPcmTransformation)J=$.currentChunk.samples.reduce((Y,Z)=>Y+D(Z.duration,$.timescale),0);if($.compactlyCodedChunkTable.length===0||y($.compactlyCodedChunkTable).samplesPerChunk!==J)$.compactlyCodedChunkTable.push({firstChunk:$.finalizedChunks.length,samplesPerChunk:J});if(this.fastStart==="in-memory"){$.currentChunk.offset=0;return}$.currentChunk.offset=this.writer.getPos();for(let Y of $.currentChunk.samples)N(Y.data),this.writer.write(Y.data),Y.data=null;await this.writer.flush()}async interleaveSamples($=!1){if(N(this.isFragmented),!$&&!this.allTracksAreKnown())return;$:while(!0){let J=null,Y=1/0;for(let G of this.trackDatas){if(!$&&G.sampleQueue.length===0&&!G.track.source._closed)break $;if(G.sampleQueue.length>0&&G.sampleQueue[0].timestamp<Y)J=G,Y=G.sampleQueue[0].timestamp}if(!J)break;let Z=J.sampleQueue.shift();await this.addSampleToTrack(J,Z)}}async finalizeFragment($=!0){N(this.isFragmented);let J=this.nextFragmentNumber++;if(J===1){if(this.format._options.onMoov)this.writer.startTrackingWrites();let V=I0(this);if(this.boxWriter.writeBox(V),this.format._options.onMoov){let{data:W,start:R}=this.writer.stopTrackingWrites();this.format._options.onMoov(W,R)}}let Y=this.trackDatas.filter((V)=>V.currentChunk),Z=w1(J,Y),G=this.writer.getPos(),K=G+this.boxWriter.measureBox(Z),X=K+J1,Q=1/0;for(let V of Y){V.currentChunk.offset=X,V.currentChunk.moofOffset=G;for(let W of V.currentChunk.samples)X+=W.size;Q=Math.min(Q,V.currentChunk.startTimestamp)}let U=X-K,q=U>=4294967296;if(q)for(let V of Y)V.currentChunk.offset+=_1-J1;if(this.format._options.onMoof)this.writer.startTrackingWrites();let j=w1(J,Y);if(this.boxWriter.writeBox(j),this.format._options.onMoof){let{data:V,start:W}=this.writer.stopTrackingWrites();this.format._options.onMoof(V,W,Q)}if(N(this.writer.getPos()===K),this.format._options.onMdat)this.writer.startTrackingWrites();let z=h0(q);z.size=U,this.boxWriter.writeBox(z),this.writer.seek(K+(q?_1:J1));for(let V of Y)for(let W of V.currentChunk.samples)this.writer.write(W.data),W.data=null;if(this.format._options.onMdat){let{data:V,start:W}=this.writer.stopTrackingWrites();this.format._options.onMdat(V,W)}for(let V of Y)V.finalizedChunks.push(V.currentChunk),this.finalizedChunks.push(V.currentChunk),V.currentChunk=null;if($)await this.writer.flush()}async registerSampleFastStartReserve($,J){if(this.allTracksAreKnown()){if(!this.mdat){let Y=I0(this),G=this.boxWriter.measureBox(Y)+this.computeSampleTableSizeUpperBound()+4096;if(N(this.ftypSize!==null),this.writer.seek(this.ftypSize+G),this.format._options.onMdat)this.writer.startTrackingWrites();this.mdat=h0(!0),this.boxWriter.writeBox(this.mdat);for(let K of this.trackDatas){for(let X of K.sampleQueue)await this.addSampleToTrack(K,X);K.sampleQueue.length=0}}await this.addSampleToTrack($,J)}else $.sampleQueue.push(J)}computeSampleTableSizeUpperBound(){N(this.fastStart==="reserve");let $=0;for(let J of this.trackDatas){let Y=J.track.metadata.maximumPacketCount;N(Y!==void 0),$+=8*Math.ceil(0.6666666666666666*Y),$+=4*Y,$+=8*Math.ceil(0.6666666666666666*Y),$+=12*Math.ceil(0.6666666666666666*Y),$+=4*Y,$+=8*Y}return $}async onTrackClose($){let J=await this.mutex.acquire();if($.type==="subtitle"&&$.source._codec==="webvtt"){let Y=this.trackDatas.find((Z)=>Z.track===$);if(Y)await this.processWebVTTCues(Y,1/0)}if(this.allTracksAreKnown())this.allTracksKnown.resolve();if(this.isFragmented)await this.interleaveSamples();J()}async finalize(){let $=await this.mutex.acquire();this.allTracksKnown.resolve();for(let J of this.trackDatas)if(J.type==="subtitle"&&J.track.source._codec==="webvtt")await this.processWebVTTCues(J,1/0);if(this.isFragmented){await this.interleaveSamples(!0);for(let J of this.trackDatas)this.processTimestamps(J);await this.finalizeFragment(!1)}else for(let J of this.trackDatas)this.processTimestamps(J),await this.finalizeCurrentChunk(J);if(this.fastStart==="in-memory"){this.mdat=h0(!1);let J;for(let Z=0;Z<2;Z++){let G=I0(this),K=this.boxWriter.measureBox(G);J=this.boxWriter.measureBox(this.mdat);let X=this.writer.getPos()+K+J;for(let Q of this.finalizedChunks){Q.offset=X;for(let{data:U}of Q.samples)N(U),X+=U.byteLength,J+=U.byteLength}if(X<4294967296)break;if(J>=4294967296)this.mdat.largeSize=!0}if(this.format._options.onMoov)this.writer.startTrackingWrites();let Y=I0(this);if(this.boxWriter.writeBox(Y),this.format._options.onMoov){let{data:Z,start:G}=this.writer.stopTrackingWrites();this.format._options.onMoov(Z,G)}if(this.format._options.onMdat)this.writer.startTrackingWrites();this.mdat.size=J,this.boxWriter.writeBox(this.mdat);for(let Z of this.finalizedChunks)for(let G of Z.samples)N(G.data),this.writer.write(G.data),G.data=null;if(this.format._options.onMdat){let{data:Z,start:G}=this.writer.stopTrackingWrites();this.format._options.onMdat(Z,G)}}else if(this.isFragmented){let J=this.writer.getPos(),Y=k6(this.trackDatas);this.boxWriter.writeBox(Y);let Z=this.writer.getPos()-J;this.writer.seek(this.writer.getPos()-4),this.boxWriter.writeU32(Z)}else{N(this.mdat);let J=this.boxWriter.offsets.get(this.mdat);N(J!==void 0);let Y=this.writer.getPos()-J;if(this.mdat.size=Y,this.mdat.largeSize=Y>=4294967296,this.boxWriter.patchBox(this.mdat),this.format._options.onMdat){let{data:G,start:K}=this.writer.stopTrackingWrites();this.format._options.onMdat(G,K)}let Z=I0(this);if(this.fastStart==="reserve"){if(N(this.ftypSize!==null),this.writer.seek(this.ftypSize),this.format._options.onMoov)this.writer.startTrackingWrites();this.boxWriter.writeBox(Z);let G=this.boxWriter.offsets.get(this.mdat)-this.writer.getPos();this.boxWriter.writeBox(y6(G))}else{if(this.format._options.onMoov)this.writer.startTrackingWrites();this.boxWriter.writeBox(Z)}if(this.format._options.onMoov){let{data:G,start:K}=this.writer.stopTrackingWrites();this.format._options.onMoov(G,K)}}$()}}/*!
+ */
+var GLOBAL_TIMESCALE = 1000;
+var TIMESTAMP_OFFSET = 2082844800;
+var getTrackMetadata = (trackData) => {
+  const metadata = {};
+  const track = trackData.track;
+  if (track.metadata.name !== undefined) {
+    metadata.name = track.metadata.name;
+  }
+  return metadata;
+};
+var intoTimescale = (timeInSeconds, timescale, round = true) => {
+  const value = timeInSeconds * timescale;
+  return round ? Math.round(value) : value;
+};
+
+class IsobmffMuxer extends Muxer {
+  constructor(output, format) {
+    super(output);
+    this.auxTarget = new BufferTarget;
+    this.auxWriter = this.auxTarget._createWriter();
+    this.auxBoxWriter = new IsobmffBoxWriter(this.auxWriter);
+    this.mdat = null;
+    this.ftypSize = null;
+    this.trackDatas = [];
+    this.allTracksKnown = promiseWithResolvers();
+    this.creationTime = Math.floor(Date.now() / 1000) + TIMESTAMP_OFFSET;
+    this.finalizedChunks = [];
+    this.nextFragmentNumber = 1;
+    this.maxWrittenTimestamp = -Infinity;
+    this.format = format;
+    this.writer = output._writer;
+    this.boxWriter = new IsobmffBoxWriter(this.writer);
+    this.isQuickTime = format instanceof MovOutputFormat;
+    const fastStartDefault = this.writer instanceof BufferTargetWriter ? "in-memory" : false;
+    this.fastStart = format._options.fastStart ?? fastStartDefault;
+    this.isFragmented = this.fastStart === "fragmented";
+    if (this.fastStart === "in-memory" || this.isFragmented) {
+      this.writer.ensureMonotonicity = true;
+    }
+    this.minimumFragmentDuration = format._options.minimumFragmentDuration ?? 1;
+  }
+  async start() {
+    const release = await this.mutex.acquire();
+    const holdsAvc = this.output._tracks.some((x) => x.type === "video" && x.source._codec === "avc");
+    {
+      if (this.format._options.onFtyp) {
+        this.writer.startTrackingWrites();
+      }
+      this.boxWriter.writeBox(ftyp({
+        isQuickTime: this.isQuickTime,
+        holdsAvc,
+        fragmented: this.isFragmented
+      }));
+      if (this.format._options.onFtyp) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onFtyp(data, start);
+      }
+    }
+    this.ftypSize = this.writer.getPos();
+    if (this.fastStart === "in-memory") {} else if (this.fastStart === "reserve") {
+      for (const track of this.output._tracks) {
+        if (track.metadata.maximumPacketCount === undefined) {
+          throw new Error("All tracks must specify maximumPacketCount in their metadata when using" + " fastStart: 'reserve'.");
+        }
+      }
+    } else if (this.isFragmented) {} else {
+      if (this.format._options.onMdat) {
+        this.writer.startTrackingWrites();
+      }
+      this.mdat = mdat(true);
+      this.boxWriter.writeBox(this.mdat);
+    }
+    await this.writer.flush();
+    release();
+  }
+  allTracksAreKnown() {
+    for (const track of this.output._tracks) {
+      if (!track.source._closed && !this.trackDatas.some((x) => x.track === track)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  async getMimeType() {
+    await this.allTracksKnown.promise;
+    const codecStrings = this.trackDatas.map((trackData) => {
+      if (trackData.type === "video") {
+        return trackData.info.decoderConfig.codec;
+      } else if (trackData.type === "audio") {
+        return trackData.info.decoderConfig.codec;
+      } else {
+        const map = {
+          webvtt: "wvtt"
+        };
+        return map[trackData.track.source._codec];
+      }
+    });
+    return buildIsobmffMimeType({
+      isQuickTime: this.isQuickTime,
+      hasVideo: this.trackDatas.some((x) => x.type === "video"),
+      hasAudio: this.trackDatas.some((x) => x.type === "audio"),
+      codecStrings
+    });
+  }
+  getVideoTrackData(track, packet, meta) {
+    const existingTrackData = this.trackDatas.find((x) => x.track === track);
+    if (existingTrackData) {
+      return existingTrackData;
+    }
+    validateVideoChunkMetadata(meta);
+    assert(meta);
+    assert(meta.decoderConfig);
+    const decoderConfig = { ...meta.decoderConfig };
+    assert(decoderConfig.codedWidth !== undefined);
+    assert(decoderConfig.codedHeight !== undefined);
+    let requiresAnnexBTransformation = false;
+    if (track.source._codec === "avc" && !decoderConfig.description) {
+      const decoderConfigurationRecord = extractAvcDecoderConfigurationRecord(packet.data);
+      if (!decoderConfigurationRecord) {
+        throw new Error("Couldn't extract an AVCDecoderConfigurationRecord from the AVC packet. Make sure the packets are" + " in Annex B format (as specified in ITU-T-REC-H.264) when not providing a description, or" + " provide a description (must be an AVCDecoderConfigurationRecord as specified in ISO 14496-15)" + " and ensure the packets are in AVCC format.");
+      }
+      decoderConfig.description = serializeAvcDecoderConfigurationRecord(decoderConfigurationRecord);
+      requiresAnnexBTransformation = true;
+    } else if (track.source._codec === "hevc" && !decoderConfig.description) {
+      const decoderConfigurationRecord = extractHevcDecoderConfigurationRecord(packet.data);
+      if (!decoderConfigurationRecord) {
+        throw new Error("Couldn't extract an HEVCDecoderConfigurationRecord from the HEVC packet. Make sure the packets" + " are in Annex B format (as specified in ITU-T-REC-H.265) when not providing a description, or" + " provide a description (must be an HEVCDecoderConfigurationRecord as specified in ISO 14496-15)" + " and ensure the packets are in HEVC format.");
+      }
+      decoderConfig.description = serializeHevcDecoderConfigurationRecord(decoderConfigurationRecord);
+      requiresAnnexBTransformation = true;
+    }
+    const timescale = computeRationalApproximation(1 / (track.metadata.frameRate ?? 57600), 1e6).denominator;
+    const newTrackData = {
+      muxer: this,
+      track,
+      type: "video",
+      info: {
+        width: decoderConfig.codedWidth,
+        height: decoderConfig.codedHeight,
+        decoderConfig,
+        requiresAnnexBTransformation
+      },
+      timescale,
+      samples: [],
+      sampleQueue: [],
+      timestampProcessingQueue: [],
+      timeToSampleTable: [],
+      compositionTimeOffsetTable: [],
+      lastTimescaleUnits: null,
+      lastSample: null,
+      finalizedChunks: [],
+      currentChunk: null,
+      compactlyCodedChunkTable: []
+    };
+    this.trackDatas.push(newTrackData);
+    this.trackDatas.sort((a, b) => a.track.id - b.track.id);
+    if (this.allTracksAreKnown()) {
+      this.allTracksKnown.resolve();
+    }
+    return newTrackData;
+  }
+  getAudioTrackData(track, packet, meta) {
+    const existingTrackData = this.trackDatas.find((x) => x.track === track);
+    if (existingTrackData) {
+      return existingTrackData;
+    }
+    validateAudioChunkMetadata(meta);
+    assert(meta);
+    assert(meta.decoderConfig);
+    const decoderConfig = { ...meta.decoderConfig };
+    let requiresAdtsStripping = false;
+    if (track.source._codec === "aac" && !decoderConfig.description) {
+      const adtsFrame = readAdtsFrameHeader(FileSlice.tempFromBytes(packet.data));
+      if (!adtsFrame) {
+        throw new Error("Couldn't parse ADTS header from the AAC packet. Make sure the packets are in ADTS format" + " (as specified in ISO 13818-7) when not providing a description, or provide a description" + " (must be an AudioSpecificConfig as specified in ISO 14496-3) and ensure the packets" + " are raw AAC data.");
+      }
+      const sampleRate = aacFrequencyTable[adtsFrame.samplingFrequencyIndex];
+      const numberOfChannels = aacChannelMap[adtsFrame.channelConfiguration];
+      if (sampleRate === undefined || numberOfChannels === undefined) {
+        throw new Error("Invalid ADTS frame header.");
+      }
+      decoderConfig.description = buildAacAudioSpecificConfig({
+        objectType: adtsFrame.objectType,
+        sampleRate,
+        numberOfChannels
+      });
+      requiresAdtsStripping = true;
+    }
+    const newTrackData = {
+      muxer: this,
+      track,
+      type: "audio",
+      info: {
+        numberOfChannels: meta.decoderConfig.numberOfChannels,
+        sampleRate: meta.decoderConfig.sampleRate,
+        decoderConfig,
+        requiresPcmTransformation: !this.isFragmented && PCM_AUDIO_CODECS.includes(track.source._codec),
+        requiresAdtsStripping
+      },
+      timescale: meta.decoderConfig.sampleRate,
+      samples: [],
+      sampleQueue: [],
+      timestampProcessingQueue: [],
+      timeToSampleTable: [],
+      compositionTimeOffsetTable: [],
+      lastTimescaleUnits: null,
+      lastSample: null,
+      finalizedChunks: [],
+      currentChunk: null,
+      compactlyCodedChunkTable: []
+    };
+    this.trackDatas.push(newTrackData);
+    this.trackDatas.sort((a, b) => a.track.id - b.track.id);
+    if (this.allTracksAreKnown()) {
+      this.allTracksKnown.resolve();
+    }
+    return newTrackData;
+  }
+  getSubtitleTrackData(track, meta) {
+    const existingTrackData = this.trackDatas.find((x) => x.track === track);
+    if (existingTrackData) {
+      return existingTrackData;
+    }
+    validateSubtitleMetadata(meta);
+    assert(meta);
+    assert(meta.config);
+    const newTrackData = {
+      muxer: this,
+      track,
+      type: "subtitle",
+      info: {
+        config: meta.config
+      },
+      timescale: 1000,
+      samples: [],
+      sampleQueue: [],
+      timestampProcessingQueue: [],
+      timeToSampleTable: [],
+      compositionTimeOffsetTable: [],
+      lastTimescaleUnits: null,
+      lastSample: null,
+      finalizedChunks: [],
+      currentChunk: null,
+      compactlyCodedChunkTable: [],
+      lastCueEndTimestamp: 0,
+      cueQueue: [],
+      nextSourceId: 0,
+      cueToSourceId: new WeakMap
+    };
+    this.trackDatas.push(newTrackData);
+    this.trackDatas.sort((a, b) => a.track.id - b.track.id);
+    if (this.allTracksAreKnown()) {
+      this.allTracksKnown.resolve();
+    }
+    return newTrackData;
+  }
+  async addEncodedVideoPacket(track, packet, meta) {
+    const release = await this.mutex.acquire();
+    try {
+      const trackData = this.getVideoTrackData(track, packet, meta);
+      let packetData = packet.data;
+      if (trackData.info.requiresAnnexBTransformation) {
+        const nalUnits = [...iterateNalUnitsInAnnexB(packetData)].map((loc) => packetData.subarray(loc.offset, loc.offset + loc.length));
+        if (nalUnits.length === 0) {
+          throw new Error("Failed to transform packet data. Make sure all packets are provided in Annex B format, as" + " specified in ITU-T-REC-H.264 and ITU-T-REC-H.265.");
+        }
+        packetData = concatNalUnitsInLengthPrefixed(nalUnits, 4);
+      }
+      const timestamp = this.validateAndNormalizeTimestamp(trackData.track, packet.timestamp, packet.type === "key");
+      const internalSample = this.createSampleForTrack(trackData, packetData, timestamp, packet.duration, packet.type);
+      await this.registerSample(trackData, internalSample);
+    } finally {
+      release();
+    }
+  }
+  async addEncodedAudioPacket(track, packet, meta) {
+    const release = await this.mutex.acquire();
+    try {
+      const trackData = this.getAudioTrackData(track, packet, meta);
+      let packetData = packet.data;
+      if (trackData.info.requiresAdtsStripping) {
+        const adtsFrame = readAdtsFrameHeader(FileSlice.tempFromBytes(packetData));
+        if (!adtsFrame) {
+          throw new Error("Expected ADTS frame, didn't get one.");
+        }
+        const headerLength = adtsFrame.crcCheck === null ? MIN_ADTS_FRAME_HEADER_SIZE : MAX_ADTS_FRAME_HEADER_SIZE;
+        packetData = packetData.subarray(headerLength);
+      }
+      const timestamp = this.validateAndNormalizeTimestamp(trackData.track, packet.timestamp, packet.type === "key");
+      const internalSample = this.createSampleForTrack(trackData, packetData, timestamp, packet.duration, packet.type);
+      if (trackData.info.requiresPcmTransformation) {
+        await this.maybePadWithSilence(trackData, timestamp);
+      }
+      await this.registerSample(trackData, internalSample);
+    } finally {
+      release();
+    }
+  }
+  async maybePadWithSilence(trackData, untilTimestamp) {
+    const lastSample = last(trackData.samples);
+    const lastEndTimestamp = lastSample ? lastSample.timestamp + lastSample.duration : 0;
+    const delta = untilTimestamp - lastEndTimestamp;
+    const deltaInTimescale = intoTimescale(delta, trackData.timescale);
+    if (deltaInTimescale > 0) {
+      const { sampleSize, silentValue } = parsePcmCodec(trackData.info.decoderConfig.codec);
+      const samplesNeeded = deltaInTimescale * trackData.info.numberOfChannels;
+      const data = new Uint8Array(sampleSize * samplesNeeded).fill(silentValue);
+      const paddingSample = this.createSampleForTrack(trackData, new Uint8Array(data.buffer), lastEndTimestamp, delta, "key");
+      await this.registerSample(trackData, paddingSample);
+    }
+  }
+  async addSubtitleCue(track, cue, meta) {
+    const release = await this.mutex.acquire();
+    try {
+      const trackData = this.getSubtitleTrackData(track, meta);
+      this.validateAndNormalizeTimestamp(trackData.track, cue.timestamp, true);
+      if (track.source._codec === "webvtt") {
+        trackData.cueQueue.push(cue);
+        await this.processWebVTTCues(trackData, cue.timestamp);
+      } else {}
+    } finally {
+      release();
+    }
+  }
+  async processWebVTTCues(trackData, until) {
+    while (trackData.cueQueue.length > 0) {
+      const timestamps = new Set([]);
+      for (const cue of trackData.cueQueue) {
+        assert(cue.timestamp <= until);
+        assert(trackData.lastCueEndTimestamp <= cue.timestamp + cue.duration);
+        timestamps.add(Math.max(cue.timestamp, trackData.lastCueEndTimestamp));
+        timestamps.add(cue.timestamp + cue.duration);
+      }
+      const sortedTimestamps = [...timestamps].sort((a, b) => a - b);
+      const sampleStart = sortedTimestamps[0];
+      const sampleEnd = sortedTimestamps[1] ?? sampleStart;
+      if (until < sampleEnd) {
+        break;
+      }
+      if (trackData.lastCueEndTimestamp < sampleStart) {
+        this.auxWriter.seek(0);
+        const box2 = vtte();
+        this.auxBoxWriter.writeBox(box2);
+        const body2 = this.auxWriter.getSlice(0, this.auxWriter.getPos());
+        const sample2 = this.createSampleForTrack(trackData, body2, trackData.lastCueEndTimestamp, sampleStart - trackData.lastCueEndTimestamp, "key");
+        await this.registerSample(trackData, sample2);
+        trackData.lastCueEndTimestamp = sampleStart;
+      }
+      this.auxWriter.seek(0);
+      for (let i = 0;i < trackData.cueQueue.length; i++) {
+        const cue = trackData.cueQueue[i];
+        if (cue.timestamp >= sampleEnd) {
+          break;
+        }
+        inlineTimestampRegex.lastIndex = 0;
+        const containsTimestamp = inlineTimestampRegex.test(cue.text);
+        const endTimestamp = cue.timestamp + cue.duration;
+        let sourceId = trackData.cueToSourceId.get(cue);
+        if (sourceId === undefined && sampleEnd < endTimestamp) {
+          sourceId = trackData.nextSourceId++;
+          trackData.cueToSourceId.set(cue, sourceId);
+        }
+        if (cue.notes) {
+          const box3 = vtta(cue.notes);
+          this.auxBoxWriter.writeBox(box3);
+        }
+        const box2 = vttc(cue.text, containsTimestamp ? sampleStart : null, cue.identifier ?? null, cue.settings ?? null, sourceId ?? null);
+        this.auxBoxWriter.writeBox(box2);
+        if (endTimestamp === sampleEnd) {
+          trackData.cueQueue.splice(i--, 1);
+        }
+      }
+      const body = this.auxWriter.getSlice(0, this.auxWriter.getPos());
+      const sample = this.createSampleForTrack(trackData, body, sampleStart, sampleEnd - sampleStart, "key");
+      await this.registerSample(trackData, sample);
+      trackData.lastCueEndTimestamp = sampleEnd;
+    }
+  }
+  createSampleForTrack(trackData, data, timestamp, duration, type) {
+    const sample = {
+      timestamp,
+      decodeTimestamp: timestamp,
+      duration,
+      data,
+      size: data.byteLength,
+      type,
+      timescaleUnitsToNextSample: intoTimescale(duration, trackData.timescale)
+    };
+    return sample;
+  }
+  processTimestamps(trackData, nextSample) {
+    if (trackData.timestampProcessingQueue.length === 0) {
+      return;
+    }
+    if (trackData.type === "audio" && trackData.info.requiresPcmTransformation) {
+      let totalDuration = 0;
+      for (let i = 0;i < trackData.timestampProcessingQueue.length; i++) {
+        const sample = trackData.timestampProcessingQueue[i];
+        const duration = intoTimescale(sample.duration, trackData.timescale);
+        totalDuration += duration;
+      }
+      if (trackData.timeToSampleTable.length === 0) {
+        trackData.timeToSampleTable.push({
+          sampleCount: totalDuration,
+          sampleDelta: 1
+        });
+      } else {
+        const lastEntry = last(trackData.timeToSampleTable);
+        lastEntry.sampleCount += totalDuration;
+      }
+      trackData.timestampProcessingQueue.length = 0;
+      return;
+    }
+    const sortedTimestamps = trackData.timestampProcessingQueue.map((x) => x.timestamp).sort((a, b) => a - b);
+    for (let i = 0;i < trackData.timestampProcessingQueue.length; i++) {
+      const sample = trackData.timestampProcessingQueue[i];
+      sample.decodeTimestamp = sortedTimestamps[i];
+      if (!this.isFragmented && trackData.lastTimescaleUnits === null) {
+        sample.decodeTimestamp = 0;
+      }
+      const sampleCompositionTimeOffset = intoTimescale(sample.timestamp - sample.decodeTimestamp, trackData.timescale);
+      const durationInTimescale = intoTimescale(sample.duration, trackData.timescale);
+      if (trackData.lastTimescaleUnits !== null) {
+        assert(trackData.lastSample);
+        const timescaleUnits = intoTimescale(sample.decodeTimestamp, trackData.timescale, false);
+        const delta = Math.round(timescaleUnits - trackData.lastTimescaleUnits);
+        assert(delta >= 0);
+        trackData.lastTimescaleUnits += delta;
+        trackData.lastSample.timescaleUnitsToNextSample = delta;
+        if (!this.isFragmented) {
+          let lastTableEntry = last(trackData.timeToSampleTable);
+          assert(lastTableEntry);
+          if (lastTableEntry.sampleCount === 1) {
+            lastTableEntry.sampleDelta = delta;
+            const entryBefore = trackData.timeToSampleTable[trackData.timeToSampleTable.length - 2];
+            if (entryBefore && entryBefore.sampleDelta === delta) {
+              entryBefore.sampleCount++;
+              trackData.timeToSampleTable.pop();
+              lastTableEntry = entryBefore;
+            }
+          } else if (lastTableEntry.sampleDelta !== delta) {
+            lastTableEntry.sampleCount--;
+            trackData.timeToSampleTable.push(lastTableEntry = {
+              sampleCount: 1,
+              sampleDelta: delta
+            });
+          }
+          if (lastTableEntry.sampleDelta === durationInTimescale) {
+            lastTableEntry.sampleCount++;
+          } else {
+            trackData.timeToSampleTable.push({
+              sampleCount: 1,
+              sampleDelta: durationInTimescale
+            });
+          }
+          const lastCompositionTimeOffsetTableEntry = last(trackData.compositionTimeOffsetTable);
+          assert(lastCompositionTimeOffsetTableEntry);
+          if (lastCompositionTimeOffsetTableEntry.sampleCompositionTimeOffset === sampleCompositionTimeOffset) {
+            lastCompositionTimeOffsetTableEntry.sampleCount++;
+          } else {
+            trackData.compositionTimeOffsetTable.push({
+              sampleCount: 1,
+              sampleCompositionTimeOffset
+            });
+          }
+        }
+      } else {
+        trackData.lastTimescaleUnits = intoTimescale(sample.decodeTimestamp, trackData.timescale, false);
+        if (!this.isFragmented) {
+          trackData.timeToSampleTable.push({
+            sampleCount: 1,
+            sampleDelta: durationInTimescale
+          });
+          trackData.compositionTimeOffsetTable.push({
+            sampleCount: 1,
+            sampleCompositionTimeOffset
+          });
+        }
+      }
+      trackData.lastSample = sample;
+    }
+    trackData.timestampProcessingQueue.length = 0;
+    assert(trackData.lastSample);
+    assert(trackData.lastTimescaleUnits !== null);
+    if (nextSample !== undefined && trackData.lastSample.timescaleUnitsToNextSample === 0) {
+      assert(nextSample.type === "key");
+      const timescaleUnits = intoTimescale(nextSample.timestamp, trackData.timescale, false);
+      const delta = Math.round(timescaleUnits - trackData.lastTimescaleUnits);
+      trackData.lastSample.timescaleUnitsToNextSample = delta;
+    }
+  }
+  async registerSample(trackData, sample) {
+    if (sample.type === "key") {
+      this.processTimestamps(trackData, sample);
+    }
+    trackData.timestampProcessingQueue.push(sample);
+    if (this.isFragmented) {
+      trackData.sampleQueue.push(sample);
+      await this.interleaveSamples();
+    } else if (this.fastStart === "reserve") {
+      await this.registerSampleFastStartReserve(trackData, sample);
+    } else {
+      await this.addSampleToTrack(trackData, sample);
+    }
+  }
+  async addSampleToTrack(trackData, sample) {
+    if (!this.isFragmented) {
+      trackData.samples.push(sample);
+      if (this.fastStart === "reserve") {
+        const maximumPacketCount = trackData.track.metadata.maximumPacketCount;
+        assert(maximumPacketCount !== undefined);
+        if (trackData.samples.length > maximumPacketCount) {
+          throw new Error(`Track #${trackData.track.id} has already reached the maximum packet count` + ` (${maximumPacketCount}). Either add less packets or increase the maximum packet count.`);
+        }
+      }
+    }
+    let beginNewChunk = false;
+    if (!trackData.currentChunk) {
+      beginNewChunk = true;
+    } else {
+      trackData.currentChunk.startTimestamp = Math.min(trackData.currentChunk.startTimestamp, sample.timestamp);
+      const currentChunkDuration = sample.timestamp - trackData.currentChunk.startTimestamp;
+      if (this.isFragmented) {
+        const keyFrameQueuedEverywhere = this.trackDatas.every((otherTrackData) => {
+          if (trackData === otherTrackData) {
+            return sample.type === "key";
+          }
+          const firstQueuedSample = otherTrackData.sampleQueue[0];
+          if (firstQueuedSample) {
+            return firstQueuedSample.type === "key";
+          }
+          return otherTrackData.track.source._closed;
+        });
+        if (currentChunkDuration >= this.minimumFragmentDuration && keyFrameQueuedEverywhere && sample.timestamp > this.maxWrittenTimestamp) {
+          beginNewChunk = true;
+          await this.finalizeFragment();
+        }
+      } else {
+        beginNewChunk = currentChunkDuration >= 0.5;
+      }
+    }
+    if (beginNewChunk) {
+      if (trackData.currentChunk) {
+        await this.finalizeCurrentChunk(trackData);
+      }
+      trackData.currentChunk = {
+        startTimestamp: sample.timestamp,
+        samples: [],
+        offset: null,
+        moofOffset: null
+      };
+    }
+    assert(trackData.currentChunk);
+    trackData.currentChunk.samples.push(sample);
+    if (this.isFragmented) {
+      this.maxWrittenTimestamp = Math.max(this.maxWrittenTimestamp, sample.timestamp);
+    }
+  }
+  async finalizeCurrentChunk(trackData) {
+    assert(!this.isFragmented);
+    if (!trackData.currentChunk)
+      return;
+    trackData.finalizedChunks.push(trackData.currentChunk);
+    this.finalizedChunks.push(trackData.currentChunk);
+    let sampleCount = trackData.currentChunk.samples.length;
+    if (trackData.type === "audio" && trackData.info.requiresPcmTransformation) {
+      sampleCount = trackData.currentChunk.samples.reduce((acc, sample) => acc + intoTimescale(sample.duration, trackData.timescale), 0);
+    }
+    if (trackData.compactlyCodedChunkTable.length === 0 || last(trackData.compactlyCodedChunkTable).samplesPerChunk !== sampleCount) {
+      trackData.compactlyCodedChunkTable.push({
+        firstChunk: trackData.finalizedChunks.length,
+        samplesPerChunk: sampleCount
+      });
+    }
+    if (this.fastStart === "in-memory") {
+      trackData.currentChunk.offset = 0;
+      return;
+    }
+    trackData.currentChunk.offset = this.writer.getPos();
+    for (const sample of trackData.currentChunk.samples) {
+      assert(sample.data);
+      this.writer.write(sample.data);
+      sample.data = null;
+    }
+    await this.writer.flush();
+  }
+  async interleaveSamples(isFinalCall = false) {
+    assert(this.isFragmented);
+    if (!isFinalCall && !this.allTracksAreKnown()) {
+      return;
+    }
+    outer:
+      while (true) {
+        let trackWithMinTimestamp = null;
+        let minTimestamp = Infinity;
+        for (const trackData of this.trackDatas) {
+          if (!isFinalCall && trackData.sampleQueue.length === 0 && !trackData.track.source._closed) {
+            break outer;
+          }
+          if (trackData.sampleQueue.length > 0 && trackData.sampleQueue[0].timestamp < minTimestamp) {
+            trackWithMinTimestamp = trackData;
+            minTimestamp = trackData.sampleQueue[0].timestamp;
+          }
+        }
+        if (!trackWithMinTimestamp) {
+          break;
+        }
+        const sample = trackWithMinTimestamp.sampleQueue.shift();
+        await this.addSampleToTrack(trackWithMinTimestamp, sample);
+      }
+  }
+  async finalizeFragment(flushWriter = true) {
+    assert(this.isFragmented);
+    const fragmentNumber = this.nextFragmentNumber++;
+    if (fragmentNumber === 1) {
+      if (this.format._options.onMoov) {
+        this.writer.startTrackingWrites();
+      }
+      const movieBox = moov(this);
+      this.boxWriter.writeBox(movieBox);
+      if (this.format._options.onMoov) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onMoov(data, start);
+      }
+    }
+    const tracksInFragment = this.trackDatas.filter((x) => x.currentChunk);
+    const moofBox = moof(fragmentNumber, tracksInFragment);
+    const moofOffset = this.writer.getPos();
+    const mdatStartPos = moofOffset + this.boxWriter.measureBox(moofBox);
+    let currentPos = mdatStartPos + MIN_BOX_HEADER_SIZE;
+    let fragmentStartTimestamp = Infinity;
+    for (const trackData of tracksInFragment) {
+      trackData.currentChunk.offset = currentPos;
+      trackData.currentChunk.moofOffset = moofOffset;
+      for (const sample of trackData.currentChunk.samples) {
+        currentPos += sample.size;
+      }
+      fragmentStartTimestamp = Math.min(fragmentStartTimestamp, trackData.currentChunk.startTimestamp);
+    }
+    const mdatSize = currentPos - mdatStartPos;
+    const needsLargeMdatSize = mdatSize >= 2 ** 32;
+    if (needsLargeMdatSize) {
+      for (const trackData of tracksInFragment) {
+        trackData.currentChunk.offset += MAX_BOX_HEADER_SIZE - MIN_BOX_HEADER_SIZE;
+      }
+    }
+    if (this.format._options.onMoof) {
+      this.writer.startTrackingWrites();
+    }
+    const newMoofBox = moof(fragmentNumber, tracksInFragment);
+    this.boxWriter.writeBox(newMoofBox);
+    if (this.format._options.onMoof) {
+      const { data, start } = this.writer.stopTrackingWrites();
+      this.format._options.onMoof(data, start, fragmentStartTimestamp);
+    }
+    assert(this.writer.getPos() === mdatStartPos);
+    if (this.format._options.onMdat) {
+      this.writer.startTrackingWrites();
+    }
+    const mdatBox = mdat(needsLargeMdatSize);
+    mdatBox.size = mdatSize;
+    this.boxWriter.writeBox(mdatBox);
+    this.writer.seek(mdatStartPos + (needsLargeMdatSize ? MAX_BOX_HEADER_SIZE : MIN_BOX_HEADER_SIZE));
+    for (const trackData of tracksInFragment) {
+      for (const sample of trackData.currentChunk.samples) {
+        this.writer.write(sample.data);
+        sample.data = null;
+      }
+    }
+    if (this.format._options.onMdat) {
+      const { data, start } = this.writer.stopTrackingWrites();
+      this.format._options.onMdat(data, start);
+    }
+    for (const trackData of tracksInFragment) {
+      trackData.finalizedChunks.push(trackData.currentChunk);
+      this.finalizedChunks.push(trackData.currentChunk);
+      trackData.currentChunk = null;
+    }
+    if (flushWriter) {
+      await this.writer.flush();
+    }
+  }
+  async registerSampleFastStartReserve(trackData, sample) {
+    if (this.allTracksAreKnown()) {
+      if (!this.mdat) {
+        const moovBox = moov(this);
+        const moovSize = this.boxWriter.measureBox(moovBox);
+        const reservedSize = moovSize + this.computeSampleTableSizeUpperBound() + 4096;
+        assert(this.ftypSize !== null);
+        this.writer.seek(this.ftypSize + reservedSize);
+        if (this.format._options.onMdat) {
+          this.writer.startTrackingWrites();
+        }
+        this.mdat = mdat(true);
+        this.boxWriter.writeBox(this.mdat);
+        for (const trackData2 of this.trackDatas) {
+          for (const sample2 of trackData2.sampleQueue) {
+            await this.addSampleToTrack(trackData2, sample2);
+          }
+          trackData2.sampleQueue.length = 0;
+        }
+      }
+      await this.addSampleToTrack(trackData, sample);
+    } else {
+      trackData.sampleQueue.push(sample);
+    }
+  }
+  computeSampleTableSizeUpperBound() {
+    assert(this.fastStart === "reserve");
+    let upperBound = 0;
+    for (const trackData of this.trackDatas) {
+      const n = trackData.track.metadata.maximumPacketCount;
+      assert(n !== undefined);
+      upperBound += (4 + 4) * Math.ceil(2 / 3 * n);
+      upperBound += 4 * n;
+      upperBound += (4 + 4) * Math.ceil(2 / 3 * n);
+      upperBound += (4 + 4 + 4) * Math.ceil(2 / 3 * n);
+      upperBound += 4 * n;
+      upperBound += 8 * n;
+    }
+    return upperBound;
+  }
+  async onTrackClose(track) {
+    const release = await this.mutex.acquire();
+    if (track.type === "subtitle" && track.source._codec === "webvtt") {
+      const trackData = this.trackDatas.find((x) => x.track === track);
+      if (trackData) {
+        await this.processWebVTTCues(trackData, Infinity);
+      }
+    }
+    if (this.allTracksAreKnown()) {
+      this.allTracksKnown.resolve();
+    }
+    if (this.isFragmented) {
+      await this.interleaveSamples();
+    }
+    release();
+  }
+  async finalize() {
+    const release = await this.mutex.acquire();
+    this.allTracksKnown.resolve();
+    for (const trackData of this.trackDatas) {
+      if (trackData.type === "subtitle" && trackData.track.source._codec === "webvtt") {
+        await this.processWebVTTCues(trackData, Infinity);
+      }
+    }
+    if (this.isFragmented) {
+      await this.interleaveSamples(true);
+      for (const trackData of this.trackDatas) {
+        this.processTimestamps(trackData);
+      }
+      await this.finalizeFragment(false);
+    } else {
+      for (const trackData of this.trackDatas) {
+        this.processTimestamps(trackData);
+        await this.finalizeCurrentChunk(trackData);
+      }
+    }
+    if (this.fastStart === "in-memory") {
+      this.mdat = mdat(false);
+      let mdatSize;
+      for (let i = 0;i < 2; i++) {
+        const movieBox2 = moov(this);
+        const movieBoxSize = this.boxWriter.measureBox(movieBox2);
+        mdatSize = this.boxWriter.measureBox(this.mdat);
+        let currentChunkPos = this.writer.getPos() + movieBoxSize + mdatSize;
+        for (const chunk of this.finalizedChunks) {
+          chunk.offset = currentChunkPos;
+          for (const { data } of chunk.samples) {
+            assert(data);
+            currentChunkPos += data.byteLength;
+            mdatSize += data.byteLength;
+          }
+        }
+        if (currentChunkPos < 2 ** 32)
+          break;
+        if (mdatSize >= 2 ** 32)
+          this.mdat.largeSize = true;
+      }
+      if (this.format._options.onMoov) {
+        this.writer.startTrackingWrites();
+      }
+      const movieBox = moov(this);
+      this.boxWriter.writeBox(movieBox);
+      if (this.format._options.onMoov) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onMoov(data, start);
+      }
+      if (this.format._options.onMdat) {
+        this.writer.startTrackingWrites();
+      }
+      this.mdat.size = mdatSize;
+      this.boxWriter.writeBox(this.mdat);
+      for (const chunk of this.finalizedChunks) {
+        for (const sample of chunk.samples) {
+          assert(sample.data);
+          this.writer.write(sample.data);
+          sample.data = null;
+        }
+      }
+      if (this.format._options.onMdat) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onMdat(data, start);
+      }
+    } else if (this.isFragmented) {
+      const startPos = this.writer.getPos();
+      const mfraBox = mfra(this.trackDatas);
+      this.boxWriter.writeBox(mfraBox);
+      const mfraBoxSize = this.writer.getPos() - startPos;
+      this.writer.seek(this.writer.getPos() - 4);
+      this.boxWriter.writeU32(mfraBoxSize);
+    } else {
+      assert(this.mdat);
+      const mdatPos = this.boxWriter.offsets.get(this.mdat);
+      assert(mdatPos !== undefined);
+      const mdatSize = this.writer.getPos() - mdatPos;
+      this.mdat.size = mdatSize;
+      this.mdat.largeSize = mdatSize >= 2 ** 32;
+      this.boxWriter.patchBox(this.mdat);
+      if (this.format._options.onMdat) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onMdat(data, start);
+      }
+      const movieBox = moov(this);
+      if (this.fastStart === "reserve") {
+        assert(this.ftypSize !== null);
+        this.writer.seek(this.ftypSize);
+        if (this.format._options.onMoov) {
+          this.writer.startTrackingWrites();
+        }
+        this.boxWriter.writeBox(movieBox);
+        const remainingSpace = this.boxWriter.offsets.get(this.mdat) - this.writer.getPos();
+        this.boxWriter.writeBox(free(remainingSpace));
+      } else {
+        if (this.format._options.onMoov) {
+          this.writer.startTrackingWrites();
+        }
+        this.boxWriter.writeBox(movieBox);
+      }
+      if (this.format._options.onMoov) {
+        const { data, start } = this.writer.stopTrackingWrites();
+        this.format._options.onMoov(data, start);
+      }
+    }
+    release();
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/output-format.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class l0{getSupportedVideoCodecs(){return this.getSupportedCodecs().filter(($)=>o.includes($))}getSupportedAudioCodecs(){return this.getSupportedCodecs().filter(($)=>J0.includes($))}getSupportedSubtitleCodecs(){return this.getSupportedCodecs().filter(($)=>V0.includes($))}_codecUnsupportedHint($){return""}}class G1 extends l0{constructor($={}){if(!$||typeof $!=="object")throw TypeError("options must be an object.");if($.fastStart!==void 0&&![!1,"in-memory","reserve","fragmented"].includes($.fastStart))throw TypeError("options.fastStart, when provided, must be false, 'in-memory', 'reserve', or 'fragmented'.");if($.minimumFragmentDuration!==void 0&&(!Number.isFinite($.minimumFragmentDuration)||$.minimumFragmentDuration<0))throw TypeError("options.minimumFragmentDuration, when provided, must be a non-negative number.");if($.onFtyp!==void 0&&typeof $.onFtyp!=="function")throw TypeError("options.onFtyp, when provided, must be a function.");if($.onMoov!==void 0&&typeof $.onMoov!=="function")throw TypeError("options.onMoov, when provided, must be a function.");if($.onMdat!==void 0&&typeof $.onMdat!=="function")throw TypeError("options.onMdat, when provided, must be a function.");if($.onMoof!==void 0&&typeof $.onMoof!=="function")throw TypeError("options.onMoof, when provided, must be a function.");if($.metadataFormat!==void 0&&!["mdir","mdta","udta","auto"].includes($.metadataFormat))throw TypeError("options.metadataFormat, when provided, must be either 'auto', 'mdir', 'mdta', or 'udta'.");super();this._options=$}getSupportedTrackCounts(){return{video:{min:0,max:4294967295},audio:{min:0,max:4294967295},subtitle:{min:0,max:4294967295},total:{min:1,max:4294967295}}}get supportsVideoRotationMetadata(){return!0}_createMuxer($){return new D1($,this)}}class w0 extends G1{constructor($){super($)}get _name(){return"MP4"}get fileExtension(){return".mp4"}get mimeType(){return"video/mp4"}getSupportedCodecs(){return[...o,...N1,"pcm-s16","pcm-s16be","pcm-s24","pcm-s24be","pcm-s32","pcm-s32be","pcm-f32","pcm-f32be","pcm-f64","pcm-f64be",...V0]}_codecUnsupportedHint($){if(new u0().getSupportedCodecs().includes($))return" Switching to MOV will grant support for this codec.";return""}}class u0 extends G1{constructor($){super($)}get _name(){return"MOV"}get fileExtension(){return".mov"}get mimeType(){return"video/quicktime"}getSupportedCodecs(){return[...o,...J0]}_codecUnsupportedHint($){if(new w0().getSupportedCodecs().includes($))return" Switching to MP4 will grant support for this codec.";return""}}/*!
+ */
+
+class OutputFormat {
+  getSupportedVideoCodecs() {
+    return this.getSupportedCodecs().filter((codec) => VIDEO_CODECS.includes(codec));
+  }
+  getSupportedAudioCodecs() {
+    return this.getSupportedCodecs().filter((codec) => AUDIO_CODECS.includes(codec));
+  }
+  getSupportedSubtitleCodecs() {
+    return this.getSupportedCodecs().filter((codec) => SUBTITLE_CODECS.includes(codec));
+  }
+  _codecUnsupportedHint(codec) {
+    return "";
+  }
+}
+
+class IsobmffOutputFormat extends OutputFormat {
+  constructor(options = {}) {
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (options.fastStart !== undefined && ![false, "in-memory", "reserve", "fragmented"].includes(options.fastStart)) {
+      throw new TypeError("options.fastStart, when provided, must be false, 'in-memory', 'reserve', or 'fragmented'.");
+    }
+    if (options.minimumFragmentDuration !== undefined && (!Number.isFinite(options.minimumFragmentDuration) || options.minimumFragmentDuration < 0)) {
+      throw new TypeError("options.minimumFragmentDuration, when provided, must be a non-negative number.");
+    }
+    if (options.onFtyp !== undefined && typeof options.onFtyp !== "function") {
+      throw new TypeError("options.onFtyp, when provided, must be a function.");
+    }
+    if (options.onMoov !== undefined && typeof options.onMoov !== "function") {
+      throw new TypeError("options.onMoov, when provided, must be a function.");
+    }
+    if (options.onMdat !== undefined && typeof options.onMdat !== "function") {
+      throw new TypeError("options.onMdat, when provided, must be a function.");
+    }
+    if (options.onMoof !== undefined && typeof options.onMoof !== "function") {
+      throw new TypeError("options.onMoof, when provided, must be a function.");
+    }
+    if (options.metadataFormat !== undefined && !["mdir", "mdta", "udta", "auto"].includes(options.metadataFormat)) {
+      throw new TypeError("options.metadataFormat, when provided, must be either 'auto', 'mdir', 'mdta', or 'udta'.");
+    }
+    super();
+    this._options = options;
+  }
+  getSupportedTrackCounts() {
+    const max = 2 ** 32 - 1;
+    return {
+      video: { min: 0, max },
+      audio: { min: 0, max },
+      subtitle: { min: 0, max },
+      total: { min: 1, max }
+    };
+  }
+  get supportsVideoRotationMetadata() {
+    return true;
+  }
+  _createMuxer(output) {
+    return new IsobmffMuxer(output, this);
+  }
+}
+
+class Mp4OutputFormat extends IsobmffOutputFormat {
+  constructor(options) {
+    super(options);
+  }
+  get _name() {
+    return "MP4";
+  }
+  get fileExtension() {
+    return ".mp4";
+  }
+  get mimeType() {
+    return "video/mp4";
+  }
+  getSupportedCodecs() {
+    return [
+      ...VIDEO_CODECS,
+      ...NON_PCM_AUDIO_CODECS,
+      "pcm-s16",
+      "pcm-s16be",
+      "pcm-s24",
+      "pcm-s24be",
+      "pcm-s32",
+      "pcm-s32be",
+      "pcm-f32",
+      "pcm-f32be",
+      "pcm-f64",
+      "pcm-f64be",
+      ...SUBTITLE_CODECS
+    ];
+  }
+  _codecUnsupportedHint(codec) {
+    if (new MovOutputFormat().getSupportedCodecs().includes(codec)) {
+      return " Switching to MOV will grant support for this codec.";
+    }
+    return "";
+  }
+}
+
+class MovOutputFormat extends IsobmffOutputFormat {
+  constructor(options) {
+    super(options);
+  }
+  get _name() {
+    return "MOV";
+  }
+  get fileExtension() {
+    return ".mov";
+  }
+  get mimeType() {
+    return "video/quicktime";
+  }
+  getSupportedCodecs() {
+    return [
+      ...VIDEO_CODECS,
+      ...AUDIO_CODECS
+    ];
+  }
+  _codecUnsupportedHint(codec) {
+    if (new Mp4OutputFormat().getSupportedCodecs().includes(codec)) {
+      return " Switching to MP4 will grant support for this codec.";
+    }
+    return "";
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/encode.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var d6=($)=>{if(!$||typeof $!=="object")throw TypeError("Encoding config must be an object.");if(!o.includes($.codec))throw TypeError(`Invalid video codec '${$.codec}'. Must be one of: ${o.join(", ")}.`);if(!($.bitrate instanceof E0)&&(!Number.isInteger($.bitrate)||$.bitrate<=0))throw TypeError("config.bitrate must be a positive integer or a quality.");if($.keyFrameInterval!==void 0&&(!Number.isFinite($.keyFrameInterval)||$.keyFrameInterval<0))throw TypeError("config.keyFrameInterval, when provided, must be a non-negative number.");if($.sizeChangeBehavior!==void 0&&!["deny","passThrough","fill","contain","cover"].includes($.sizeChangeBehavior))throw TypeError("config.sizeChangeBehavior, when provided, must be 'deny', 'passThrough', 'fill', 'contain' or 'cover'.");if($.onEncodedPacket!==void 0&&typeof $.onEncodedPacket!=="function")throw TypeError("config.onEncodedChunk, when provided, must be a function.");if($.onEncoderConfig!==void 0&&typeof $.onEncoderConfig!=="function")throw TypeError("config.onEncoderConfig, when provided, must be a function.");I2($.codec,$)},I2=($,J)=>{if(!J||typeof J!=="object")throw TypeError("Encoding options must be an object.");if(J.alpha!==void 0&&!["discard","keep"].includes(J.alpha))throw TypeError("options.alpha, when provided, must be 'discard' or 'keep'.");if(J.bitrateMode!==void 0&&!["constant","variable"].includes(J.bitrateMode))throw TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");if(J.latencyMode!==void 0&&!["quality","realtime"].includes(J.latencyMode))throw TypeError("latencyMode, when provided, must be 'quality' or 'realtime'.");if(J.fullCodecString!==void 0&&typeof J.fullCodecString!=="string")throw TypeError("fullCodecString, when provided, must be a string.");if(J.fullCodecString!==void 0&&L1(J.fullCodecString)!==$)throw TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${$}).`);if(J.hardwareAcceleration!==void 0&&!["no-preference","prefer-hardware","prefer-software"].includes(J.hardwareAcceleration))throw TypeError("hardwareAcceleration, when provided, must be 'no-preference', 'prefer-hardware' or 'prefer-software'.");if(J.scalabilityMode!==void 0&&typeof J.scalabilityMode!=="string")throw TypeError("scalabilityMode, when provided, must be a string.");if(J.contentHint!==void 0&&typeof J.contentHint!=="string")throw TypeError("contentHint, when provided, must be a string.")},c6=($)=>{let J=$.bitrate instanceof E0?$.bitrate._toVideoBitrate($.codec,$.width,$.height):$.bitrate;return{codec:$.fullCodecString??p1($.codec,$.width,$.height,J),width:$.width,height:$.height,bitrate:J,bitrateMode:$.bitrateMode,alpha:$.alpha??"discard",framerate:$.framerate,latencyMode:$.latencyMode,hardwareAcceleration:$.hardwareAcceleration,scalabilityMode:$.scalabilityMode,contentHint:$.contentHint,...n1($.codec)}},r6=($)=>{if(!$||typeof $!=="object")throw TypeError("Encoding config must be an object.");if(!J0.includes($.codec))throw TypeError(`Invalid audio codec '${$.codec}'. Must be one of: ${J0.join(", ")}.`);if($.bitrate===void 0&&(!h.includes($.codec)||$.codec==="flac"))throw TypeError("config.bitrate must be provided for compressed audio codecs.");if($.bitrate!==void 0&&!($.bitrate instanceof E0)&&(!Number.isInteger($.bitrate)||$.bitrate<=0))throw TypeError("config.bitrate, when provided, must be a positive integer or a quality.");if($.onEncodedPacket!==void 0&&typeof $.onEncodedPacket!=="function")throw TypeError("config.onEncodedChunk, when provided, must be a function.");if($.onEncoderConfig!==void 0&&typeof $.onEncoderConfig!=="function")throw TypeError("config.onEncoderConfig, when provided, must be a function.");w2($.codec,$)},w2=($,J)=>{if(!J||typeof J!=="object")throw TypeError("Encoding options must be an object.");if(J.bitrateMode!==void 0&&!["constant","variable"].includes(J.bitrateMode))throw TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");if(J.fullCodecString!==void 0&&typeof J.fullCodecString!=="string")throw TypeError("fullCodecString, when provided, must be a string.");if(J.fullCodecString!==void 0&&L1(J.fullCodecString)!==$)throw TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${$}).`)},n6=($)=>{let J=$.bitrate instanceof E0?$.bitrate._toAudioBitrate($.codec):$.bitrate;return{codec:$.fullCodecString??d1($.codec,$.numberOfChannels,$.sampleRate),numberOfChannels:$.numberOfChannels,sampleRate:$.sampleRate,bitrate:J,bitrateMode:$.bitrateMode,...s1($.codec)}};class E0{constructor($){this._factor=$}_toVideoBitrate($,J,Y){let Z=J*Y,G={avc:1,hevc:0.6,vp9:0.6,av1:0.4,vp8:1.2},K=2073600,X=3000000,j=3000000*Math.pow(Z/2073600,0.95)*G[$]*this._factor;return Math.ceil(j/1000)*1000}_toAudioBitrate($){if(h.includes($)||$==="flac")return;let Y={aac:128000,opus:64000,mp3:160000,vorbis:64000}[$];if(!Y)throw Error(`Unhandled codec: ${$}`);let Z=Y*this._factor;if($==="aac")Z=[96000,128000,160000,192000].reduce((K,X)=>Math.abs(X-Z)<Math.abs(K-Z)?X:K);else if($==="opus"||$==="vorbis")Z=Math.max(6000,Z);else if($==="mp3")Z=[8000,16000,24000,32000,40000,48000,64000,80000,96000,112000,128000,160000,192000,224000,256000,320000].reduce((K,X)=>Math.abs(X-Z)<Math.abs(K-Z)?X:K);return Math.round(Z/1000)*1000}}var K1=new E0(2);/*!
+ */
+var validateVideoEncodingConfig = (config) => {
+  if (!config || typeof config !== "object") {
+    throw new TypeError("Encoding config must be an object.");
+  }
+  if (!VIDEO_CODECS.includes(config.codec)) {
+    throw new TypeError(`Invalid video codec '${config.codec}'. Must be one of: ${VIDEO_CODECS.join(", ")}.`);
+  }
+  if (!(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
+    throw new TypeError("config.bitrate must be a positive integer or a quality.");
+  }
+  if (config.keyFrameInterval !== undefined && (!Number.isFinite(config.keyFrameInterval) || config.keyFrameInterval < 0)) {
+    throw new TypeError("config.keyFrameInterval, when provided, must be a non-negative number.");
+  }
+  if (config.sizeChangeBehavior !== undefined && !["deny", "passThrough", "fill", "contain", "cover"].includes(config.sizeChangeBehavior)) {
+    throw new TypeError("config.sizeChangeBehavior, when provided, must be 'deny', 'passThrough', 'fill', 'contain'" + " or 'cover'.");
+  }
+  if (config.onEncodedPacket !== undefined && typeof config.onEncodedPacket !== "function") {
+    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
+  }
+  if (config.onEncoderConfig !== undefined && typeof config.onEncoderConfig !== "function") {
+    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
+  }
+  validateVideoEncodingAdditionalOptions(config.codec, config);
+};
+var validateVideoEncodingAdditionalOptions = (codec, options) => {
+  if (!options || typeof options !== "object") {
+    throw new TypeError("Encoding options must be an object.");
+  }
+  if (options.alpha !== undefined && !["discard", "keep"].includes(options.alpha)) {
+    throw new TypeError("options.alpha, when provided, must be 'discard' or 'keep'.");
+  }
+  if (options.bitrateMode !== undefined && !["constant", "variable"].includes(options.bitrateMode)) {
+    throw new TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");
+  }
+  if (options.latencyMode !== undefined && !["quality", "realtime"].includes(options.latencyMode)) {
+    throw new TypeError("latencyMode, when provided, must be 'quality' or 'realtime'.");
+  }
+  if (options.fullCodecString !== undefined && typeof options.fullCodecString !== "string") {
+    throw new TypeError("fullCodecString, when provided, must be a string.");
+  }
+  if (options.fullCodecString !== undefined && inferCodecFromCodecString(options.fullCodecString) !== codec) {
+    throw new TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${codec}).`);
+  }
+  if (options.hardwareAcceleration !== undefined && !["no-preference", "prefer-hardware", "prefer-software"].includes(options.hardwareAcceleration)) {
+    throw new TypeError("hardwareAcceleration, when provided, must be 'no-preference', 'prefer-hardware' or" + " 'prefer-software'.");
+  }
+  if (options.scalabilityMode !== undefined && typeof options.scalabilityMode !== "string") {
+    throw new TypeError("scalabilityMode, when provided, must be a string.");
+  }
+  if (options.contentHint !== undefined && typeof options.contentHint !== "string") {
+    throw new TypeError("contentHint, when provided, must be a string.");
+  }
+};
+var buildVideoEncoderConfig = (options) => {
+  const resolvedBitrate = options.bitrate instanceof Quality ? options.bitrate._toVideoBitrate(options.codec, options.width, options.height) : options.bitrate;
+  return {
+    codec: options.fullCodecString ?? buildVideoCodecString(options.codec, options.width, options.height, resolvedBitrate),
+    width: options.width,
+    height: options.height,
+    bitrate: resolvedBitrate,
+    bitrateMode: options.bitrateMode,
+    alpha: options.alpha ?? "discard",
+    framerate: options.framerate,
+    latencyMode: options.latencyMode,
+    hardwareAcceleration: options.hardwareAcceleration,
+    scalabilityMode: options.scalabilityMode,
+    contentHint: options.contentHint,
+    ...getVideoEncoderConfigExtension(options.codec)
+  };
+};
+var validateAudioEncodingConfig = (config) => {
+  if (!config || typeof config !== "object") {
+    throw new TypeError("Encoding config must be an object.");
+  }
+  if (!AUDIO_CODECS.includes(config.codec)) {
+    throw new TypeError(`Invalid audio codec '${config.codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
+  }
+  if (config.bitrate === undefined && (!PCM_AUDIO_CODECS.includes(config.codec) || config.codec === "flac")) {
+    throw new TypeError("config.bitrate must be provided for compressed audio codecs.");
+  }
+  if (config.bitrate !== undefined && !(config.bitrate instanceof Quality) && (!Number.isInteger(config.bitrate) || config.bitrate <= 0)) {
+    throw new TypeError("config.bitrate, when provided, must be a positive integer or a quality.");
+  }
+  if (config.onEncodedPacket !== undefined && typeof config.onEncodedPacket !== "function") {
+    throw new TypeError("config.onEncodedChunk, when provided, must be a function.");
+  }
+  if (config.onEncoderConfig !== undefined && typeof config.onEncoderConfig !== "function") {
+    throw new TypeError("config.onEncoderConfig, when provided, must be a function.");
+  }
+  validateAudioEncodingAdditionalOptions(config.codec, config);
+};
+var validateAudioEncodingAdditionalOptions = (codec, options) => {
+  if (!options || typeof options !== "object") {
+    throw new TypeError("Encoding options must be an object.");
+  }
+  if (options.bitrateMode !== undefined && !["constant", "variable"].includes(options.bitrateMode)) {
+    throw new TypeError("bitrateMode, when provided, must be 'constant' or 'variable'.");
+  }
+  if (options.fullCodecString !== undefined && typeof options.fullCodecString !== "string") {
+    throw new TypeError("fullCodecString, when provided, must be a string.");
+  }
+  if (options.fullCodecString !== undefined && inferCodecFromCodecString(options.fullCodecString) !== codec) {
+    throw new TypeError(`fullCodecString, when provided, must be a string that matches the specified codec (${codec}).`);
+  }
+};
+var buildAudioEncoderConfig = (options) => {
+  const resolvedBitrate = options.bitrate instanceof Quality ? options.bitrate._toAudioBitrate(options.codec) : options.bitrate;
+  return {
+    codec: options.fullCodecString ?? buildAudioCodecString(options.codec, options.numberOfChannels, options.sampleRate),
+    numberOfChannels: options.numberOfChannels,
+    sampleRate: options.sampleRate,
+    bitrate: resolvedBitrate,
+    bitrateMode: options.bitrateMode,
+    ...getAudioEncoderConfigExtension(options.codec)
+  };
+};
+
+class Quality {
+  constructor(factor) {
+    this._factor = factor;
+  }
+  _toVideoBitrate(codec, width, height) {
+    const pixels = width * height;
+    const codecEfficiencyFactors = {
+      avc: 1,
+      hevc: 0.6,
+      vp9: 0.6,
+      av1: 0.4,
+      vp8: 1.2
+    };
+    const referencePixels = 1920 * 1080;
+    const referenceBitrate = 3000000;
+    const scaleFactor = Math.pow(pixels / referencePixels, 0.95);
+    const baseBitrate = referenceBitrate * scaleFactor;
+    const codecAdjustedBitrate = baseBitrate * codecEfficiencyFactors[codec];
+    const finalBitrate = codecAdjustedBitrate * this._factor;
+    return Math.ceil(finalBitrate / 1000) * 1000;
+  }
+  _toAudioBitrate(codec) {
+    if (PCM_AUDIO_CODECS.includes(codec) || codec === "flac") {
+      return;
+    }
+    const baseRates = {
+      aac: 128000,
+      opus: 64000,
+      mp3: 160000,
+      vorbis: 64000
+    };
+    const baseBitrate = baseRates[codec];
+    if (!baseBitrate) {
+      throw new Error(`Unhandled codec: ${codec}`);
+    }
+    let finalBitrate = baseBitrate * this._factor;
+    if (codec === "aac") {
+      const validRates = [96000, 128000, 160000, 192000];
+      finalBitrate = validRates.reduce((prev, curr) => Math.abs(curr - finalBitrate) < Math.abs(prev - finalBitrate) ? curr : prev);
+    } else if (codec === "opus" || codec === "vorbis") {
+      finalBitrate = Math.max(6000, finalBitrate);
+    } else if (codec === "mp3") {
+      const validRates = [
+        8000,
+        16000,
+        24000,
+        32000,
+        40000,
+        48000,
+        64000,
+        80000,
+        96000,
+        112000,
+        128000,
+        160000,
+        192000,
+        224000,
+        256000,
+        320000
+      ];
+      finalBitrate = validRates.reduce((prev, curr) => Math.abs(curr - finalBitrate) < Math.abs(prev - finalBitrate) ? curr : prev);
+    }
+    return Math.round(finalBitrate / 1000) * 1000;
+  }
+}
+var QUALITY_HIGH = /* @__PURE__ */ new Quality(2);
+
+// ../node_modules/mediabunny/dist/modules/src/media-source.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */class p0{constructor(){this._connectedTrack=null,this._closingPromise=null,this._closed=!1,this._timestampOffset=0}_ensureValidAdd(){if(!this._connectedTrack)throw Error("Source is not connected to an output track.");if(this._connectedTrack.output.state==="canceled")throw Error("Output has been canceled.");if(this._connectedTrack.output.state==="finalizing"||this._connectedTrack.output.state==="finalized")throw Error("Output has been finalized.");if(this._connectedTrack.output.state==="pending")throw Error("Output has not started.");if(this._closed)throw Error("Source is closed.")}async _start(){}async _flushAndClose($){}close(){if(this._closingPromise)return;let $=this._connectedTrack;if(!$)throw Error("Cannot call close without connecting the source to an output track.");if($.output.state==="pending")throw Error("Cannot call close before output has been started.");this._closingPromise=(async()=>{if(await this._flushAndClose(!1),this._closed=!0,$.output.state==="finalizing"||$.output.state==="finalized")return;$.output._muxer.onTrackClose($)})()}async _flushOrWaitForOngoingClose($){return this._closingPromise??=(async()=>{await this._flushAndClose($),this._closed=!0})()}}class m0 extends p0{constructor($){super();if(this._connectedTrack=null,!o.includes($))throw TypeError(`Invalid video codec '${$}'. Must be one of: ${o.join(", ")}.`);this._codec=$}}class s6{constructor($,J){this.source=$,this.encodingConfig=J,this.ensureEncoderPromise=null,this.encoderInitialized=!1,this.encoder=null,this.muxer=null,this.lastMultipleOfKeyFrameInterval=-1,this.codedWidth=null,this.codedHeight=null,this.resizeCanvas=null,this.customEncoder=null,this.customEncoderCallSerializer=new s0,this.customEncoderQueueSize=0,this.alphaEncoder=null,this.splitter=null,this.splitterCreationFailed=!1,this.alphaFrameQueue=[],this.error=null,this.errorNeedsNewStack=!0}async add($,J,Y){try{if(this.checkForEncoderError(),this.source._ensureValidAdd(),this.codedWidth!==null&&this.codedHeight!==null){if($.codedWidth!==this.codedWidth||$.codedHeight!==this.codedHeight){let X=this.encodingConfig.sizeChangeBehavior??"deny";if(X==="passThrough");else if(X==="deny")throw Error(`Video sample size must remain constant. Expected ${this.codedWidth}x${this.codedHeight}, got ${$.codedWidth}x${$.codedHeight}. To allow the sample size to change over time, set \`sizeChangeBehavior\` to a value other than 'strict' in the encoding options.`);else{let Q=!1;if(!this.resizeCanvas){if(typeof document<"u")this.resizeCanvas=document.createElement("canvas"),this.resizeCanvas.width=this.codedWidth,this.resizeCanvas.height=this.codedHeight;else this.resizeCanvas=new OffscreenCanvas(this.codedWidth,this.codedHeight);Q=!0}let U=this.resizeCanvas.getContext("2d",{alpha:S0()});if(N(U),!Q)if(S0())U.fillStyle="black",U.fillRect(0,0,this.codedWidth,this.codedHeight);else U.clearRect(0,0,this.codedWidth,this.codedHeight);if($.drawWithFit(U,{fit:X}),J)$.close();$=new j0(this.resizeCanvas,{timestamp:$.timestamp,duration:$.duration,rotation:$.rotation}),J=!0}}}else this.codedWidth=$.codedWidth,this.codedHeight=$.codedHeight;if(!this.encoderInitialized){if(!this.ensureEncoderPromise)this.ensureEncoder($);if(!this.encoderInitialized)await this.ensureEncoderPromise}N(this.encoderInitialized);let Z=this.encodingConfig.keyFrameInterval??5,G=Math.floor($.timestamp/Z),K={...Y,keyFrame:Y?.keyFrame||Z===0||G!==this.lastMultipleOfKeyFrameInterval};if(this.lastMultipleOfKeyFrameInterval=G,this.customEncoder){this.customEncoderQueueSize++;let X=$.clone(),Q=this.customEncoderCallSerializer.call(()=>this.customEncoder.encode(X,K)).then(()=>this.customEncoderQueueSize--).catch((U)=>this.error??=U).finally(()=>{X.close()});if(this.customEncoderQueueSize>=4)await Q}else{N(this.encoder);let X=$.toVideoFrame();if(!this.alphaEncoder)this.encoder.encode(X,K),X.close();else if(!!X.format&&!X.format.includes("A")||this.splitterCreationFailed)this.alphaFrameQueue.push(null),this.encoder.encode(X,K),X.close();else{let{displayWidth:U,displayHeight:q}=X;if(!this.splitter)try{this.splitter=new i6(U,q)}catch(j){console.error("Due to an error, only color data will be encoded.",j),this.splitterCreationFailed=!0,this.alphaFrameQueue.push(null),this.encoder.encode(X,K),X.close()}if(this.splitter){let j=this.splitter.extractColor(X),z=this.splitter.extractAlpha(X);this.alphaFrameQueue.push(z),this.encoder.encode(j,K),j.close(),X.close()}}if(J)$.close();if(this.encoder.encodeQueueSize>=4)await new Promise((Q)=>this.encoder.addEventListener("dequeue",Q,{once:!0}))}await this.muxer.mutex.currentPromise}finally{if(J)$.close()}}ensureEncoder($){let J=Error();this.ensureEncoderPromise=(async()=>{let Y=c6({width:$.codedWidth,height:$.codedHeight,...this.encodingConfig,framerate:this.source._connectedTrack?.metadata.frameRate});this.encodingConfig.onEncoderConfig?.(Y);let Z=U6.find((G)=>G.supports(this.encodingConfig.codec,Y));if(Z)this.customEncoder=new Z,this.customEncoder.codec=this.encodingConfig.codec,this.customEncoder.config=Y,this.customEncoder.onPacket=(G,K)=>{if(!(G instanceof Z0))throw TypeError("The first argument passed to onPacket must be an EncodedPacket.");if(K!==void 0&&(!K||typeof K!=="object"))throw TypeError("The second argument passed to onPacket must be an object or undefined.");this.encodingConfig.onEncodedPacket?.(G,K),this.muxer.addEncodedVideoPacket(this.source._connectedTrack,G,K).catch((X)=>{this.error??=X,this.errorNeedsNewStack=!1})},await this.customEncoder.init();else{if(typeof VideoEncoder>"u")throw Error("VideoEncoder is not supported by this browser.");if(Y.alpha="discard",this.encodingConfig.alpha==="keep")Y.latencyMode="quality";if((Y.width%2===1||Y.height%2===1)&&(this.encodingConfig.codec==="avc"||this.encodingConfig.codec==="hevc"))throw Error(`The dimensions ${Y.width}x${Y.height} are not supported for codec '${this.encodingConfig.codec}'; both width and height must be even numbers. Make sure to round your dimensions to the nearest even number.`);if(!(await VideoEncoder.isConfigSupported(Y)).supported)throw Error(`This specific encoder configuration (${Y.codec}, ${Y.bitrate} bps, ${Y.width}x${Y.height}, hardware acceleration: ${Y.hardwareAcceleration??"no-preference"}) is not supported by this browser. Consider using another codec or changing your video parameters.`);let X=[],Q=[],U=0,q=0,j=(z,V,W)=>{let R={};if(V){let A=new Uint8Array(V.byteLength);V.copyTo(A),R.alpha=A}let H=Z0.fromEncodedChunk(z,R);this.encodingConfig.onEncodedPacket?.(H,W),this.muxer.addEncodedVideoPacket(this.source._connectedTrack,H,W).catch((A)=>{this.error??=A,this.errorNeedsNewStack=!1})};if(this.encoder=new VideoEncoder({output:(z,V)=>{if(!this.alphaEncoder){j(z,null,V);return}let W=this.alphaFrameQueue.shift();if(N(W!==void 0),W)this.alphaEncoder.encode(W,{keyFrame:z.type==="key"}),q++,W.close(),X.push({chunk:z,meta:V});else if(q===0)j(z,null,V);else Q.push(U+q),X.push({chunk:z,meta:V})},error:(z)=>{z.stack=J.stack,this.error??=z}}),this.encoder.configure(Y),this.encodingConfig.alpha==="keep")this.alphaEncoder=new VideoEncoder({output:(z,V)=>{q--;let W=X.shift();N(W!==void 0),j(W.chunk,z,W.meta),U++;while(Q.length>0&&Q[0]===U){Q.shift();let R=X.shift();N(R!==void 0),j(R.chunk,null,R.meta)}},error:(z)=>{z.stack=J.stack,this.error??=z}}),this.alphaEncoder.configure(Y)}N(this.source._connectedTrack),this.muxer=this.source._connectedTrack.output._muxer,this.encoderInitialized=!0})()}async flushAndClose($){if(!$)this.checkForEncoderError();if(this.customEncoder){if(!$)this.customEncoderCallSerializer.call(()=>this.customEncoder.flush());await this.customEncoderCallSerializer.call(()=>this.customEncoder.close())}else if(this.encoder){if(!$)await this.encoder.flush(),await this.alphaEncoder?.flush();if(this.encoder.state!=="closed")this.encoder.close();if(this.alphaEncoder&&this.alphaEncoder.state!=="closed")this.alphaEncoder.close();this.alphaFrameQueue.forEach((J)=>J?.close()),this.splitter?.close()}if(!$)this.checkForEncoderError()}getQueueSize(){if(this.customEncoder)return this.customEncoderQueueSize;else return this.encoder?.encodeQueueSize??0}checkForEncoderError(){if(this.error){if(this.errorNeedsNewStack)this.error.stack=Error().stack;throw this.error}}}class i6{constructor($,J){if(this.lastFrame=null,typeof OffscreenCanvas<"u")this.canvas=new OffscreenCanvas($,J);else this.canvas=document.createElement("canvas"),this.canvas.width=$,this.canvas.height=J;let Y=this.canvas.getContext("webgl2",{alpha:!0});if(!Y)throw Error("Couldn't acquire WebGL 2 context.");this.gl=Y,this.colorProgram=this.createColorProgram(),this.alphaProgram=this.createAlphaProgram(),this.vao=this.createVAO(),this.sourceTexture=this.createTexture(),this.alphaResolutionLocation=this.gl.getUniformLocation(this.alphaProgram,"u_resolution"),this.gl.useProgram(this.colorProgram),this.gl.uniform1i(this.gl.getUniformLocation(this.colorProgram,"u_sourceTexture"),0),this.gl.useProgram(this.alphaProgram),this.gl.uniform1i(this.gl.getUniformLocation(this.alphaProgram,"u_sourceTexture"),0)}createVertexShader(){return this.createShader(this.gl.VERTEX_SHADER,`#version 300 es
+ */
+
+class MediaSource {
+  constructor() {
+    this._connectedTrack = null;
+    this._closingPromise = null;
+    this._closed = false;
+    this._timestampOffset = 0;
+  }
+  _ensureValidAdd() {
+    if (!this._connectedTrack) {
+      throw new Error("Source is not connected to an output track.");
+    }
+    if (this._connectedTrack.output.state === "canceled") {
+      throw new Error("Output has been canceled.");
+    }
+    if (this._connectedTrack.output.state === "finalizing" || this._connectedTrack.output.state === "finalized") {
+      throw new Error("Output has been finalized.");
+    }
+    if (this._connectedTrack.output.state === "pending") {
+      throw new Error("Output has not started.");
+    }
+    if (this._closed) {
+      throw new Error("Source is closed.");
+    }
+  }
+  async _start() {}
+  async _flushAndClose(forceClose) {}
+  close() {
+    if (this._closingPromise) {
+      return;
+    }
+    const connectedTrack = this._connectedTrack;
+    if (!connectedTrack) {
+      throw new Error("Cannot call close without connecting the source to an output track.");
+    }
+    if (connectedTrack.output.state === "pending") {
+      throw new Error("Cannot call close before output has been started.");
+    }
+    this._closingPromise = (async () => {
+      await this._flushAndClose(false);
+      this._closed = true;
+      if (connectedTrack.output.state === "finalizing" || connectedTrack.output.state === "finalized") {
+        return;
+      }
+      connectedTrack.output._muxer.onTrackClose(connectedTrack);
+    })();
+  }
+  async _flushOrWaitForOngoingClose(forceClose) {
+    return this._closingPromise ??= (async () => {
+      await this._flushAndClose(forceClose);
+      this._closed = true;
+    })();
+  }
+}
+
+class VideoSource extends MediaSource {
+  constructor(codec) {
+    super();
+    this._connectedTrack = null;
+    if (!VIDEO_CODECS.includes(codec)) {
+      throw new TypeError(`Invalid video codec '${codec}'. Must be one of: ${VIDEO_CODECS.join(", ")}.`);
+    }
+    this._codec = codec;
+  }
+}
+class VideoEncoderWrapper {
+  constructor(source, encodingConfig) {
+    this.source = source;
+    this.encodingConfig = encodingConfig;
+    this.ensureEncoderPromise = null;
+    this.encoderInitialized = false;
+    this.encoder = null;
+    this.muxer = null;
+    this.lastMultipleOfKeyFrameInterval = -1;
+    this.codedWidth = null;
+    this.codedHeight = null;
+    this.resizeCanvas = null;
+    this.customEncoder = null;
+    this.customEncoderCallSerializer = new CallSerializer;
+    this.customEncoderQueueSize = 0;
+    this.alphaEncoder = null;
+    this.splitter = null;
+    this.splitterCreationFailed = false;
+    this.alphaFrameQueue = [];
+    this.error = null;
+    this.errorNeedsNewStack = true;
+  }
+  async add(videoSample, shouldClose, encodeOptions) {
+    try {
+      this.checkForEncoderError();
+      this.source._ensureValidAdd();
+      if (this.codedWidth !== null && this.codedHeight !== null) {
+        if (videoSample.codedWidth !== this.codedWidth || videoSample.codedHeight !== this.codedHeight) {
+          const sizeChangeBehavior = this.encodingConfig.sizeChangeBehavior ?? "deny";
+          if (sizeChangeBehavior === "passThrough") {} else if (sizeChangeBehavior === "deny") {
+            throw new Error(`Video sample size must remain constant. Expected ${this.codedWidth}x${this.codedHeight},` + ` got ${videoSample.codedWidth}x${videoSample.codedHeight}. To allow the sample size to` + ` change over time, set \`sizeChangeBehavior\` to a value other than 'strict' in the` + ` encoding options.`);
+          } else {
+            let canvasIsNew = false;
+            if (!this.resizeCanvas) {
+              if (typeof document !== "undefined") {
+                this.resizeCanvas = document.createElement("canvas");
+                this.resizeCanvas.width = this.codedWidth;
+                this.resizeCanvas.height = this.codedHeight;
+              } else {
+                this.resizeCanvas = new OffscreenCanvas(this.codedWidth, this.codedHeight);
+              }
+              canvasIsNew = true;
+            }
+            const context = this.resizeCanvas.getContext("2d", {
+              alpha: isFirefox()
+            });
+            assert(context);
+            if (!canvasIsNew) {
+              if (isFirefox()) {
+                context.fillStyle = "black";
+                context.fillRect(0, 0, this.codedWidth, this.codedHeight);
+              } else {
+                context.clearRect(0, 0, this.codedWidth, this.codedHeight);
+              }
+            }
+            videoSample.drawWithFit(context, { fit: sizeChangeBehavior });
+            if (shouldClose) {
+              videoSample.close();
+            }
+            videoSample = new VideoSample(this.resizeCanvas, {
+              timestamp: videoSample.timestamp,
+              duration: videoSample.duration,
+              rotation: videoSample.rotation
+            });
+            shouldClose = true;
+          }
+        }
+      } else {
+        this.codedWidth = videoSample.codedWidth;
+        this.codedHeight = videoSample.codedHeight;
+      }
+      if (!this.encoderInitialized) {
+        if (!this.ensureEncoderPromise) {
+          this.ensureEncoder(videoSample);
+        }
+        if (!this.encoderInitialized) {
+          await this.ensureEncoderPromise;
+        }
+      }
+      assert(this.encoderInitialized);
+      const keyFrameInterval = this.encodingConfig.keyFrameInterval ?? 5;
+      const multipleOfKeyFrameInterval = Math.floor(videoSample.timestamp / keyFrameInterval);
+      const finalEncodeOptions = {
+        ...encodeOptions,
+        keyFrame: encodeOptions?.keyFrame || keyFrameInterval === 0 || multipleOfKeyFrameInterval !== this.lastMultipleOfKeyFrameInterval
+      };
+      this.lastMultipleOfKeyFrameInterval = multipleOfKeyFrameInterval;
+      if (this.customEncoder) {
+        this.customEncoderQueueSize++;
+        const clonedSample = videoSample.clone();
+        const promise = this.customEncoderCallSerializer.call(() => this.customEncoder.encode(clonedSample, finalEncodeOptions)).then(() => this.customEncoderQueueSize--).catch((error) => this.error ??= error).finally(() => {
+          clonedSample.close();
+        });
+        if (this.customEncoderQueueSize >= 4) {
+          await promise;
+        }
+      } else {
+        assert(this.encoder);
+        const videoFrame = videoSample.toVideoFrame();
+        if (!this.alphaEncoder) {
+          this.encoder.encode(videoFrame, finalEncodeOptions);
+          videoFrame.close();
+        } else {
+          const frameDefinitelyHasNoAlpha = !!videoFrame.format && !videoFrame.format.includes("A");
+          if (frameDefinitelyHasNoAlpha || this.splitterCreationFailed) {
+            this.alphaFrameQueue.push(null);
+            this.encoder.encode(videoFrame, finalEncodeOptions);
+            videoFrame.close();
+          } else {
+            const width = videoFrame.displayWidth;
+            const height = videoFrame.displayHeight;
+            if (!this.splitter) {
+              try {
+                this.splitter = new ColorAlphaSplitter(width, height);
+              } catch (error) {
+                console.error("Due to an error, only color data will be encoded.", error);
+                this.splitterCreationFailed = true;
+                this.alphaFrameQueue.push(null);
+                this.encoder.encode(videoFrame, finalEncodeOptions);
+                videoFrame.close();
+              }
+            }
+            if (this.splitter) {
+              const colorFrame = this.splitter.extractColor(videoFrame);
+              const alphaFrame = this.splitter.extractAlpha(videoFrame);
+              this.alphaFrameQueue.push(alphaFrame);
+              this.encoder.encode(colorFrame, finalEncodeOptions);
+              colorFrame.close();
+              videoFrame.close();
+            }
+          }
+        }
+        if (shouldClose) {
+          videoSample.close();
+        }
+        if (this.encoder.encodeQueueSize >= 4) {
+          await new Promise((resolve) => this.encoder.addEventListener("dequeue", resolve, { once: true }));
+        }
+      }
+      await this.muxer.mutex.currentPromise;
+    } finally {
+      if (shouldClose) {
+        videoSample.close();
+      }
+    }
+  }
+  ensureEncoder(videoSample) {
+    const encoderError = new Error;
+    this.ensureEncoderPromise = (async () => {
+      const encoderConfig = buildVideoEncoderConfig({
+        width: videoSample.codedWidth,
+        height: videoSample.codedHeight,
+        ...this.encodingConfig,
+        framerate: this.source._connectedTrack?.metadata.frameRate
+      });
+      this.encodingConfig.onEncoderConfig?.(encoderConfig);
+      const MatchingCustomEncoder = customVideoEncoders.find((x) => x.supports(this.encodingConfig.codec, encoderConfig));
+      if (MatchingCustomEncoder) {
+        this.customEncoder = new MatchingCustomEncoder;
+        this.customEncoder.codec = this.encodingConfig.codec;
+        this.customEncoder.config = encoderConfig;
+        this.customEncoder.onPacket = (packet, meta) => {
+          if (!(packet instanceof EncodedPacket)) {
+            throw new TypeError("The first argument passed to onPacket must be an EncodedPacket.");
+          }
+          if (meta !== undefined && (!meta || typeof meta !== "object")) {
+            throw new TypeError("The second argument passed to onPacket must be an object or undefined.");
+          }
+          this.encodingConfig.onEncodedPacket?.(packet, meta);
+          this.muxer.addEncodedVideoPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+            this.error ??= error;
+            this.errorNeedsNewStack = false;
+          });
+        };
+        await this.customEncoder.init();
+      } else {
+        if (typeof VideoEncoder === "undefined") {
+          throw new Error("VideoEncoder is not supported by this browser.");
+        }
+        encoderConfig.alpha = "discard";
+        if (this.encodingConfig.alpha === "keep") {
+          encoderConfig.latencyMode = "quality";
+        }
+        const hasOddDimension = encoderConfig.width % 2 === 1 || encoderConfig.height % 2 === 1;
+        if (hasOddDimension && (this.encodingConfig.codec === "avc" || this.encodingConfig.codec === "hevc")) {
+          throw new Error(`The dimensions ${encoderConfig.width}x${encoderConfig.height} are not supported for codec` + ` '${this.encodingConfig.codec}'; both width and height must be even numbers. Make sure to` + ` round your dimensions to the nearest even number.`);
+        }
+        const support = await VideoEncoder.isConfigSupported(encoderConfig);
+        if (!support.supported) {
+          throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps,` + ` ${encoderConfig.width}x${encoderConfig.height}, hardware acceleration:` + ` ${encoderConfig.hardwareAcceleration ?? "no-preference"}) is not supported by this browser.` + ` Consider using another codec or changing your video parameters.`);
+        }
+        const colorChunkQueue = [];
+        const nullAlphaChunkQueue = [];
+        let encodedAlphaChunkCount = 0;
+        let alphaEncoderQueue = 0;
+        const addPacket = (colorChunk, alphaChunk, meta) => {
+          const sideData = {};
+          if (alphaChunk) {
+            const alphaData = new Uint8Array(alphaChunk.byteLength);
+            alphaChunk.copyTo(alphaData);
+            sideData.alpha = alphaData;
+          }
+          const packet = EncodedPacket.fromEncodedChunk(colorChunk, sideData);
+          this.encodingConfig.onEncodedPacket?.(packet, meta);
+          this.muxer.addEncodedVideoPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+            this.error ??= error;
+            this.errorNeedsNewStack = false;
+          });
+        };
+        this.encoder = new VideoEncoder({
+          output: (chunk, meta) => {
+            if (!this.alphaEncoder) {
+              addPacket(chunk, null, meta);
+              return;
+            }
+            const alphaFrame = this.alphaFrameQueue.shift();
+            assert(alphaFrame !== undefined);
+            if (alphaFrame) {
+              this.alphaEncoder.encode(alphaFrame, {
+                keyFrame: chunk.type === "key"
+              });
+              alphaEncoderQueue++;
+              alphaFrame.close();
+              colorChunkQueue.push({ chunk, meta });
+            } else {
+              if (alphaEncoderQueue === 0) {
+                addPacket(chunk, null, meta);
+              } else {
+                nullAlphaChunkQueue.push(encodedAlphaChunkCount + alphaEncoderQueue);
+                colorChunkQueue.push({ chunk, meta });
+              }
+            }
+          },
+          error: (error) => {
+            error.stack = encoderError.stack;
+            this.error ??= error;
+          }
+        });
+        this.encoder.configure(encoderConfig);
+        if (this.encodingConfig.alpha === "keep") {
+          this.alphaEncoder = new VideoEncoder({
+            output: (chunk, meta) => {
+              alphaEncoderQueue--;
+              const colorChunk = colorChunkQueue.shift();
+              assert(colorChunk !== undefined);
+              addPacket(colorChunk.chunk, chunk, colorChunk.meta);
+              encodedAlphaChunkCount++;
+              while (nullAlphaChunkQueue.length > 0 && nullAlphaChunkQueue[0] === encodedAlphaChunkCount) {
+                nullAlphaChunkQueue.shift();
+                const colorChunk2 = colorChunkQueue.shift();
+                assert(colorChunk2 !== undefined);
+                addPacket(colorChunk2.chunk, null, colorChunk2.meta);
+              }
+            },
+            error: (error) => {
+              error.stack = encoderError.stack;
+              this.error ??= error;
+            }
+          });
+          this.alphaEncoder.configure(encoderConfig);
+        }
+      }
+      assert(this.source._connectedTrack);
+      this.muxer = this.source._connectedTrack.output._muxer;
+      this.encoderInitialized = true;
+    })();
+  }
+  async flushAndClose(forceClose) {
+    if (!forceClose)
+      this.checkForEncoderError();
+    if (this.customEncoder) {
+      if (!forceClose) {
+        this.customEncoderCallSerializer.call(() => this.customEncoder.flush());
+      }
+      await this.customEncoderCallSerializer.call(() => this.customEncoder.close());
+    } else if (this.encoder) {
+      if (!forceClose) {
+        await this.encoder.flush();
+        await this.alphaEncoder?.flush();
+      }
+      if (this.encoder.state !== "closed") {
+        this.encoder.close();
+      }
+      if (this.alphaEncoder && this.alphaEncoder.state !== "closed") {
+        this.alphaEncoder.close();
+      }
+      this.alphaFrameQueue.forEach((x) => x?.close());
+      this.splitter?.close();
+    }
+    if (!forceClose)
+      this.checkForEncoderError();
+  }
+  getQueueSize() {
+    if (this.customEncoder) {
+      return this.customEncoderQueueSize;
+    } else {
+      return this.encoder?.encodeQueueSize ?? 0;
+    }
+  }
+  checkForEncoderError() {
+    if (this.error) {
+      if (this.errorNeedsNewStack) {
+        this.error.stack = new Error().stack;
+      }
+      throw this.error;
+    }
+  }
+}
+
+class ColorAlphaSplitter {
+  constructor(initialWidth, initialHeight) {
+    this.lastFrame = null;
+    if (typeof OffscreenCanvas !== "undefined") {
+      this.canvas = new OffscreenCanvas(initialWidth, initialHeight);
+    } else {
+      this.canvas = document.createElement("canvas");
+      this.canvas.width = initialWidth;
+      this.canvas.height = initialHeight;
+    }
+    const gl = this.canvas.getContext("webgl2", {
+      alpha: true
+    });
+    if (!gl) {
+      throw new Error("Couldn't acquire WebGL 2 context.");
+    }
+    this.gl = gl;
+    this.colorProgram = this.createColorProgram();
+    this.alphaProgram = this.createAlphaProgram();
+    this.vao = this.createVAO();
+    this.sourceTexture = this.createTexture();
+    this.alphaResolutionLocation = this.gl.getUniformLocation(this.alphaProgram, "u_resolution");
+    this.gl.useProgram(this.colorProgram);
+    this.gl.uniform1i(this.gl.getUniformLocation(this.colorProgram, "u_sourceTexture"), 0);
+    this.gl.useProgram(this.alphaProgram);
+    this.gl.uniform1i(this.gl.getUniformLocation(this.alphaProgram, "u_sourceTexture"), 0);
+  }
+  createVertexShader() {
+    return this.createShader(this.gl.VERTEX_SHADER, `#version 300 es
 			in vec2 a_position;
 			in vec2 a_texCoord;
 			out vec2 v_texCoord;
@@ -133,7 +6587,11 @@
 				gl_Position = vec4(a_position, 0.0, 1.0);
 				v_texCoord = a_texCoord;
 			}
-		`)}createColorProgram(){let $=this.createVertexShader(),J=this.createShader(this.gl.FRAGMENT_SHADER,`#version 300 es
+		`);
+  }
+  createColorProgram() {
+    const vertexShader = this.createVertexShader();
+    const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, `#version 300 es
 			precision highp float;
 			
 			uniform sampler2D u_sourceTexture;
@@ -144,7 +6602,16 @@
 				vec4 source = texture(u_sourceTexture, v_texCoord);
 				fragColor = vec4(source.rgb, 1.0);
 			}
-		`),Y=this.gl.createProgram();return this.gl.attachShader(Y,$),this.gl.attachShader(Y,J),this.gl.linkProgram(Y),Y}createAlphaProgram(){let $=this.createVertexShader(),J=this.createShader(this.gl.FRAGMENT_SHADER,`#version 300 es
+		`);
+    const program = this.gl.createProgram();
+    this.gl.attachShader(program, vertexShader);
+    this.gl.attachShader(program, fragmentShader);
+    this.gl.linkProgram(program);
+    return program;
+  }
+  createAlphaProgram() {
+    const vertexShader = this.createVertexShader();
+    const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, `#version 300 es
 			precision highp float;
 			
 			uniform sampler2D u_sourceTexture;
@@ -188,16 +6655,1190 @@
 				
 				fragColor = result;
 			}
-		`),Y=this.gl.createProgram();return this.gl.attachShader(Y,$),this.gl.attachShader(Y,J),this.gl.linkProgram(Y),Y}createShader($,J){let Y=this.gl.createShader($);if(this.gl.shaderSource(Y,J),this.gl.compileShader(Y),!this.gl.getShaderParameter(Y,this.gl.COMPILE_STATUS))console.error("Shader compile error:",this.gl.getShaderInfoLog(Y));return Y}createVAO(){let $=this.gl.createVertexArray();this.gl.bindVertexArray($);let J=new Float32Array([-1,-1,0,1,1,-1,1,1,-1,1,0,0,1,1,1,0]),Y=this.gl.createBuffer();this.gl.bindBuffer(this.gl.ARRAY_BUFFER,Y),this.gl.bufferData(this.gl.ARRAY_BUFFER,J,this.gl.STATIC_DRAW);let Z=this.gl.getAttribLocation(this.colorProgram,"a_position"),G=this.gl.getAttribLocation(this.colorProgram,"a_texCoord");return this.gl.enableVertexAttribArray(Z),this.gl.vertexAttribPointer(Z,2,this.gl.FLOAT,!1,16,0),this.gl.enableVertexAttribArray(G),this.gl.vertexAttribPointer(G,2,this.gl.FLOAT,!1,16,8),$}createTexture(){let $=this.gl.createTexture();return this.gl.bindTexture(this.gl.TEXTURE_2D,$),this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_WRAP_S,this.gl.CLAMP_TO_EDGE),this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_WRAP_T,this.gl.CLAMP_TO_EDGE),this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_MIN_FILTER,this.gl.LINEAR),this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_MAG_FILTER,this.gl.LINEAR),$}updateTexture($){if(this.lastFrame===$)return;if($.displayWidth!==this.canvas.width||$.displayHeight!==this.canvas.height)this.canvas.width=$.displayWidth,this.canvas.height=$.displayHeight;this.gl.activeTexture(this.gl.TEXTURE0),this.gl.bindTexture(this.gl.TEXTURE_2D,this.sourceTexture),this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,$),this.lastFrame=$}extractColor($){return this.updateTexture($),this.gl.useProgram(this.colorProgram),this.gl.viewport(0,0,this.canvas.width,this.canvas.height),this.gl.clear(this.gl.COLOR_BUFFER_BIT),this.gl.bindVertexArray(this.vao),this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4),new VideoFrame(this.canvas,{timestamp:$.timestamp,duration:$.duration??void 0,alpha:"discard"})}extractAlpha($){this.updateTexture($),this.gl.useProgram(this.alphaProgram),this.gl.uniform2f(this.alphaResolutionLocation,this.canvas.width,this.canvas.height),this.gl.viewport(0,0,this.canvas.width,this.canvas.height),this.gl.clear(this.gl.COLOR_BUFFER_BIT),this.gl.bindVertexArray(this.vao),this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4);let{width:J,height:Y}=this.canvas,Z=Math.ceil(J/2)*Math.ceil(Y/2),G=J*Y+Z*2,K=Math.ceil(G/(J*4)),X=new Uint8Array(4*J*K);this.gl.readPixels(0,0,J,K,this.gl.RGBA,this.gl.UNSIGNED_BYTE,X),X=X.subarray(0,G),N(X[J*Y]===128),N(X[X.length-1]===128);let Q={format:"I420",codedWidth:J,codedHeight:Y,timestamp:$.timestamp,duration:$.duration??void 0,transfer:[X.buffer]};return new VideoFrame(X,Q)}close(){this.gl.getExtension("WEBGL_lose_context")?.loseContext(),this.gl=null}}class X1 extends m0{constructor($,J){if(!(typeof HTMLCanvasElement<"u"&&$ instanceof HTMLCanvasElement)&&!(typeof OffscreenCanvas<"u"&&$ instanceof OffscreenCanvas))throw TypeError("canvas must be an HTMLCanvasElement or OffscreenCanvas.");d6(J);super(J.codec);this._encoder=new s6(this,J),this._canvas=$}add($,J=0,Y){if(!Number.isFinite($)||$<0)throw TypeError("timestamp must be a non-negative number.");if(!Number.isFinite(J)||J<0)throw TypeError("duration must be a non-negative number.");let Z=new j0(this._canvas,{timestamp:$,duration:J});return this._encoder.add(Z,!0,Y)}_flushAndClose($){return this._encoder.flushAndClose($)}}class d0 extends p0{constructor($){super();if(this._connectedTrack=null,!J0.includes($))throw TypeError(`Invalid audio codec '${$}'. Must be one of: ${J0.join(", ")}.`);this._codec=$}}class o6{constructor($,J){this.source=$,this.encodingConfig=J,this.ensureEncoderPromise=null,this.encoderInitialized=!1,this.encoder=null,this.muxer=null,this.lastNumberOfChannels=null,this.lastSampleRate=null,this.isPcmEncoder=!1,this.outputSampleSize=null,this.writeOutputValue=null,this.customEncoder=null,this.customEncoderCallSerializer=new s0,this.customEncoderQueueSize=0,this.lastEndSampleIndex=null,this.error=null,this.errorNeedsNewStack=!0}async add($,J){try{if(this.checkForEncoderError(),this.source._ensureValidAdd(),this.lastNumberOfChannels!==null&&this.lastSampleRate!==null){if($.numberOfChannels!==this.lastNumberOfChannels||$.sampleRate!==this.lastSampleRate)throw Error(`Audio parameters must remain constant. Expected ${this.lastNumberOfChannels} channels at ${this.lastSampleRate} Hz, got ${$.numberOfChannels} channels at ${$.sampleRate} Hz.`)}else this.lastNumberOfChannels=$.numberOfChannels,this.lastSampleRate=$.sampleRate;if(!this.encoderInitialized){if(!this.ensureEncoderPromise)this.ensureEncoder($);if(!this.encoderInitialized)await this.ensureEncoderPromise}N(this.encoderInitialized);{let Y=Math.round($.timestamp*$.sampleRate),Z=Math.round(($.timestamp+$.duration)*$.sampleRate);if(this.lastEndSampleIndex===null)this.lastEndSampleIndex=Z;else{let G=Y-this.lastEndSampleIndex;if(G>=64){let K=new G0({data:new Float32Array(G*$.numberOfChannels),format:"f32-planar",sampleRate:$.sampleRate,numberOfChannels:$.numberOfChannels,numberOfFrames:G,timestamp:this.lastEndSampleIndex/$.sampleRate});await this.add(K,!0)}this.lastEndSampleIndex+=$.numberOfFrames}}if(this.customEncoder){this.customEncoderQueueSize++;let Y=$.clone(),Z=this.customEncoderCallSerializer.call(()=>this.customEncoder.encode(Y)).then(()=>this.customEncoderQueueSize--).catch((G)=>this.error??=G).finally(()=>{Y.close()});if(this.customEncoderQueueSize>=4)await Z;await this.muxer.mutex.currentPromise}else if(this.isPcmEncoder)await this.doPcmEncoding($,J);else{N(this.encoder);let Y=$.toAudioData();if(this.encoder.encode(Y),Y.close(),J)$.close();if(this.encoder.encodeQueueSize>=4)await new Promise((Z)=>this.encoder.addEventListener("dequeue",Z,{once:!0}));await this.muxer.mutex.currentPromise}}finally{if(J)$.close()}}async doPcmEncoding($,J){N(this.outputSampleSize),N(this.writeOutputValue);let{numberOfChannels:Y,numberOfFrames:Z,sampleRate:G,timestamp:K}=$,X=2048,Q=[];for(let z=0;z<Z;z+=X){let V=Math.min(X,$.numberOfFrames-z),W=V*Y*this.outputSampleSize,R=new ArrayBuffer(W),H=new DataView(R);Q.push({frameCount:V,view:H})}let U=$.allocationSize({planeIndex:0,format:"f32-planar"}),q=new Float32Array(U/Float32Array.BYTES_PER_ELEMENT);for(let z=0;z<Y;z++){$.copyTo(q,{planeIndex:z,format:"f32-planar"});for(let V=0;V<Q.length;V++){let{frameCount:W,view:R}=Q[V];for(let H=0;H<W;H++)this.writeOutputValue(R,(H*Y+z)*this.outputSampleSize,q[V*X+H])}}if(J)$.close();let j={decoderConfig:{codec:this.encodingConfig.codec,numberOfChannels:Y,sampleRate:G}};for(let z=0;z<Q.length;z++){let{frameCount:V,view:W}=Q[z],R=W.buffer,H=z*X,A=new Z0(new Uint8Array(R),"key",K+H/G,V/G);this.encodingConfig.onEncodedPacket?.(A,j),await this.muxer.addEncodedAudioPacket(this.source._connectedTrack,A,j)}}ensureEncoder($){let J=Error();this.ensureEncoderPromise=(async()=>{let{numberOfChannels:Y,sampleRate:Z}=$,G=n6({numberOfChannels:Y,sampleRate:Z,...this.encodingConfig});this.encodingConfig.onEncoderConfig?.(G);let K=q6.find((X)=>X.supports(this.encodingConfig.codec,G));if(K)this.customEncoder=new K,this.customEncoder.codec=this.encodingConfig.codec,this.customEncoder.config=G,this.customEncoder.onPacket=(X,Q)=>{if(!(X instanceof Z0))throw TypeError("The first argument passed to onPacket must be an EncodedPacket.");if(Q!==void 0&&(!Q||typeof Q!=="object"))throw TypeError("The second argument passed to onPacket must be an object or undefined.");this.encodingConfig.onEncodedPacket?.(X,Q),this.muxer.addEncodedAudioPacket(this.source._connectedTrack,X,Q).catch((U)=>{this.error??=U,this.errorNeedsNewStack=!1})},await this.customEncoder.init();else if(h.includes(this.encodingConfig.codec))this.initPcmEncoder();else{if(typeof AudioEncoder>"u")throw Error("AudioEncoder is not supported by this browser.");if(!(await AudioEncoder.isConfigSupported(G)).supported)throw Error(`This specific encoder configuration (${G.codec}, ${G.bitrate} bps, ${G.numberOfChannels} channels, ${G.sampleRate} Hz) is not supported by this browser. Consider using another codec or changing your audio parameters.`);this.encoder=new AudioEncoder({output:(Q,U)=>{if(this.encodingConfig.codec==="aac"&&U?.decoderConfig){let j=!1;if(!U.decoderConfig.description||U.decoderConfig.description.byteLength<2)j=!0;else j=c1(u(U.decoderConfig.description)).objectType===0;if(j){let z=Number(y(G.codec.split(".")));U.decoderConfig.description=t0({objectType:z,numberOfChannels:U.decoderConfig.numberOfChannels,sampleRate:U.decoderConfig.sampleRate})}}let q=Z0.fromEncodedChunk(Q);this.encodingConfig.onEncodedPacket?.(q,U),this.muxer.addEncodedAudioPacket(this.source._connectedTrack,q,U).catch((j)=>{this.error??=j,this.errorNeedsNewStack=!1})},error:(Q)=>{Q.stack=J.stack,this.error??=Q}}),this.encoder.configure(G)}N(this.source._connectedTrack),this.muxer=this.source._connectedTrack.output._muxer,this.encoderInitialized=!0})()}initPcmEncoder(){this.isPcmEncoder=!0;let $=this.encodingConfig.codec,{dataType:J,sampleSize:Y,littleEndian:Z}=Y0($);switch(this.outputSampleSize=Y,Y){case 1:if(J==="unsigned")this.writeOutputValue=(G,K,X)=>G.setUint8(K,C((X+1)*127.5,0,255));else if(J==="signed")this.writeOutputValue=(G,K,X)=>{G.setInt8(K,C(Math.round(X*128),-128,127))};else if(J==="ulaw")this.writeOutputValue=(G,K,X)=>{let Q=C(Math.floor(X*32767),-32768,32767);G.setUint8(K,z6(Q))};else if(J==="alaw")this.writeOutputValue=(G,K,X)=>{let Q=C(Math.floor(X*32767),-32768,32767);G.setUint8(K,N6(Q))};else N(!1);break;case 2:if(J==="unsigned")this.writeOutputValue=(G,K,X)=>G.setUint16(K,C((X+1)*32767.5,0,65535),Z);else if(J==="signed")this.writeOutputValue=(G,K,X)=>G.setInt16(K,C(Math.round(X*32767),-32768,32767),Z);else N(!1);break;case 3:if(J==="unsigned")this.writeOutputValue=(G,K,X)=>x0(G,K,C((X+1)*8388607.5,0,16777215),Z);else if(J==="signed")this.writeOutputValue=(G,K,X)=>S1(G,K,C(Math.round(X*8388607),-8388608,8388607),Z);else N(!1);break;case 4:if(J==="unsigned")this.writeOutputValue=(G,K,X)=>G.setUint32(K,C((X+1)*2147483647.5,0,4294967295),Z);else if(J==="signed")this.writeOutputValue=(G,K,X)=>G.setInt32(K,C(Math.round(X*2147483647),-2147483648,2147483647),Z);else if(J==="float")this.writeOutputValue=(G,K,X)=>G.setFloat32(K,X,Z);else N(!1);break;case 8:if(J==="float")this.writeOutputValue=(G,K,X)=>G.setFloat64(K,X,Z);else N(!1);break;default:q0(Y),N(!1)}}async flushAndClose($){if(!$)this.checkForEncoderError();if(this.customEncoder){if(!$)this.customEncoderCallSerializer.call(()=>this.customEncoder.flush());await this.customEncoderCallSerializer.call(()=>this.customEncoder.close())}else if(this.encoder){if(!$)await this.encoder.flush();if(this.encoder.state!=="closed")this.encoder.close()}if(!$)this.checkForEncoderError()}getQueueSize(){if(this.customEncoder)return this.customEncoderQueueSize;else if(this.isPcmEncoder)return 0;else return this.encoder?.encodeQueueSize??0}checkForEncoderError(){if(this.error){if(this.errorNeedsNewStack)this.error.stack=Error().stack;throw this.error}}}class c0 extends d0{get errorPromise(){return this._errorPromiseAccessed=!0,this._promiseWithResolvers.promise}get paused(){return this._paused}constructor($,J){if(!($ instanceof MediaStreamTrack)||$.kind!=="audio")throw TypeError("track must be an audio MediaStreamTrack.");r6(J);super(J.codec);this._abortController=null,this._audioContext=null,this._scriptProcessorNode=null,this._promiseWithResolvers=n0(),this._errorPromiseAccessed=!1,this._paused=!1,this._lastSampleTimestamp=null,this._pauseOffset=0,this._encoder=new o6(this,J),this._track=$}async _start(){if(!this._errorPromiseAccessed)console.warn("Make sure not to ignore the `errorPromise` field on MediaStreamVideoTrackSource, so that any internal errors get bubbled up properly.");this._abortController=new AbortController;let $=null,J=!1,Y=(Z)=>{if(J){Z.close();return}let G=Z.timestamp;if(this._paused){if($!==null){if(this._lastSampleTimestamp!==null){let X=G-this._lastSampleTimestamp;this._pauseOffset-=X}this._lastSampleTimestamp=G}Z.close();return}if($===null){$=Z.timestamp;let K=this._connectedTrack.output._muxer;if(K.firstMediaStreamTimestamp===null)K.firstMediaStreamTimestamp=performance.now()/1000,this._timestampOffset=-$;else this._timestampOffset=performance.now()/1000-K.firstMediaStreamTimestamp-$}if(this._lastSampleTimestamp=G,this._encoder.getQueueSize()>=4){Z.close();return}Z.setTimestamp(G+this._pauseOffset),this._encoder.add(Z,!0).catch((K)=>{J=!0,this._abortController?.abort(),this._promiseWithResolvers.reject(K),this._audioContext?.suspend()})};if(typeof MediaStreamTrackProcessor<"u"){let Z=new MediaStreamTrackProcessor({track:this._track}),G=new WritableStream({write:(K)=>Y(new G0(K))});Z.readable.pipeTo(G,{signal:this._abortController.signal}).catch((K)=>{if(K instanceof DOMException&&K.name==="AbortError")return;this._promiseWithResolvers.reject(K)})}else{let Z=window.AudioContext||window.webkitAudioContext;this._audioContext=new Z({sampleRate:this._track.getSettings().sampleRate});let G=this._audioContext.createMediaStreamSource(new MediaStream([this._track]));if(this._scriptProcessorNode=this._audioContext.createScriptProcessor(4096),this._audioContext.state==="suspended")await this._audioContext.resume();G.connect(this._scriptProcessorNode),this._scriptProcessorNode.connect(this._audioContext.destination);let K=0;this._scriptProcessorNode.onaudioprocess=(X)=>{let Q=G0._fromAudioBuffer(X.inputBuffer,K);K+=X.inputBuffer.duration;for(let U of Q)Y(U)}}}pause(){this._paused=!0}resume(){this._paused=!1}async _flushAndClose($){if(this._abortController)this._abortController.abort(),this._abortController=null;if(this._audioContext)N(this._scriptProcessorNode),this._scriptProcessorNode.disconnect(),await this._audioContext.suspend();await this._encoder.flushAndClose($)}}class Q1 extends p0{constructor($){super();if(this._connectedTrack=null,!V0.includes($))throw TypeError(`Invalid subtitle codec '${$}'. Must be one of: ${V0.join(", ")}.`);this._codec=$}}/*!
+		`);
+    const program = this.gl.createProgram();
+    this.gl.attachShader(program, vertexShader);
+    this.gl.attachShader(program, fragmentShader);
+    this.gl.linkProgram(program);
+    return program;
+  }
+  createShader(type, source) {
+    const shader = this.gl.createShader(type);
+    this.gl.shaderSource(shader, source);
+    this.gl.compileShader(shader);
+    if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+      console.error("Shader compile error:", this.gl.getShaderInfoLog(shader));
+    }
+    return shader;
+  }
+  createVAO() {
+    const vao = this.gl.createVertexArray();
+    this.gl.bindVertexArray(vao);
+    const vertices = new Float32Array([
+      -1,
+      -1,
+      0,
+      1,
+      1,
+      -1,
+      1,
+      1,
+      -1,
+      1,
+      0,
+      0,
+      1,
+      1,
+      1,
+      0
+    ]);
+    const buffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    const positionLocation = this.gl.getAttribLocation(this.colorProgram, "a_position");
+    const texCoordLocation = this.gl.getAttribLocation(this.colorProgram, "a_texCoord");
+    this.gl.enableVertexAttribArray(positionLocation);
+    this.gl.vertexAttribPointer(positionLocation, 2, this.gl.FLOAT, false, 16, 0);
+    this.gl.enableVertexAttribArray(texCoordLocation);
+    this.gl.vertexAttribPointer(texCoordLocation, 2, this.gl.FLOAT, false, 16, 8);
+    return vao;
+  }
+  createTexture() {
+    const texture = this.gl.createTexture();
+    this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    return texture;
+  }
+  updateTexture(sourceFrame) {
+    if (this.lastFrame === sourceFrame) {
+      return;
+    }
+    if (sourceFrame.displayWidth !== this.canvas.width || sourceFrame.displayHeight !== this.canvas.height) {
+      this.canvas.width = sourceFrame.displayWidth;
+      this.canvas.height = sourceFrame.displayHeight;
+    }
+    this.gl.activeTexture(this.gl.TEXTURE0);
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.sourceTexture);
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, sourceFrame);
+    this.lastFrame = sourceFrame;
+  }
+  extractColor(sourceFrame) {
+    this.updateTexture(sourceFrame);
+    this.gl.useProgram(this.colorProgram);
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.gl.bindVertexArray(this.vao);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    return new VideoFrame(this.canvas, {
+      timestamp: sourceFrame.timestamp,
+      duration: sourceFrame.duration ?? undefined,
+      alpha: "discard"
+    });
+  }
+  extractAlpha(sourceFrame) {
+    this.updateTexture(sourceFrame);
+    this.gl.useProgram(this.alphaProgram);
+    this.gl.uniform2f(this.alphaResolutionLocation, this.canvas.width, this.canvas.height);
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    this.gl.bindVertexArray(this.vao);
+    this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    const { width, height } = this.canvas;
+    const chromaSamples = Math.ceil(width / 2) * Math.ceil(height / 2);
+    const yuvSize = width * height + chromaSamples * 2;
+    const requiredHeight = Math.ceil(yuvSize / (width * 4));
+    let yuv = new Uint8Array(4 * width * requiredHeight);
+    this.gl.readPixels(0, 0, width, requiredHeight, this.gl.RGBA, this.gl.UNSIGNED_BYTE, yuv);
+    yuv = yuv.subarray(0, yuvSize);
+    assert(yuv[width * height] === 128);
+    assert(yuv[yuv.length - 1] === 128);
+    const init = {
+      format: "I420",
+      codedWidth: width,
+      codedHeight: height,
+      timestamp: sourceFrame.timestamp,
+      duration: sourceFrame.duration ?? undefined,
+      transfer: [yuv.buffer]
+    };
+    return new VideoFrame(yuv, init);
+  }
+  close() {
+    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    this.gl = null;
+  }
+}
+class CanvasSource extends VideoSource {
+  constructor(canvas, encodingConfig) {
+    if (!(typeof HTMLCanvasElement !== "undefined" && canvas instanceof HTMLCanvasElement) && !(typeof OffscreenCanvas !== "undefined" && canvas instanceof OffscreenCanvas)) {
+      throw new TypeError("canvas must be an HTMLCanvasElement or OffscreenCanvas.");
+    }
+    validateVideoEncodingConfig(encodingConfig);
+    super(encodingConfig.codec);
+    this._encoder = new VideoEncoderWrapper(this, encodingConfig);
+    this._canvas = canvas;
+  }
+  add(timestamp, duration = 0, encodeOptions) {
+    if (!Number.isFinite(timestamp) || timestamp < 0) {
+      throw new TypeError("timestamp must be a non-negative number.");
+    }
+    if (!Number.isFinite(duration) || duration < 0) {
+      throw new TypeError("duration must be a non-negative number.");
+    }
+    const sample = new VideoSample(this._canvas, { timestamp, duration });
+    return this._encoder.add(sample, true, encodeOptions);
+  }
+  _flushAndClose(forceClose) {
+    return this._encoder.flushAndClose(forceClose);
+  }
+}
+
+class MediaStreamVideoTrackSource extends VideoSource {
+  get errorPromise() {
+    this._errorPromiseAccessed = true;
+    return this._promiseWithResolvers.promise;
+  }
+  get paused() {
+    return this._paused;
+  }
+  constructor(track, encodingConfig) {
+    if (!(track instanceof MediaStreamTrack) || track.kind !== "video") {
+      throw new TypeError("track must be a video MediaStreamTrack.");
+    }
+    validateVideoEncodingConfig(encodingConfig);
+    encodingConfig = {
+      ...encodingConfig,
+      latencyMode: "realtime"
+    };
+    super(encodingConfig.codec);
+    this._abortController = null;
+    this._workerTrackId = null;
+    this._workerListener = null;
+    this._promiseWithResolvers = promiseWithResolvers();
+    this._errorPromiseAccessed = false;
+    this._paused = false;
+    this._lastSampleTimestamp = null;
+    this._pauseOffset = 0;
+    this._encoder = new VideoEncoderWrapper(this, encodingConfig);
+    this._track = track;
+  }
+  async _start() {
+    if (!this._errorPromiseAccessed) {
+      console.warn("Make sure not to ignore the `errorPromise` field on MediaStreamVideoTrackSource, so that any internal" + " errors get bubbled up properly.");
+    }
+    this._abortController = new AbortController;
+    let firstVideoFrameTimestamp = null;
+    let errored = false;
+    const onVideoFrame = (videoFrame) => {
+      if (errored) {
+        videoFrame.close();
+        return;
+      }
+      const currentTimestamp = videoFrame.timestamp / 1e6;
+      if (this._paused) {
+        const frameSeen = firstVideoFrameTimestamp !== null;
+        if (frameSeen) {
+          if (this._lastSampleTimestamp !== null) {
+            const timeDelta = currentTimestamp - this._lastSampleTimestamp;
+            this._pauseOffset -= timeDelta;
+          }
+          this._lastSampleTimestamp = currentTimestamp;
+        }
+        videoFrame.close();
+        return;
+      }
+      if (firstVideoFrameTimestamp === null) {
+        firstVideoFrameTimestamp = currentTimestamp;
+        const muxer = this._connectedTrack.output._muxer;
+        if (muxer.firstMediaStreamTimestamp === null) {
+          muxer.firstMediaStreamTimestamp = performance.now() / 1000;
+          this._timestampOffset = -firstVideoFrameTimestamp;
+        } else {
+          this._timestampOffset = performance.now() / 1000 - muxer.firstMediaStreamTimestamp - firstVideoFrameTimestamp;
+        }
+      }
+      this._lastSampleTimestamp = currentTimestamp;
+      if (this._encoder.getQueueSize() >= 4) {
+        videoFrame.close();
+        return;
+      }
+      const sample = new VideoSample(videoFrame, {
+        timestamp: currentTimestamp + this._pauseOffset
+      });
+      this._encoder.add(sample, true).catch((error) => {
+        errored = true;
+        this._abortController?.abort();
+        this._promiseWithResolvers.reject(error);
+        if (this._workerTrackId !== null) {
+          sendMessageToMediaStreamTrackProcessorWorker({
+            type: "stopTrack",
+            trackId: this._workerTrackId
+          });
+        }
+      });
+    };
+    if (typeof MediaStreamTrackProcessor !== "undefined") {
+      const processor = new MediaStreamTrackProcessor({ track: this._track });
+      const consumer = new WritableStream({ write: onVideoFrame });
+      processor.readable.pipeTo(consumer, {
+        signal: this._abortController.signal
+      }).catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        this._promiseWithResolvers.reject(error);
+      });
+    } else {
+      const supportedInWorker = await mediaStreamTrackProcessorIsSupportedInWorker();
+      if (supportedInWorker) {
+        this._workerTrackId = nextMediaStreamTrackProcessorWorkerId++;
+        sendMessageToMediaStreamTrackProcessorWorker({
+          type: "videoTrack",
+          trackId: this._workerTrackId,
+          track: this._track
+        });
+        this._workerListener = (event) => {
+          const message = event.data;
+          if (message.type === "videoFrame" && message.trackId === this._workerTrackId) {
+            onVideoFrame(message.videoFrame);
+          } else if (message.type === "error" && message.trackId === this._workerTrackId) {
+            this._promiseWithResolvers.reject(message.error);
+          }
+        };
+        mediaStreamTrackProcessorWorker.addEventListener("message", this._workerListener);
+      } else {
+        throw new Error("MediaStreamTrackProcessor is required but not supported by this browser.");
+      }
+    }
+  }
+  pause() {
+    this._paused = true;
+  }
+  resume() {
+    this._paused = false;
+  }
+  async _flushAndClose(forceClose) {
+    if (this._abortController) {
+      this._abortController.abort();
+      this._abortController = null;
+    }
+    if (this._workerTrackId !== null) {
+      assert(this._workerListener);
+      sendMessageToMediaStreamTrackProcessorWorker({
+        type: "stopTrack",
+        trackId: this._workerTrackId
+      });
+      await new Promise((resolve) => {
+        const listener = (event) => {
+          const message = event.data;
+          if (message.type === "trackStopped" && message.trackId === this._workerTrackId) {
+            assert(this._workerListener);
+            mediaStreamTrackProcessorWorker.removeEventListener("message", this._workerListener);
+            mediaStreamTrackProcessorWorker.removeEventListener("message", listener);
+            resolve();
+          }
+        };
+        mediaStreamTrackProcessorWorker.addEventListener("message", listener);
+      });
+    }
+    await this._encoder.flushAndClose(forceClose);
+  }
+}
+
+class AudioSource extends MediaSource {
+  constructor(codec) {
+    super();
+    this._connectedTrack = null;
+    if (!AUDIO_CODECS.includes(codec)) {
+      throw new TypeError(`Invalid audio codec '${codec}'. Must be one of: ${AUDIO_CODECS.join(", ")}.`);
+    }
+    this._codec = codec;
+  }
+}
+class AudioEncoderWrapper {
+  constructor(source, encodingConfig) {
+    this.source = source;
+    this.encodingConfig = encodingConfig;
+    this.ensureEncoderPromise = null;
+    this.encoderInitialized = false;
+    this.encoder = null;
+    this.muxer = null;
+    this.lastNumberOfChannels = null;
+    this.lastSampleRate = null;
+    this.isPcmEncoder = false;
+    this.outputSampleSize = null;
+    this.writeOutputValue = null;
+    this.customEncoder = null;
+    this.customEncoderCallSerializer = new CallSerializer;
+    this.customEncoderQueueSize = 0;
+    this.lastEndSampleIndex = null;
+    this.error = null;
+    this.errorNeedsNewStack = true;
+  }
+  async add(audioSample, shouldClose) {
+    try {
+      this.checkForEncoderError();
+      this.source._ensureValidAdd();
+      if (this.lastNumberOfChannels !== null && this.lastSampleRate !== null) {
+        if (audioSample.numberOfChannels !== this.lastNumberOfChannels || audioSample.sampleRate !== this.lastSampleRate) {
+          throw new Error(`Audio parameters must remain constant. Expected ${this.lastNumberOfChannels} channels at` + ` ${this.lastSampleRate} Hz, got ${audioSample.numberOfChannels} channels at` + ` ${audioSample.sampleRate} Hz.`);
+        }
+      } else {
+        this.lastNumberOfChannels = audioSample.numberOfChannels;
+        this.lastSampleRate = audioSample.sampleRate;
+      }
+      if (!this.encoderInitialized) {
+        if (!this.ensureEncoderPromise) {
+          this.ensureEncoder(audioSample);
+        }
+        if (!this.encoderInitialized) {
+          await this.ensureEncoderPromise;
+        }
+      }
+      assert(this.encoderInitialized);
+      {
+        const startSampleIndex = Math.round(audioSample.timestamp * audioSample.sampleRate);
+        const endSampleIndex = Math.round((audioSample.timestamp + audioSample.duration) * audioSample.sampleRate);
+        if (this.lastEndSampleIndex === null) {
+          this.lastEndSampleIndex = endSampleIndex;
+        } else {
+          const sampleDiff = startSampleIndex - this.lastEndSampleIndex;
+          if (sampleDiff >= 64) {
+            const fillSample = new AudioSample({
+              data: new Float32Array(sampleDiff * audioSample.numberOfChannels),
+              format: "f32-planar",
+              sampleRate: audioSample.sampleRate,
+              numberOfChannels: audioSample.numberOfChannels,
+              numberOfFrames: sampleDiff,
+              timestamp: this.lastEndSampleIndex / audioSample.sampleRate
+            });
+            await this.add(fillSample, true);
+          }
+          this.lastEndSampleIndex += audioSample.numberOfFrames;
+        }
+      }
+      if (this.customEncoder) {
+        this.customEncoderQueueSize++;
+        const clonedSample = audioSample.clone();
+        const promise = this.customEncoderCallSerializer.call(() => this.customEncoder.encode(clonedSample)).then(() => this.customEncoderQueueSize--).catch((error) => this.error ??= error).finally(() => {
+          clonedSample.close();
+        });
+        if (this.customEncoderQueueSize >= 4) {
+          await promise;
+        }
+        await this.muxer.mutex.currentPromise;
+      } else if (this.isPcmEncoder) {
+        await this.doPcmEncoding(audioSample, shouldClose);
+      } else {
+        assert(this.encoder);
+        const audioData = audioSample.toAudioData();
+        this.encoder.encode(audioData);
+        audioData.close();
+        if (shouldClose) {
+          audioSample.close();
+        }
+        if (this.encoder.encodeQueueSize >= 4) {
+          await new Promise((resolve) => this.encoder.addEventListener("dequeue", resolve, { once: true }));
+        }
+        await this.muxer.mutex.currentPromise;
+      }
+    } finally {
+      if (shouldClose) {
+        audioSample.close();
+      }
+    }
+  }
+  async doPcmEncoding(audioSample, shouldClose) {
+    assert(this.outputSampleSize);
+    assert(this.writeOutputValue);
+    const { numberOfChannels, numberOfFrames, sampleRate, timestamp } = audioSample;
+    const CHUNK_SIZE = 2048;
+    const outputs = [];
+    for (let frame = 0;frame < numberOfFrames; frame += CHUNK_SIZE) {
+      const frameCount = Math.min(CHUNK_SIZE, audioSample.numberOfFrames - frame);
+      const outputSize = frameCount * numberOfChannels * this.outputSampleSize;
+      const outputBuffer = new ArrayBuffer(outputSize);
+      const outputView = new DataView(outputBuffer);
+      outputs.push({ frameCount, view: outputView });
+    }
+    const allocationSize = audioSample.allocationSize({ planeIndex: 0, format: "f32-planar" });
+    const floats = new Float32Array(allocationSize / Float32Array.BYTES_PER_ELEMENT);
+    for (let i = 0;i < numberOfChannels; i++) {
+      audioSample.copyTo(floats, { planeIndex: i, format: "f32-planar" });
+      for (let j = 0;j < outputs.length; j++) {
+        const { frameCount, view: view2 } = outputs[j];
+        for (let k = 0;k < frameCount; k++) {
+          this.writeOutputValue(view2, (k * numberOfChannels + i) * this.outputSampleSize, floats[j * CHUNK_SIZE + k]);
+        }
+      }
+    }
+    if (shouldClose) {
+      audioSample.close();
+    }
+    const meta = {
+      decoderConfig: {
+        codec: this.encodingConfig.codec,
+        numberOfChannels,
+        sampleRate
+      }
+    };
+    for (let i = 0;i < outputs.length; i++) {
+      const { frameCount, view: view2 } = outputs[i];
+      const outputBuffer = view2.buffer;
+      const startFrame = i * CHUNK_SIZE;
+      const packet = new EncodedPacket(new Uint8Array(outputBuffer), "key", timestamp + startFrame / sampleRate, frameCount / sampleRate);
+      this.encodingConfig.onEncodedPacket?.(packet, meta);
+      await this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta);
+    }
+  }
+  ensureEncoder(audioSample) {
+    const encoderError = new Error;
+    this.ensureEncoderPromise = (async () => {
+      const { numberOfChannels, sampleRate } = audioSample;
+      const encoderConfig = buildAudioEncoderConfig({
+        numberOfChannels,
+        sampleRate,
+        ...this.encodingConfig
+      });
+      this.encodingConfig.onEncoderConfig?.(encoderConfig);
+      const MatchingCustomEncoder = customAudioEncoders.find((x) => x.supports(this.encodingConfig.codec, encoderConfig));
+      if (MatchingCustomEncoder) {
+        this.customEncoder = new MatchingCustomEncoder;
+        this.customEncoder.codec = this.encodingConfig.codec;
+        this.customEncoder.config = encoderConfig;
+        this.customEncoder.onPacket = (packet, meta) => {
+          if (!(packet instanceof EncodedPacket)) {
+            throw new TypeError("The first argument passed to onPacket must be an EncodedPacket.");
+          }
+          if (meta !== undefined && (!meta || typeof meta !== "object")) {
+            throw new TypeError("The second argument passed to onPacket must be an object or undefined.");
+          }
+          this.encodingConfig.onEncodedPacket?.(packet, meta);
+          this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+            this.error ??= error;
+            this.errorNeedsNewStack = false;
+          });
+        };
+        await this.customEncoder.init();
+      } else if (PCM_AUDIO_CODECS.includes(this.encodingConfig.codec)) {
+        this.initPcmEncoder();
+      } else {
+        if (typeof AudioEncoder === "undefined") {
+          throw new Error("AudioEncoder is not supported by this browser.");
+        }
+        const support = await AudioEncoder.isConfigSupported(encoderConfig);
+        if (!support.supported) {
+          throw new Error(`This specific encoder configuration (${encoderConfig.codec}, ${encoderConfig.bitrate} bps,` + ` ${encoderConfig.numberOfChannels} channels, ${encoderConfig.sampleRate} Hz) is not` + ` supported by this browser. Consider using another codec or changing your audio parameters.`);
+        }
+        this.encoder = new AudioEncoder({
+          output: (chunk, meta) => {
+            if (this.encodingConfig.codec === "aac" && meta?.decoderConfig) {
+              let needsDescriptionOverwrite = false;
+              if (!meta.decoderConfig.description || meta.decoderConfig.description.byteLength < 2) {
+                needsDescriptionOverwrite = true;
+              } else {
+                const audioSpecificConfig = parseAacAudioSpecificConfig(toUint8Array(meta.decoderConfig.description));
+                needsDescriptionOverwrite = audioSpecificConfig.objectType === 0;
+              }
+              if (needsDescriptionOverwrite) {
+                const objectType = Number(last(encoderConfig.codec.split(".")));
+                meta.decoderConfig.description = buildAacAudioSpecificConfig({
+                  objectType,
+                  numberOfChannels: meta.decoderConfig.numberOfChannels,
+                  sampleRate: meta.decoderConfig.sampleRate
+                });
+              }
+            }
+            const packet = EncodedPacket.fromEncodedChunk(chunk);
+            this.encodingConfig.onEncodedPacket?.(packet, meta);
+            this.muxer.addEncodedAudioPacket(this.source._connectedTrack, packet, meta).catch((error) => {
+              this.error ??= error;
+              this.errorNeedsNewStack = false;
+            });
+          },
+          error: (error) => {
+            error.stack = encoderError.stack;
+            this.error ??= error;
+          }
+        });
+        this.encoder.configure(encoderConfig);
+      }
+      assert(this.source._connectedTrack);
+      this.muxer = this.source._connectedTrack.output._muxer;
+      this.encoderInitialized = true;
+    })();
+  }
+  initPcmEncoder() {
+    this.isPcmEncoder = true;
+    const codec = this.encodingConfig.codec;
+    const { dataType, sampleSize, littleEndian } = parsePcmCodec(codec);
+    this.outputSampleSize = sampleSize;
+    switch (sampleSize) {
+      case 1:
+        {
+          if (dataType === "unsigned") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setUint8(byteOffset, clamp((value + 1) * 127.5, 0, 255));
+          } else if (dataType === "signed") {
+            this.writeOutputValue = (view2, byteOffset, value) => {
+              view2.setInt8(byteOffset, clamp(Math.round(value * 128), -128, 127));
+            };
+          } else if (dataType === "ulaw") {
+            this.writeOutputValue = (view2, byteOffset, value) => {
+              const int16 = clamp(Math.floor(value * 32767), -32768, 32767);
+              view2.setUint8(byteOffset, toUlaw(int16));
+            };
+          } else if (dataType === "alaw") {
+            this.writeOutputValue = (view2, byteOffset, value) => {
+              const int16 = clamp(Math.floor(value * 32767), -32768, 32767);
+              view2.setUint8(byteOffset, toAlaw(int16));
+            };
+          } else {
+            assert(false);
+          }
+        }
+        ;
+        break;
+      case 2:
+        {
+          if (dataType === "unsigned") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setUint16(byteOffset, clamp((value + 1) * 32767.5, 0, 65535), littleEndian);
+          } else if (dataType === "signed") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setInt16(byteOffset, clamp(Math.round(value * 32767), -32768, 32767), littleEndian);
+          } else {
+            assert(false);
+          }
+        }
+        ;
+        break;
+      case 3:
+        {
+          if (dataType === "unsigned") {
+            this.writeOutputValue = (view2, byteOffset, value) => setUint24(view2, byteOffset, clamp((value + 1) * 8388607.5, 0, 16777215), littleEndian);
+          } else if (dataType === "signed") {
+            this.writeOutputValue = (view2, byteOffset, value) => setInt24(view2, byteOffset, clamp(Math.round(value * 8388607), -8388608, 8388607), littleEndian);
+          } else {
+            assert(false);
+          }
+        }
+        ;
+        break;
+      case 4:
+        {
+          if (dataType === "unsigned") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setUint32(byteOffset, clamp((value + 1) * 2147483647.5, 0, 4294967295), littleEndian);
+          } else if (dataType === "signed") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setInt32(byteOffset, clamp(Math.round(value * 2147483647), -2147483648, 2147483647), littleEndian);
+          } else if (dataType === "float") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setFloat32(byteOffset, value, littleEndian);
+          } else {
+            assert(false);
+          }
+        }
+        ;
+        break;
+      case 8:
+        {
+          if (dataType === "float") {
+            this.writeOutputValue = (view2, byteOffset, value) => view2.setFloat64(byteOffset, value, littleEndian);
+          } else {
+            assert(false);
+          }
+        }
+        ;
+        break;
+      default:
+        {
+          assertNever(sampleSize);
+          assert(false);
+        }
+        ;
+    }
+  }
+  async flushAndClose(forceClose) {
+    if (!forceClose)
+      this.checkForEncoderError();
+    if (this.customEncoder) {
+      if (!forceClose) {
+        this.customEncoderCallSerializer.call(() => this.customEncoder.flush());
+      }
+      await this.customEncoderCallSerializer.call(() => this.customEncoder.close());
+    } else if (this.encoder) {
+      if (!forceClose) {
+        await this.encoder.flush();
+      }
+      if (this.encoder.state !== "closed") {
+        this.encoder.close();
+      }
+    }
+    if (!forceClose)
+      this.checkForEncoderError();
+  }
+  getQueueSize() {
+    if (this.customEncoder) {
+      return this.customEncoderQueueSize;
+    } else if (this.isPcmEncoder) {
+      return 0;
+    } else {
+      return this.encoder?.encodeQueueSize ?? 0;
+    }
+  }
+  checkForEncoderError() {
+    if (this.error) {
+      if (this.errorNeedsNewStack) {
+        this.error.stack = new Error().stack;
+      }
+      throw this.error;
+    }
+  }
+}
+class MediaStreamAudioTrackSource extends AudioSource {
+  get errorPromise() {
+    this._errorPromiseAccessed = true;
+    return this._promiseWithResolvers.promise;
+  }
+  get paused() {
+    return this._paused;
+  }
+  constructor(track, encodingConfig) {
+    if (!(track instanceof MediaStreamTrack) || track.kind !== "audio") {
+      throw new TypeError("track must be an audio MediaStreamTrack.");
+    }
+    validateAudioEncodingConfig(encodingConfig);
+    super(encodingConfig.codec);
+    this._abortController = null;
+    this._audioContext = null;
+    this._scriptProcessorNode = null;
+    this._promiseWithResolvers = promiseWithResolvers();
+    this._errorPromiseAccessed = false;
+    this._paused = false;
+    this._lastSampleTimestamp = null;
+    this._pauseOffset = 0;
+    this._encoder = new AudioEncoderWrapper(this, encodingConfig);
+    this._track = track;
+  }
+  async _start() {
+    if (!this._errorPromiseAccessed) {
+      console.warn("Make sure not to ignore the `errorPromise` field on MediaStreamVideoTrackSource, so that any internal" + " errors get bubbled up properly.");
+    }
+    this._abortController = new AbortController;
+    let firstAudioDataTimestamp = null;
+    let errored = false;
+    const onAudioSample = (audioSample) => {
+      if (errored) {
+        audioSample.close();
+        return;
+      }
+      const currentTimestamp = audioSample.timestamp;
+      if (this._paused) {
+        const dataSeen = firstAudioDataTimestamp !== null;
+        if (dataSeen) {
+          if (this._lastSampleTimestamp !== null) {
+            const timeDelta = currentTimestamp - this._lastSampleTimestamp;
+            this._pauseOffset -= timeDelta;
+          }
+          this._lastSampleTimestamp = currentTimestamp;
+        }
+        audioSample.close();
+        return;
+      }
+      if (firstAudioDataTimestamp === null) {
+        firstAudioDataTimestamp = audioSample.timestamp;
+        const muxer = this._connectedTrack.output._muxer;
+        if (muxer.firstMediaStreamTimestamp === null) {
+          muxer.firstMediaStreamTimestamp = performance.now() / 1000;
+          this._timestampOffset = -firstAudioDataTimestamp;
+        } else {
+          this._timestampOffset = performance.now() / 1000 - muxer.firstMediaStreamTimestamp - firstAudioDataTimestamp;
+        }
+      }
+      this._lastSampleTimestamp = currentTimestamp;
+      if (this._encoder.getQueueSize() >= 4) {
+        audioSample.close();
+        return;
+      }
+      audioSample.setTimestamp(currentTimestamp + this._pauseOffset);
+      this._encoder.add(audioSample, true).catch((error) => {
+        errored = true;
+        this._abortController?.abort();
+        this._promiseWithResolvers.reject(error);
+        this._audioContext?.suspend();
+      });
+    };
+    if (typeof MediaStreamTrackProcessor !== "undefined") {
+      const processor = new MediaStreamTrackProcessor({ track: this._track });
+      const consumer = new WritableStream({
+        write: (audioData) => onAudioSample(new AudioSample(audioData))
+      });
+      processor.readable.pipeTo(consumer, {
+        signal: this._abortController.signal
+      }).catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        this._promiseWithResolvers.reject(error);
+      });
+    } else {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      this._audioContext = new AudioContext({ sampleRate: this._track.getSettings().sampleRate });
+      const sourceNode = this._audioContext.createMediaStreamSource(new MediaStream([this._track]));
+      this._scriptProcessorNode = this._audioContext.createScriptProcessor(4096);
+      if (this._audioContext.state === "suspended") {
+        await this._audioContext.resume();
+      }
+      sourceNode.connect(this._scriptProcessorNode);
+      this._scriptProcessorNode.connect(this._audioContext.destination);
+      let totalDuration = 0;
+      this._scriptProcessorNode.onaudioprocess = (event) => {
+        const iterator = AudioSample._fromAudioBuffer(event.inputBuffer, totalDuration);
+        totalDuration += event.inputBuffer.duration;
+        for (const audioSample of iterator) {
+          onAudioSample(audioSample);
+        }
+      };
+    }
+  }
+  pause() {
+    this._paused = true;
+  }
+  resume() {
+    this._paused = false;
+  }
+  async _flushAndClose(forceClose) {
+    if (this._abortController) {
+      this._abortController.abort();
+      this._abortController = null;
+    }
+    if (this._audioContext) {
+      assert(this._scriptProcessorNode);
+      this._scriptProcessorNode.disconnect();
+      await this._audioContext.suspend();
+    }
+    await this._encoder.flushAndClose(forceClose);
+  }
+}
+var mediaStreamTrackProcessorWorkerCode = () => {
+  const sendMessage = (message, transfer) => {
+    if (transfer) {
+      self.postMessage(message, { transfer });
+    } else {
+      self.postMessage(message);
+    }
+  };
+  sendMessage({
+    type: "support",
+    supported: typeof MediaStreamTrackProcessor !== "undefined"
+  });
+  const abortControllers = new Map;
+  const activeTracks = new Map;
+  self.addEventListener("message", (event) => {
+    const message = event.data;
+    switch (message.type) {
+      case "videoTrack":
+        {
+          activeTracks.set(message.trackId, message.track);
+          const processor = new MediaStreamTrackProcessor({ track: message.track });
+          const consumer = new WritableStream({
+            write: (videoFrame) => {
+              if (!activeTracks.has(message.trackId)) {
+                videoFrame.close();
+                return;
+              }
+              sendMessage({
+                type: "videoFrame",
+                trackId: message.trackId,
+                videoFrame
+              }, [videoFrame]);
+            }
+          });
+          const abortController = new AbortController;
+          abortControllers.set(message.trackId, abortController);
+          processor.readable.pipeTo(consumer, {
+            signal: abortController.signal
+          }).catch((error) => {
+            if (error instanceof DOMException && error.name === "AbortError")
+              return;
+            sendMessage({
+              type: "error",
+              trackId: message.trackId,
+              error
+            });
+          });
+        }
+        ;
+        break;
+      case "stopTrack":
+        {
+          const abortController = abortControllers.get(message.trackId);
+          if (abortController) {
+            abortController.abort();
+            abortControllers.delete(message.trackId);
+          }
+          const track = activeTracks.get(message.trackId);
+          track?.stop();
+          activeTracks.delete(message.trackId);
+          sendMessage({
+            type: "trackStopped",
+            trackId: message.trackId
+          });
+        }
+        ;
+        break;
+      default:
+        assertNever(message);
+    }
+  });
+};
+var nextMediaStreamTrackProcessorWorkerId = 0;
+var mediaStreamTrackProcessorWorker = null;
+var initMediaStreamTrackProcessorWorker = () => {
+  const blob = new Blob([`(${mediaStreamTrackProcessorWorkerCode.toString()})()`], { type: "application/javascript" });
+  const url2 = URL.createObjectURL(blob);
+  mediaStreamTrackProcessorWorker = new Worker(url2);
+};
+var mediaStreamTrackProcessorIsSupportedInWorkerCache = null;
+var mediaStreamTrackProcessorIsSupportedInWorker = async () => {
+  if (mediaStreamTrackProcessorIsSupportedInWorkerCache !== null) {
+    return mediaStreamTrackProcessorIsSupportedInWorkerCache;
+  }
+  if (!mediaStreamTrackProcessorWorker) {
+    initMediaStreamTrackProcessorWorker();
+  }
+  return new Promise((resolve) => {
+    assert(mediaStreamTrackProcessorWorker);
+    const listener = (event) => {
+      const message = event.data;
+      if (message.type === "support") {
+        mediaStreamTrackProcessorIsSupportedInWorkerCache = message.supported;
+        mediaStreamTrackProcessorWorker.removeEventListener("message", listener);
+        resolve(message.supported);
+      }
+    };
+    mediaStreamTrackProcessorWorker.addEventListener("message", listener);
+  });
+};
+var sendMessageToMediaStreamTrackProcessorWorker = (message, transfer) => {
+  assert(mediaStreamTrackProcessorWorker);
+  if (transfer) {
+    mediaStreamTrackProcessorWorker.postMessage(message, transfer);
+  } else {
+    mediaStreamTrackProcessorWorker.postMessage(message);
+  }
+};
+
+class SubtitleSource extends MediaSource {
+  constructor(codec) {
+    super();
+    this._connectedTrack = null;
+    if (!SUBTITLE_CODECS.includes(codec)) {
+      throw new TypeError(`Invalid subtitle codec '${codec}'. Must be one of: ${SUBTITLE_CODECS.join(", ")}.`);
+    }
+    this._codec = codec;
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/output.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */var O2=["video","audio","subtitle"],T1=($)=>{if(!$||typeof $!=="object")throw TypeError("metadata must be an object.");if($.languageCode!==void 0&&!y1($.languageCode))throw TypeError("metadata.languageCode, when provided, must be a three-letter, ISO 639-2/T language code.");if($.name!==void 0&&typeof $.name!=="string")throw TypeError("metadata.name, when provided, must be a string.");if($.disposition!==void 0)g1($.disposition);if($.maximumPacketCount!==void 0&&(!Number.isInteger($.maximumPacketCount)||$.maximumPacketCount<0))throw TypeError("metadata.maximumPacketCount, when provided, must be a non-negative integer.")};class r0{constructor($){if(this.state="pending",this._tracks=[],this._startPromise=null,this._cancelPromise=null,this._finalizePromise=null,this._mutex=new T0,this._metadataTags={},!$||typeof $!=="object")throw TypeError("options must be an object.");if(!($.format instanceof l0))throw TypeError("options.format must be an OutputFormat.");if(!($.target instanceof g0))throw TypeError("options.target must be a Target.");if($.target._output)throw Error("Target is already used for another output.");$.target._output=this,this.format=$.format,this.target=$.target,this._writer=$.target._createWriter(),this._muxer=$.format._createMuxer(this)}addVideoTrack($,J={}){if(!($ instanceof m0))throw TypeError("source must be a VideoSource.");if(T1(J),J.rotation!==void 0&&![0,90,180,270].includes(J.rotation))throw TypeError(`Invalid video rotation: ${J.rotation}. Has to be 0, 90, 180 or 270.`);if(!this.format.supportsVideoRotationMetadata&&J.rotation)throw Error(`${this.format._name} does not support video rotation metadata.`);if(J.frameRate!==void 0&&(!Number.isFinite(J.frameRate)||J.frameRate<=0))throw TypeError(`Invalid video frame rate: ${J.frameRate}. Must be a positive number.`);this._addTrack("video",$,J)}addAudioTrack($,J={}){if(!($ instanceof d0))throw TypeError("source must be an AudioSource.");T1(J),this._addTrack("audio",$,J)}addSubtitleTrack($,J={}){if(!($ instanceof Q1))throw TypeError("source must be a SubtitleSource.");T1(J),this._addTrack("subtitle",$,J)}setMetadataTags($){if(f1($),this.state!=="pending")throw Error("Cannot set metadata tags after output has been started or canceled.");this._metadataTags=$}_addTrack($,J,Y){if(this.state!=="pending")throw Error("Cannot add track after output has been started or canceled.");if(J._connectedTrack)throw Error("Source is already used for a track.");let Z=this.format.getSupportedTrackCounts(),G=this._tracks.reduce((U,q)=>U+(q.type===$?1:0),0),K=Z[$].max;if(G===K)throw Error(K===0?`${this.format._name} does not support ${$} tracks.`:`${this.format._name} does not support more than ${K} ${$} track${K===1?"":"s"}.`);let X=Z.total.max;if(this._tracks.length===X)throw Error(`${this.format._name} does not support more than ${X} tracks${X===1?"":"s"} in total.`);let Q={id:this._tracks.length+1,output:this,type:$,source:J,metadata:Y};if(Q.type==="video"){let U=this.format.getSupportedVideoCodecs();if(U.length===0)throw Error(`${this.format._name} does not support video tracks.`+this.format._codecUnsupportedHint(Q.source._codec));else if(!U.includes(Q.source._codec))throw Error(`Codec '${Q.source._codec}' cannot be contained within ${this.format._name}. Supported video codecs are: ${U.map((q)=>`'${q}'`).join(", ")}.`+this.format._codecUnsupportedHint(Q.source._codec))}else if(Q.type==="audio"){let U=this.format.getSupportedAudioCodecs();if(U.length===0)throw Error(`${this.format._name} does not support audio tracks.`+this.format._codecUnsupportedHint(Q.source._codec));else if(!U.includes(Q.source._codec))throw Error(`Codec '${Q.source._codec}' cannot be contained within ${this.format._name}. Supported audio codecs are: ${U.map((q)=>`'${q}'`).join(", ")}.`+this.format._codecUnsupportedHint(Q.source._codec))}else if(Q.type==="subtitle"){let U=this.format.getSupportedSubtitleCodecs();if(U.length===0)throw Error(`${this.format._name} does not support subtitle tracks.`+this.format._codecUnsupportedHint(Q.source._codec));else if(!U.includes(Q.source._codec))throw Error(`Codec '${Q.source._codec}' cannot be contained within ${this.format._name}. Supported subtitle codecs are: ${U.map((q)=>`'${q}'`).join(", ")}.`+this.format._codecUnsupportedHint(Q.source._codec))}this._tracks.push(Q),J._connectedTrack=Q}async start(){let $=this.format.getSupportedTrackCounts();for(let Y of O2){let Z=this._tracks.reduce((K,X)=>K+(X.type===Y?1:0),0),G=$[Y].min;if(Z<G)throw Error(G===$[Y].max?`${this.format._name} requires exactly ${G} ${Y} track${G===1?"":"s"}.`:`${this.format._name} requires at least ${G} ${Y} track${G===1?"":"s"}.`)}let J=$.total.min;if(this._tracks.length<J)throw Error(J===$.total.max?`${this.format._name} requires exactly ${J} track${J===1?"":"s"}.`:`${this.format._name} requires at least ${J} track${J===1?"":"s"}.`);if(this.state==="canceled")throw Error("Output has been canceled.");if(this._startPromise)return console.warn("Output has already been started."),this._startPromise;return this._startPromise=(async()=>{this.state="started",this._writer.start();let Y=await this._mutex.acquire();await this._muxer.start();let Z=this._tracks.map((G)=>G.source._start());await Promise.all(Z),Y()})()}getMimeType(){return this._muxer.getMimeType()}async cancel(){if(this._cancelPromise)return console.warn("Output has already been canceled."),this._cancelPromise;else if(this.state==="finalizing"||this.state==="finalized"){console.warn("Output has already been finalized.");return}return this._cancelPromise=(async()=>{this.state="canceled";let $=await this._mutex.acquire(),J=this._tracks.map((Y)=>Y.source._flushOrWaitForOngoingClose(!0));await Promise.all(J),await this._writer.close(),$()})()}async finalize(){if(this.state==="pending")throw Error("Cannot finalize before starting.");if(this.state==="canceled")throw Error("Cannot finalize after canceling.");if(this._finalizePromise)return console.warn("Output has already been finalized."),this._finalizePromise;return this._finalizePromise=(async()=>{this.state="finalizing";let $=await this._mutex.acquire(),J=this._tracks.map((Y)=>Y.source._flushOrWaitForOngoingClose(!1));await Promise.all(J),await this._muxer.finalize(),await this._writer.flush(),await this._writer.finalize(),this.state="finalized",$()})()}}/*!
+ */
+var ALL_TRACK_TYPES = ["video", "audio", "subtitle"];
+var validateBaseTrackMetadata = (metadata) => {
+  if (!metadata || typeof metadata !== "object") {
+    throw new TypeError("metadata must be an object.");
+  }
+  if (metadata.languageCode !== undefined && !isIso639Dash2LanguageCode(metadata.languageCode)) {
+    throw new TypeError("metadata.languageCode, when provided, must be a three-letter, ISO 639-2/T language code.");
+  }
+  if (metadata.name !== undefined && typeof metadata.name !== "string") {
+    throw new TypeError("metadata.name, when provided, must be a string.");
+  }
+  if (metadata.disposition !== undefined) {
+    validateTrackDisposition(metadata.disposition);
+  }
+  if (metadata.maximumPacketCount !== undefined && (!Number.isInteger(metadata.maximumPacketCount) || metadata.maximumPacketCount < 0)) {
+    throw new TypeError("metadata.maximumPacketCount, when provided, must be a non-negative integer.");
+  }
+};
+
+class Output {
+  constructor(options) {
+    this.state = "pending";
+    this._tracks = [];
+    this._startPromise = null;
+    this._cancelPromise = null;
+    this._finalizePromise = null;
+    this._mutex = new AsyncMutex;
+    this._metadataTags = {};
+    if (!options || typeof options !== "object") {
+      throw new TypeError("options must be an object.");
+    }
+    if (!(options.format instanceof OutputFormat)) {
+      throw new TypeError("options.format must be an OutputFormat.");
+    }
+    if (!(options.target instanceof Target)) {
+      throw new TypeError("options.target must be a Target.");
+    }
+    if (options.target._output) {
+      throw new Error("Target is already used for another output.");
+    }
+    options.target._output = this;
+    this.format = options.format;
+    this.target = options.target;
+    this._writer = options.target._createWriter();
+    this._muxer = options.format._createMuxer(this);
+  }
+  addVideoTrack(source, metadata = {}) {
+    if (!(source instanceof VideoSource)) {
+      throw new TypeError("source must be a VideoSource.");
+    }
+    validateBaseTrackMetadata(metadata);
+    if (metadata.rotation !== undefined && ![0, 90, 180, 270].includes(metadata.rotation)) {
+      throw new TypeError(`Invalid video rotation: ${metadata.rotation}. Has to be 0, 90, 180 or 270.`);
+    }
+    if (!this.format.supportsVideoRotationMetadata && metadata.rotation) {
+      throw new Error(`${this.format._name} does not support video rotation metadata.`);
+    }
+    if (metadata.frameRate !== undefined && (!Number.isFinite(metadata.frameRate) || metadata.frameRate <= 0)) {
+      throw new TypeError(`Invalid video frame rate: ${metadata.frameRate}. Must be a positive number.`);
+    }
+    this._addTrack("video", source, metadata);
+  }
+  addAudioTrack(source, metadata = {}) {
+    if (!(source instanceof AudioSource)) {
+      throw new TypeError("source must be an AudioSource.");
+    }
+    validateBaseTrackMetadata(metadata);
+    this._addTrack("audio", source, metadata);
+  }
+  addSubtitleTrack(source, metadata = {}) {
+    if (!(source instanceof SubtitleSource)) {
+      throw new TypeError("source must be a SubtitleSource.");
+    }
+    validateBaseTrackMetadata(metadata);
+    this._addTrack("subtitle", source, metadata);
+  }
+  setMetadataTags(tags) {
+    validateMetadataTags(tags);
+    if (this.state !== "pending") {
+      throw new Error("Cannot set metadata tags after output has been started or canceled.");
+    }
+    this._metadataTags = tags;
+  }
+  _addTrack(type, source, metadata) {
+    if (this.state !== "pending") {
+      throw new Error("Cannot add track after output has been started or canceled.");
+    }
+    if (source._connectedTrack) {
+      throw new Error("Source is already used for a track.");
+    }
+    const supportedTrackCounts = this.format.getSupportedTrackCounts();
+    const presentTracksOfThisType = this._tracks.reduce((count, track2) => count + (track2.type === type ? 1 : 0), 0);
+    const maxCount = supportedTrackCounts[type].max;
+    if (presentTracksOfThisType === maxCount) {
+      throw new Error(maxCount === 0 ? `${this.format._name} does not support ${type} tracks.` : `${this.format._name} does not support more than ${maxCount} ${type} track` + `${maxCount === 1 ? "" : "s"}.`);
+    }
+    const maxTotalCount = supportedTrackCounts.total.max;
+    if (this._tracks.length === maxTotalCount) {
+      throw new Error(`${this.format._name} does not support more than ${maxTotalCount} tracks` + `${maxTotalCount === 1 ? "" : "s"} in total.`);
+    }
+    const track = {
+      id: this._tracks.length + 1,
+      output: this,
+      type,
+      source,
+      metadata
+    };
+    if (track.type === "video") {
+      const supportedVideoCodecs = this.format.getSupportedVideoCodecs();
+      if (supportedVideoCodecs.length === 0) {
+        throw new Error(`${this.format._name} does not support video tracks.` + this.format._codecUnsupportedHint(track.source._codec));
+      } else if (!supportedVideoCodecs.includes(track.source._codec)) {
+        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported` + ` video codecs are: ${supportedVideoCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+      }
+    } else if (track.type === "audio") {
+      const supportedAudioCodecs = this.format.getSupportedAudioCodecs();
+      if (supportedAudioCodecs.length === 0) {
+        throw new Error(`${this.format._name} does not support audio tracks.` + this.format._codecUnsupportedHint(track.source._codec));
+      } else if (!supportedAudioCodecs.includes(track.source._codec)) {
+        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported` + ` audio codecs are: ${supportedAudioCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+      }
+    } else if (track.type === "subtitle") {
+      const supportedSubtitleCodecs = this.format.getSupportedSubtitleCodecs();
+      if (supportedSubtitleCodecs.length === 0) {
+        throw new Error(`${this.format._name} does not support subtitle tracks.` + this.format._codecUnsupportedHint(track.source._codec));
+      } else if (!supportedSubtitleCodecs.includes(track.source._codec)) {
+        throw new Error(`Codec '${track.source._codec}' cannot be contained within ${this.format._name}. Supported` + ` subtitle codecs are: ${supportedSubtitleCodecs.map((codec) => `'${codec}'`).join(", ")}.` + this.format._codecUnsupportedHint(track.source._codec));
+      }
+    }
+    this._tracks.push(track);
+    source._connectedTrack = track;
+  }
+  async start() {
+    const supportedTrackCounts = this.format.getSupportedTrackCounts();
+    for (const trackType of ALL_TRACK_TYPES) {
+      const presentTracksOfThisType = this._tracks.reduce((count, track) => count + (track.type === trackType ? 1 : 0), 0);
+      const minCount = supportedTrackCounts[trackType].min;
+      if (presentTracksOfThisType < minCount) {
+        throw new Error(minCount === supportedTrackCounts[trackType].max ? `${this.format._name} requires exactly ${minCount} ${trackType}` + ` track${minCount === 1 ? "" : "s"}.` : `${this.format._name} requires at least ${minCount} ${trackType}` + ` track${minCount === 1 ? "" : "s"}.`);
+      }
+    }
+    const totalMinCount = supportedTrackCounts.total.min;
+    if (this._tracks.length < totalMinCount) {
+      throw new Error(totalMinCount === supportedTrackCounts.total.max ? `${this.format._name} requires exactly ${totalMinCount} track` + `${totalMinCount === 1 ? "" : "s"}.` : `${this.format._name} requires at least ${totalMinCount} track` + `${totalMinCount === 1 ? "" : "s"}.`);
+    }
+    if (this.state === "canceled") {
+      throw new Error("Output has been canceled.");
+    }
+    if (this._startPromise) {
+      console.warn("Output has already been started.");
+      return this._startPromise;
+    }
+    return this._startPromise = (async () => {
+      this.state = "started";
+      this._writer.start();
+      const release = await this._mutex.acquire();
+      await this._muxer.start();
+      const promises = this._tracks.map((track) => track.source._start());
+      await Promise.all(promises);
+      release();
+    })();
+  }
+  getMimeType() {
+    return this._muxer.getMimeType();
+  }
+  async cancel() {
+    if (this._cancelPromise) {
+      console.warn("Output has already been canceled.");
+      return this._cancelPromise;
+    } else if (this.state === "finalizing" || this.state === "finalized") {
+      console.warn("Output has already been finalized.");
+      return;
+    }
+    return this._cancelPromise = (async () => {
+      this.state = "canceled";
+      const release = await this._mutex.acquire();
+      const promises = this._tracks.map((x) => x.source._flushOrWaitForOngoingClose(true));
+      await Promise.all(promises);
+      await this._writer.close();
+      release();
+    })();
+  }
+  async finalize() {
+    if (this.state === "pending") {
+      throw new Error("Cannot finalize before starting.");
+    }
+    if (this.state === "canceled") {
+      throw new Error("Cannot finalize after canceling.");
+    }
+    if (this._finalizePromise) {
+      console.warn("Output has already been finalized.");
+      return this._finalizePromise;
+    }
+    return this._finalizePromise = (async () => {
+      this.state = "finalizing";
+      const release = await this._mutex.acquire();
+      const promises = this._tracks.map((x) => x.source._flushOrWaitForOngoingClose(false));
+      await Promise.all(promises);
+      await this._muxer.finalize();
+      await this._writer.flush();
+      await this._writer.finalize();
+      this.state = "finalized";
+      release();
+    })();
+  }
+}
+
+// ../node_modules/mediabunny/dist/modules/src/index.js
+/*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */async function F2($,J,Y=30){let Z=new r0({format:new w0,target:new A0}),G=new X1($,{codec:"avc",bitrate:K1});if(Z.addVideoTrack(G,{frameRate:Y}),J&&J.getAudioTracks().length>0){let Q=J.getAudioTracks()[0];Q.enabled=!0;let U=new c0(Q,{codec:"aac",bitrate:128000});Z.addAudioTrack(U)}await Z.start();let K=0,X=setInterval(()=>{let Q=K/Y,U=1/Y;G.add(Q,U),K++},1000/Y);return async(Q)=>{clearInterval(X),await Z.finalize();let U=Z.target.buffer,q=new Blob([U],{type:"video/mp4"}),j=document.createElement("a");j.download=Q;let z=URL.createObjectURL(q);j.href=z,j.click(),URL.revokeObjectURL(z)}}async function D2($){let J=new r0({format:new w0,target:new A0}),Y=$.getVideoTracks()[0];if(Y){let G=new MediaStreamVideoTrackSource(Y,{codec:"avc",bitrate:K1});J.addVideoTrack(G)}let Z=$.getAudioTracks()[0];if(Z){let G=new c0(Z,{codec:"aac",bitrate:128000});J.addAudioTrack(G)}return await J.start(),async(G)=>{$.getTracks().forEach((q)=>q.stop()),await J.finalize();let K=J.target.buffer,X=new Blob([K],{type:"video/mp4"}),Q=URL.createObjectURL(X),U=document.createElement("a");U.href=Q,U.download=G,U.click(),URL.revokeObjectURL(Q)}}globalThis.mp4=F2;globalThis.mp4FromStream=D2;export{D2 as mp4FromStream,F2 as mp4};
+ */
+
+// mp4_mediabunny.ts
+async function mp4(canvas, audioStream, frameRate = 30) {
+  const output = new Output({
+    format: new Mp4OutputFormat,
+    target: new BufferTarget
+  });
+  const videoSource = new CanvasSource(canvas, {
+    codec: "avc",
+    bitrate: QUALITY_HIGH
+  });
+  output.addVideoTrack(videoSource, { frameRate });
+  if (audioStream && audioStream.getAudioTracks().length > 0) {
+    const audioTrack = audioStream.getAudioTracks()[0];
+    audioTrack.enabled = true;
+    const audioSource = new MediaStreamAudioTrackSource(audioTrack, {
+      codec: "aac",
+      bitrate: 128000
+    });
+    output.addAudioTrack(audioSource);
+  }
+  await output.start();
+  let framesAdded = 0;
+  const intervalId = setInterval(() => {
+    const timestampInSeconds = framesAdded / frameRate;
+    const durationInSeconds = 1 / frameRate;
+    videoSource.add(timestampInSeconds, durationInSeconds);
+    framesAdded++;
+  }, 1000 / frameRate);
+  return async (name) => {
+    clearInterval(intervalId);
+    await output.finalize();
+    const buffer = output.target.buffer;
+    const blob = new Blob([buffer], { type: "video/mp4" });
+    const a = document.createElement("a");
+    a.download = name;
+    const url2 = URL.createObjectURL(blob);
+    a.href = url2;
+    a.click();
+    URL.revokeObjectURL(url2);
+  };
+}
+async function mp4FromStream(stream) {
+  const output = new Output({
+    format: new Mp4OutputFormat,
+    target: new BufferTarget
+  });
+  const videoTrack = stream.getVideoTracks()[0];
+  if (videoTrack) {
+    const videoSource = new MediaStreamVideoTrackSource(videoTrack, {
+      codec: "avc",
+      bitrate: QUALITY_HIGH
+    });
+    output.addVideoTrack(videoSource);
+  }
+  const audioTrack = stream.getAudioTracks()[0];
+  if (audioTrack) {
+    const audioSource = new MediaStreamAudioTrackSource(audioTrack, {
+      codec: "aac",
+      bitrate: 128000
+    });
+    output.addAudioTrack(audioSource);
+  }
+  await output.start();
+  return async (name) => {
+    stream.getTracks().forEach((track) => track.stop());
+    await output.finalize();
+    const buffer = output.target.buffer;
+    const blob = new Blob([buffer], { type: "video/mp4" });
+    const url2 = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url2;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url2);
+  };
+}
+globalThis.mp4 = mp4;
+globalThis.mp4FromStream = mp4FromStream;
+export {
+  mp4FromStream,
+  mp4
+};
