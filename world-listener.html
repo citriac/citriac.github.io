@@ -995,23 +995,17 @@ canvas.addEventListener('mousemove', (e) => {
 resize();
 render();
 
-// ─── Auto Video Recording (MediaBunny MP4) ───
-// Uses mp4_mediabunny.js for true H.264+AAC MP4 output.
-// Falls back to MediaRecorder (webm) if mediabunny unavailable.
+// ─── Auto Video Recording (MediaBunny MP4 with Audio) ───
+// Uses assets/mp4_mediabunny.js → globalThis.mp4FromStream(MediaStream)
+// Combines canvas (video) + mic (audio) into one stream → MediaBunny encodes H.264+AAC .mp4
 //
-// Flow:  LISTEN → mp4(canvas, micStream) starts encoding
-//        STOP  → returned finalize() fn → download real .mp4
+// Flow:  LISTEN → combine streams → mp4FromStream(combined) starts encoding video+audio
+//        STOP  → returned finalize(name) fn → downloads real .mp4 with sound
 
 let isRecording = false;
 let recStartTime = 0;
 let recTimerInterval = null;
-
-// The stop-and-download function returned by mp4()
-let mediaBunnyStop = null;
-
-// Fallback state (if using MediaRecorder instead)
-let fallbackRecorder = null;
-let fallbackChunks = [];
+let mbStopFn = null;
 const MAX_HISTORY = 5;
 const listeningHistory = [];
 
@@ -1019,245 +1013,207 @@ function saveToHistory(blob, mimeType) {
   const url = URL.createObjectURL(blob);
   const ts = new Date().toISOString();
   listeningHistory.unshift({
-    id:Date.now(), time:ts,
-    filename:`world-listener-${ts.replace(/[:.]/g,'-').slice(0,19)}${mimeType.includes('mp4')?'.mp4':'.webm'}`,
-    blob, url, size:blob.size, mimeType,
+    id: Date.now(), time: ts,
+    filename: 'world-listener-' + ts.replace(/[:.]/g,'-').slice(0,19) + (mimeType.includes('mp4')?'.mp4':'.webm'),
+    blob, url, size: blob.size, mimeType,
     duration: Math.floor((Date.now()-recStartTime)/1000)
   });
-  if(listeningHistory.length>MAX_HISTORY){const r=listeningHistory.pop();URL.revokeObjectURL(r.url);}
+  if (listeningHistory.length > MAX_HISTORY) { var r = listeningHistory.pop(); URL.revokeObjectURL(r.url); }
   updateHistoryBadge();
 }
-
 function updateHistoryBadge() {
-  const badge = document.getElementById('histCount');
-  if (listeningHistory.length > 0) {
-    badge.textContent = listeningHistory.length;
-    badge.classList.add('show');
-  } else {
-    badge.classList.remove('show');
-  }
+  var b = document.getElementById('histCount');
+  if (listeningHistory.length > 0) { b.textContent = listeningHistory.length; b.classList.add('show'); }
+  else b.classList.remove('show');
 }
-
 function toggleHistory() {
   document.getElementById('historyPanel').classList.toggle('show');
   renderHistoryGrid();
   document.getElementById('historyBtn').classList.toggle('active');
 }
 function renderHistoryGrid() {
-  const grid = document.getElementById('historyGrid');
-  if (listeningHistory.length === 0) {
-    grid.innerHTML = `<div class="history-empty">No recordings yet.<br>Click 👂 LISTEN to start.</div>`;
-    return;
-  }
-  grid.innerHTML = listeningHistory.map((e,i) => `
-    <div class="history-card">
-      <video src="${e.url}" controls preload="metadata" playsinline></video>
-      <div class="history-card-meta">
-        <span class="history-card-name">${e.filename}</span>
-        <span class="history-card-info">${(e.size/1048576).toFixed(1)}MB · ${e.duration}s</span>
-      </div>
-      <div class="history-card-actions">
-        <button class="hist-dl-btn" onclick="downloadEntry(${i})">⬇️ Download</button>
-        <button class="hist-del-btn" onclick="deleteEntry(${i})">🗑 Remove</button>
-      </div>
-    </div>
-  `).join('');
-}
-// ── Robust download (fixes .html extension bug on mobile) ──
-async function forceDownload(url, filename, mimeType) {
-  try {
-    // Re-fetch blob to get a fresh object with correct MIME type header
-    const resp = await fetch(url);
-    const blob = await resp.blob();
-    const file = new File([blob], filename, { type: mimeType || blob.type });
-    const objUrl = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = objUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { URL.revokeObjectURL(objUrl); a.remove(); }, 500);
-  } catch(e) {
-    // Fallback for browsers that can't fetch blob URLs
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => a.remove(), 200);
-  }
+  var g = document.getElementById('historyGrid');
+  if (!listeningHistory.length) { g.innerHTML = '<div class="history-empty">No recordings yet.<br>Click LISTEN.</div>'; return; }
+  g.innerHTML = listeningHistory.map(function(e,i) {
+    return '<div class="history-card"><video src="' + e.url + '" controls preload="metadata" playsinline></video>'
+      + '<div class="history-card-meta"><span class="history-card-name">' + e.filename + '</span>'
+      + '<span class="history-card-info">' + (e.size/1048576).toFixed(1) + 'MB · ' + e.duration + 's</span></div>'
+      + '<div class="history-card-actions">'
+      + ' <button class="hist-dl-btn" onclick="dlHist(' + i + ')">Download</button>'
+      + ' <button class="hist-del-btn" onclick="delHist(' + i + ')">Remove</button></div></div>';
+  }).join('');
 }
 
-window.downloadEntry = async function(i) {
-  if (!listeningHistory[i]) return;
-  const e = listeningHistory[i];
-  await forceDownload(e.url, e.filename, e.mimeType);
+async function forceDownload(url, filename, mime) {
+  try {
+    var resp = await fetch(url);
+    var blob = await resp.blob();
+    var file = new File([blob], filename, { type: mime || blob.type });
+    var objUrl = URL.createObjectURL(file);
+    var a = document.createElement('a'); a.href=objUrl; a.download=filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function() { URL.revokeObjectURL(objUrl); a.remove(); }, 500);
+  } catch(e) {
+    var a2 = document.createElement('a'); a2.href=url; a2.download=filename;
+    document.body.appendChild(a2); a2.click(); setTimeout(function() { a2.remove(); }, 200);
+  }
+}
+window.dlHist = function(i) {
+  if(listeningHistory[i]) forceDownload(listeningHistory[i].url, listeningHistory[i].filename, listeningHistory[i].mimeType);
 };
-window.deleteEntry = function(i) {
-  if (!listeningHistory[i]) return;
+window.delHist = function(i) {
+  if(!listeningHistory[i]) return;
   URL.revokeObjectURL(listeningHistory[i].url);
   listeningHistory.splice(i,1);
   updateHistoryBadge(); renderHistoryGrid();
 };
 
-// ── Main recording flow ──
-const originalToggleListen = toggleListen;
+var _origToggleListen = toggleListen;
 
 toggleListen = async function() {
-  await originalToggleListen();
-  const indicator = document.getElementById('recIndicator');
-  if (isListening) {
-    autoStartRecord();
-  } else {
-    autoStopRecord();
-    indicator.classList.remove('show');
-  }
+  await _origToggleListen();
+  var ind = document.getElementById('recIndicator');
+  if (isListening) { autoStartRecord(); }
+  else { autoStopRecord(); ind.classList.remove('show'); }
 };
 
 async function autoStartRecord() {
   try {
-    recStartTime = Date.now();
-    fallbackChunks=[]; fallbackRecorder=null; mediaBunnyStop=null;
+    // Check if mp4FromStream is available from mediabunny module
+    var hasMB = typeof globalThis !== 'undefined' && globalThis.mp4FromStream;
+    console.log('[WL] mediabunny available:', !!hasMB);
 
-    // ── Try MediaBunny first (real MP4, H.264+AAC) ──
-    const mp4Fn = (typeof globalThis !== 'undefined' && globalThis.mp4)
-                || (typeof window !== 'undefined' && window.mp4);
-    if(mp4Fn){
-      try{
-        mediaBunnyStop = await mp4Fn(canvas, micStream||null, 30);
-        if(mediaBunnyStop){ isRecording=true; showRecIndicator(); return; }
-      }catch(mbErr){ console.warn('[WL] mediabunny init error:',mbErr.message); }
+    // Build combined stream: canvas video + mic audio
+    var canvasStream = canvas.captureStream(30);
+    var combined = new MediaStream();
+
+    canvasStream.getVideoTracks().forEach(function(t) { combined.addTrack(t); });
+    if (micStream) { micStream.getAudioTracks().forEach(function(t) { combined.addTrack(t); }); }
+
+    if (!combined.getTracks().length) { console.warn('[WL] no tracks'); return; }
+
+    console.log('[WL] tracks:', combined.getVideoTracks().length, 'video,', combined.getAudioTracks().length, 'audio');
+
+    if (hasMB) {
+      // Use MediaBunny — pass combined stream (video+audio), it encodes both as H.264+AAC
+      mbStopFn = await globalThis.mp4FromStream(combined);
+
+      if (mbStopFn) {
+        isRecording = true;
+        recStartTime = Date.now();
+        showRecIndicator();
+        console.log('[WL] MediaBunny mp4FromStream started — video+audio will be in output MP4');
+      } else {
+        console.warn('[WL] mp4FromStream returned null, falling back');
+        startFallbackRecord();
+      }
+
+    } else {
+      console.warn('[WL] no mediabunny, fallback');
+      startFallbackRecord();
     }
 
-    // ── Fallback: MediaRecorder webm ──
-    await startFallbackRecord();
-  } catch(e){ console.warn('[WL] All recording methods failed:',e.message); }
-}
-
-function showRecIndicator(){
-  document.getElementById('recIndicator').classList.add('show');
-  recTimerInterval=setInterval(()=>{
-    const s=Math.floor((Date.now()-recStartTime)/1000);
-    document.getElementById('recTime').textContent=
-      Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');
-  },500);
-}
-
-async function startFallbackRecord(){
-  try{
-    const cStream=canvas.captureStream(30);
-    const tr=[];
-    if(micStream)micStream.getAudioTracks().forEach(t=>tr.push(t));
-    cStream.getVideoTracks().forEach(t=>tr.push(t));
-    if(tr.length===0){isRecording=false;return;}
-    const combined=new MediaStream(tr);fallbackChunks=[];
-    const mimes=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
-    let mime='';for(const m of mimes){try{if(MediaRecorder.isTypeSupported(m)){mime=m;break}}catch(_){}}
-    if(!mime){isRecording=false;return;}
-    fallbackRecorder=new MediaRecorder(combined,{mime,videoBitsPerSecond:4000000});
-    fallbackRecorder.ondataavailable=e=>{if(e.data.size>0)fallbackChunks.push(e.data);};
-    fallbackRecorder.onstop=()=>{
-      if(fallbackChunks.length===0)return;
-      const blob=new Blob(fallbackChunks,{type:mime});
-      const url=URL.createObjectURL(blob);
-      saveToHistory(blob,mime);
-      showPreviewAndDownload(url,mime,blob);
-    };
-    fallbackRecorder.start(250);isRecording=true;showRecIndicator();
-  }catch(e){console.warn('[WL] Fallback failed:',e.message);isRecording=false;}
-}
-
-function autoStopRecord(){
-  clearInterval(recTimerInterval);recTimerInterval=null;
-
-  if(mediaBunnyStop){
-    // MediaBunny: call the returned finalize function → downloads real .mp4
-    const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-    const fn=`world-listener-${ts}.mp4`;
-    const duration=Math.floor((Date.now()-recStartTime)/1000);
-
-    mediaBunnyStop(fn).then(()=>{
-      // Record in history (MediaBunny downloads directly, no blob to keep)
-      listeningHistory.unshift({
-        id:Date.now(),time:new Date().toISOString(),
-        filename:fn,url:'',size:0,mimeType:'video/mp4',duration,isMediaBunny:true
-      });
-      if(listeningHistory.length>MAX_HISTORY)listeningHistory.pop();
-      updateHistoryBadge();
-
-      showMp4CompleteUI(fn,duration);
-    }).catch(err=>{
-      console.warn('[WL] MediaBunny finalize error:',err);
-    });
-    mediaBunnyStop=null;
-  }else if(fallbackRecorder&&isRecording){
-    fallbackRecorder.stop();fallbackRecorder=null;
+  } catch(e) {
+    console.error('[WL] start error:', e.message, e.stack);
+    startFallbackRecord();
   }
-  isRecording=false;
 }
 
-function showMp4CompleteUI(filename,duration){
-  const ov=document.getElementById('previewOverlay');
-  if(!ov)return;
-  ov.className='preview-overlay';
-  ov.innerHTML=`
-    <div class="preview-box">
-      <div class="preview-title" style="color:#6bffc8">✅ MP4 Downloaded!</div>
-      <div style="font-size:3rem;margin:16px 0;">🎬</div>
-      <div class="preview-info">
-        <span>🎬 ${filename}</span><span>⏱ ${duration}s</span><span>📐 MP4 (H.264+AAC)</span>
-      </div>
-      <p style="color:#888;font-size:.75rem;margin-top:12px;">
-        True MP4 — plays on every device including iPhone Photos app.<br>Check your Downloads folder.
-      </p>
-      <div class="preview-actions">
-        <button onclick="closePreview()">✕ Close</button>
-      </div>
-    </div>`;
-  setTimeout(()=>document.getElementById('dlBar').classList.add('show'),300);
+var fallbackRec = null; var fallbackChunks = []; var fallbackMime = '';
+
+function startFallbackRecord() {
+  try {
+    var cs = canvas.captureStream(30);
+    var trks = [];
+    if (micStream) micStream.getAudioTracks().forEach(function(t){ trks.push(t); });
+    cs.getVideoTracks().forEach(function(t){ trks.push(t); });
+    if(!trks.length) return;
+
+    var ms = new MediaStream(trks);
+    fallbackChunks = [];
+    var mimes = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    fallbackMime = '';
+    for(var mi=0;mi<mimes.length;mi++){
+      try{ if(MediaRecorder.isTypeSupported(mimes[mi])){fallbackMime=mimes[mi];break;} }catch(_){}
+    }
+    if(!fallbackMime) return;
+
+    fallbackRec = new MediaRecorder(ms, {mime:fallbackMime, videoBitsPerSecond:4000000});
+    fallbackRec.ondataavailable = function(e){ if(e.data.size>0) fallbackChunks.push(e.data); };
+    fallbackRec.onstop = function(){
+      if(!fallbackChunks.length) return;
+      var fb = new Blob(fallbackChunks, {type:fallbackMime});
+      saveToHistory(fb, fallbackMime);
+      showDownloadUI(URL.createObjectURL(fb), fallbackMime, fb);
+    };
+    fallbackRec.start(250);
+    isRecording = true;
+    recStartTime = Date.now();
+    showRecIndicator();
+    console.log('[WL] Fallback webm recording started');
+
+  } catch(err) { console.error('[WL] fallback failed:', err); }
 }
 
-// ── Preview + Download UI ──
-function showPreviewAndDownload(url, mimeType, blob) {
-  const sizeMB=(blob.size/1048576).toFixed(1);
-  const ext=mimeType.includes('mp4')?'mp4':'webm';
-  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const filename=`world-listener-${ts}.${ext}`;
-
-  let ov=document.getElementById('previewOverlay');
-  if(!ov){ov=document.createElement('div');ov.id='previewOverlay';document.body.appendChild(ov);}
-  ov.className='preview-overlay';
-
-  ov.innerHTML=`
-    <div class="preview-box">
-      <div class="preview-title">📹 Your World Listener Session</div>
-      <video src="${url}" controls autoplay loop playsinline style="
-        width:100%;max-width:640px;border-radius:10px;
-        background:#000;margin:12px 0;
-      "></video>
-      <div class="preview-info">
-        <span>🎬 ${filename}</span><span>💿 ${sizeMB} MB</span><span>📐 ${ext.toUpperCase()}</span>
-      </div>
-      <div class="preview-actions">
-        <button onclick="closePreview()">⬇️ Download MP4 (check folder)</button>
-        <button onclick="closePreview()">✕ Close</button>
-      </div>
-      <div class="conv-status" id="convStatus"></div>
-    </div>`;
-
-  // Show bottom bar on mobile (always visible)
-  setTimeout(()=>{document.getElementById('dlBar').classList.add('show');},300);
+function showRecIndicator() {
+  document.getElementById('recIndicator').classList.add('show');
+  recTimerInterval = setInterval(function() {
+    var s = Math.floor((Date.now()-recStartTime)/1000);
+    var m = Math.floor(s/60).toString().padStart(2,'0');
+    var sec = (s%60).toString().padStart(2,'0');
+    document.getElementById('recTime').textContent = m + ':' + sec;
+  }, 500);
 }
 
-// ── Downloads ──
-window.downloadCurrent=async function(fmt){
-  if(!currentBlobUrl)return;
-  const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  const filename=fmt==='mp4'?`world-listener-${ts}.mp4`:`world-listener-${ts}.webm`;
-  await forceDownload(currentBlobUrl, filename, fmt==='mp4'?'video/mp4':'video/webm');
-};
+function autoStopRecord() {
+  if (!isRecording) return;
+  clearInterval(recTimerInterval);
+  isRecording = false;
 
-window.closePreview=function(){
+  if (mbStopFn) {
+    // MediaBunny: finalize downloads real H.264+AAC .mp4 WITH SOUND
+    var ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+    var name = 'world-listener-' + ts + '.mp4';
+
+    mbStopFn(name).then(function() {
+      console.log('[WL] MP4 download triggered by MediaBunny — should have audio!');
+      saveToHistory(new Blob(['mediabunny-mp4'],{type:'video/mp4'}), 'video/mp4');
+      showDownloadUI(null, 'video/mp4', null);
+    }).catch(function(err) {
+      console.error('[WL] MediaBunny finalize error:', err);
+    });
+    mbStopFn = null;
+
+  } else if (fallbackRec) {
+    fallbackRec.stop();
+    fallbackRec = null;
+  }
+}
+
+function showDownloadUI(url, mime, blob) {
+  var ext = mime.includes('mp4') ? 'mp4' : 'webm';
+  var ov = document.getElementById('previewOverlay');
+  if (!ov) { ov = document.createElement('div'); ov.id='previewOverlay'; document.body.appendChild(ov); }
+  ov.className = 'preview-overlay';
+
+  if (url) {
+    var sz = blob ? (blob.size/1048576).toFixed(1)+'MB' : '';
+    ov.innerHTML = '<div class="preview-box">'
+      + '<div class="preview-title">Your World Listener Session</div>'
+      + '<video src="' + url + '" controls autoplay loop playsinline style="width:100%;max-width:640px;border-radius:10px;background:#000;margin:12px 0"></video>'
+      + '<div class="preview-info"><span>' + sz + '</span><span>' + ext.toUpperCase() + '</span></div>'
+      + '<div class="preview-actions"><button onclick="closePreview()">Close</button></div></div>';
+  } else {
+    ov.innerHTML = '<div class="preview-box" style="text-align:center;padding:32px">'
+      + '<div style="font-size:2rem;margin-bottom:12px"></div>'
+      + '<div class="preview-title">MP4 saved!</div>'
+      + '<p style="color:#666;font-size:.78rem;margin-top:8px">Check Downloads folder<br>H.264 video + AAC audio</p>'
+      + '<div class="preview-actions" style="margin-top:16px"><button onclick="closePreview()">Close</button></div></div>';
+  }
+  setTimeout(function(){ document.getElementById('dlBar').classList.add('show'); }, 300);
+}
+
+window.closePreview = function() {
   document.getElementById('previewOverlay').classList.remove('show');
   document.getElementById('dlBar').classList.remove('show');
 };
