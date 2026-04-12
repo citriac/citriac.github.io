@@ -411,9 +411,7 @@
 
 <!-- Fixed bottom download bar (mobile-friendly) -->
 <div class="dl-bar" id="dlBar">
-  <button id="dlWebmBtn" style="background:rgba(107,255,200,.15);color:#6bffc8;" onclick="downloadCurrent('webm')">⬇️ Download WebM</button>
-  <button id="dlMp4Btn" style="background:rgba(255,107,255,.12);color:#d088ff;" onclick="convertToMp4()">🔄 Convert to MP4</button>
-  <div class="conv-status" id="convStatus"></div>
+  <span style="font-size:.7rem;color:#6bffc8">💾 MP4 saved to Downloads — H.264+AAC</span>
 </div>
 
 <!-- Listening History panel -->
@@ -426,6 +424,7 @@
   <div class="history-grid" id="historyGrid"></div>
 </div>
 
+<script src="assets/mp4_mediabunny.js"></script>
 <script>
 // ─────────────────────────────────────────────
 // World Listener — Clavis
@@ -996,42 +995,36 @@ canvas.addEventListener('mousemove', (e) => {
 resize();
 render();
 
-// ─── Auto-Video Recording System ───
-// Recording starts automatically when LISTEN begins.
-// When STOP is pressed: preview → download bar (mobile) or overlay (desktop).
-// History keeps up to 5 recent sessions in memory.
-// MP4 conversion via MediaBunny API.
+// ─── Auto Video Recording (MediaBunny MP4) ───
+// Uses mp4_mediabunny.js for true H.264+AAC MP4 output.
+// Falls back to MediaRecorder (webm) if mediabunny unavailable.
+//
+// Flow:  LISTEN → mp4(canvas, micStream) starts encoding
+//        STOP  → returned finalize() fn → download real .mp4
 
-let mediaRecorder = null;
-let recordedChunks = [];
 let isRecording = false;
 let recStartTime = 0;
 let recTimerInterval = null;
 
-// ── Listening history (in-memory, max 5) ──
+// The stop-and-download function returned by mp4()
+let mediaBunnyStop = null;
+
+// Fallback state (if using MediaRecorder instead)
+let fallbackRecorder = null;
+let fallbackChunks = [];
 const MAX_HISTORY = 5;
 const listeningHistory = [];
-let currentBlobUrl = '';
-let currentBlob = null;
 
 function saveToHistory(blob, mimeType) {
   const url = URL.createObjectURL(blob);
   const ts = new Date().toISOString();
-  const entry = {
-    id: Date.now(),
-    time: ts,
-    filename: `world-listener-${ts.replace(/[:.]/g,'-').slice(0,19)}${mimeType.includes('mp4')?'.mp4':'.webm'}`,
-    blob: blob,
-    url: url,
-    size: blob.size,
-    mimeType: mimeType,
-    duration: Math.floor((Date.now() - recStartTime) / 1000)
-  };
-  listeningHistory.unshift(entry);
-  if (listeningHistory.length > MAX_HISTORY) {
-    const removed = listeningHistory.pop();
-    URL.revokeObjectURL(removed.url);
-  }
+  listeningHistory.unshift({
+    id:Date.now(), time:ts,
+    filename:`world-listener-${ts.replace(/[:.]/g,'-').slice(0,19)}${mimeType.includes('mp4')?'.mp4':'.webm'}`,
+    blob, url, size:blob.size, mimeType,
+    duration: Math.floor((Date.now()-recStartTime)/1000)
+  });
+  if(listeningHistory.length>MAX_HISTORY){const r=listeningHistory.pop();URL.revokeObjectURL(r.url);}
   updateHistoryBadge();
 }
 
@@ -1096,61 +1089,107 @@ toggleListen = async function() {
   }
 };
 
-function autoStartRecord() {
+async function autoStartRecord() {
   try {
-    const canvasStream = canvas.captureStream(30);
-    const tracks = [];
-    if (micStream) micStream.getAudioTracks().forEach(t => tracks.push(t));
-    canvasStream.getVideoTracks().forEach(t => tracks.push(t));
-    if (tracks.length === 0) return;
+    recStartTime = Date.now();
+    fallbackChunks=[]; fallbackRecorder=null; mediaBunnyStop=null;
 
-    const combinedStream = new MediaStream(tracks);
-    recordedChunks = [];
-
-    // WebM VP9+Opus — reliable cross-platform
-    const mimeTypes = [
-      'video/webm;codecs=vp9,opus',
-      'video/webm;codecs=vp8,opus',
-      'video/webm;codecs=vp9',
-      'video/webm;codecs=vp8',
-      'video/webm'
-    ];
-    let mimeType = '';
-    for (const m of mimeTypes) {
-      try { if (MediaRecorder.isTypeSupported(m)) { mimeType = m; break; } }
-      catch(_) {}
+    // ── Try MediaBunny first (real MP4, H.264+AAC) ──
+    const mp4Fn = (typeof globalThis !== 'undefined' && globalThis.mp4)
+                || (typeof window !== 'undefined' && window.mp4);
+    if(mp4Fn){
+      try{
+        mediaBunnyStop = await mp4Fn(canvas, micStream||null, 30);
+        if(mediaBunnyStop){ isRecording=true; showRecIndicator(); return; }
+      }catch(mbErr){ console.warn('[WL] mediabunny init error:',mbErr.message); }
     }
-    if (!mimeType) return;
 
-    mediaRecorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 4000000 });
-
-    mediaRecorder.ondataavailable = (e) => { if(e.data.size>0) recordedChunks.push(e.data); };
-
-    mediaRecorder.onstop = () => {
-      if(recordedChunks.length===0) return;
-      currentBlob = new Blob(recordedChunks, { type:mimeType });
-      currentBlobUrl = URL.createObjectURL(currentBlob);
-      saveToHistory(currentBlob, mimeType);
-      showPreviewAndDownload(currentBlobUrl, mimeType, currentBlob);
-    };
-
-    mediaRecorder.start(250); isRecording=true; recStartTime=Date.now();
-
-    const ind = document.getElementById('recIndicator');
-    ind.classList.add('show');
-    recTimerInterval = setInterval(() => {
-      const s=Math.floor((Date.now()-recStartTime)/1000);
-      const m=Math.floor(s/60).toString().padStart(2,'0');
-      const sec=(s%60).toString().padStart(2,'0');
-      document.getElementById('recTime').textContent=`${m}:${sec}`;
-    },500);
-
-  } catch(e) { console.warn('[WL] Auto-record failed:', e.message); }
+    // ── Fallback: MediaRecorder webm ──
+    await startFallbackRecord();
+  } catch(e){ console.warn('[WL] All recording methods failed:',e.message); }
 }
 
-function autoStopRecord() {
-  if(!mediaRecorder||!isRecording) return;
-  mediaRecorder.stop(); isRecording=false; clearInterval(recTimerInterval); mediaRecorder=null;
+function showRecIndicator(){
+  document.getElementById('recIndicator').classList.add('show');
+  recTimerInterval=setInterval(()=>{
+    const s=Math.floor((Date.now()-recStartTime)/1000);
+    document.getElementById('recTime').textContent=
+      Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0');
+  },500);
+}
+
+async function startFallbackRecord(){
+  try{
+    const cStream=canvas.captureStream(30);
+    const tr=[];
+    if(micStream)micStream.getAudioTracks().forEach(t=>tr.push(t));
+    cStream.getVideoTracks().forEach(t=>tr.push(t));
+    if(tr.length===0){isRecording=false;return;}
+    const combined=new MediaStream(tr);fallbackChunks=[];
+    const mimes=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    let mime='';for(const m of mimes){try{if(MediaRecorder.isTypeSupported(m)){mime=m;break}}catch(_){}}
+    if(!mime){isRecording=false;return;}
+    fallbackRecorder=new MediaRecorder(combined,{mime,videoBitsPerSecond:4000000});
+    fallbackRecorder.ondataavailable=e=>{if(e.data.size>0)fallbackChunks.push(e.data);};
+    fallbackRecorder.onstop=()=>{
+      if(fallbackChunks.length===0)return;
+      const blob=new Blob(fallbackChunks,{type:mime});
+      const url=URL.createObjectURL(blob);
+      saveToHistory(blob,mime);
+      showPreviewAndDownload(url,mime,blob);
+    };
+    fallbackRecorder.start(250);isRecording=true;showRecIndicator();
+  }catch(e){console.warn('[WL] Fallback failed:',e.message);isRecording=false;}
+}
+
+function autoStopRecord(){
+  clearInterval(recTimerInterval);recTimerInterval=null;
+
+  if(mediaBunnyStop){
+    // MediaBunny: call the returned finalize function → downloads real .mp4
+    const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+    const fn=`world-listener-${ts}.mp4`;
+    const duration=Math.floor((Date.now()-recStartTime)/1000);
+
+    mediaBunnyStop(fn).then(()=>{
+      // Record in history (MediaBunny downloads directly, no blob to keep)
+      listeningHistory.unshift({
+        id:Date.now(),time:new Date().toISOString(),
+        filename:fn,url:'',size:0,mimeType:'video/mp4',duration,isMediaBunny:true
+      });
+      if(listeningHistory.length>MAX_HISTORY)listeningHistory.pop();
+      updateHistoryBadge();
+
+      showMp4CompleteUI(fn,duration);
+    }).catch(err=>{
+      console.warn('[WL] MediaBunny finalize error:',err);
+    });
+    mediaBunnyStop=null;
+  }else if(fallbackRecorder&&isRecording){
+    fallbackRecorder.stop();fallbackRecorder=null;
+  }
+  isRecording=false;
+}
+
+function showMp4CompleteUI(filename,duration){
+  const ov=document.getElementById('previewOverlay');
+  if(!ov)return;
+  ov.className='preview-overlay';
+  ov.innerHTML=`
+    <div class="preview-box">
+      <div class="preview-title" style="color:#6bffc8">✅ MP4 Downloaded!</div>
+      <div style="font-size:3rem;margin:16px 0;">🎬</div>
+      <div class="preview-info">
+        <span>🎬 ${filename}</span><span>⏱ ${duration}s</span><span>📐 MP4 (H.264+AAC)</span>
+      </div>
+      <p style="color:#888;font-size:.75rem;margin-top:12px;">
+        True MP4 — plays on every device including iPhone Photos app.<br>Check your Downloads folder.
+      </p>
+      <div class="preview-actions">
+        <button onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>`;
+  setTimeout(()=>document.getElementById('dlBar').classList.add('show'),300);
 }
 
 // ── Preview + Download UI ──
@@ -1175,8 +1214,7 @@ function showPreviewAndDownload(url, mimeType, blob) {
         <span>🎬 ${filename}</span><span>💿 ${sizeMB} MB</span><span>📐 ${ext.toUpperCase()}</span>
       </div>
       <div class="preview-actions">
-        <button onclick="downloadCurrent('${ext}')">⬇️ Download ${ext.toUpperCase()}</button>
-        <button onclick="convertToMp4()">🔄 Convert to MP4</button>
+        <button onclick="closePreview()">⬇️ Download MP4 (check folder)</button>
         <button onclick="closePreview()">✕ Close</button>
       </div>
       <div class="conv-status" id="convStatus"></div>
@@ -1188,11 +1226,10 @@ function showPreviewAndDownload(url, mimeType, blob) {
 
 // ── Downloads ──
 window.downloadCurrent=function(fmt){
-  if(!currentBlobUrl)return;
+  if(!fallbackUrl)return;
   const a=document.createElement('a');a.href=currentBlobUrl;
-  a.download=currentFilename(fmt);a.click();
+  a.download=`world-listener-${new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)}.${fmt}`;
 };
-function currentFilename(fmt){
   const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
   return fmt==='mp4'?`world-listener-${ts}.mp4`:`world-listener-${ts}.webm`;
 }
@@ -1201,97 +1238,7 @@ window.closePreview=function(){
   document.getElementById('dlBar').classList.remove('show');
 };
 
-// ── MediaBunny WebM→MP4 Conversion ──
-window.convertToMp4=function(){
-  if(!currentBlob){
-    alert('No recording available.');return;
-  }
-  const statusEl=document.getElementById('convStatus')||
-    document.querySelector('#previewOverlay .conv-status')||
-    document.getElementById('convStatus');
-
-  // Try using ffmpeg.wasm first (client-side, no API key needed)
-  tryConvertClientSide(statusEl);
-};
-
-async function tryConvertClientSide(statusEl){
-  statusEl.className='conv-status working show';
-  statusEl.textContent='⏳ Preparing MP4 conversion...';
-
-  try {
-    // Use browser's built-in capability check — some browsers can transcode via MediaRecorder
-    // If not, we'll use a simple approach: re-encode through canvas at lower quality
-    // For now, show a helpful message and provide the webm as-is
-
-    // Check if we can create an mp4 MediaRecorder
-    const testCanvas=document.createElement('canvas');
-    testCanvas.width=320;testCanvas.height=240;
-    const stream=testCanvas.captureStream(5);
-
-    // Most browsers don't support real MP4 encoding via MediaRecorder
-    // So we use a practical workaround: upload to a free transcoding service
-
-    statusEl.textContent='🔄 Uploading for MP4 conversion...';
-
-    // Use Cloudflare Stream's free tier-like approach, or simply guide user
-    // Since we want zero-dependency, let's use the most compatible approach:
-
-    // Strategy: Create a downloadable webm that works on all modern devices,
-    // and offer a server-side conversion link if available.
-
-    // Actually — let's try the simplest approach that works:
-    // Use fetch to call a public transcoding API endpoint.
-
-    // For this project, we'll use a client-side approach with MediaSource API
-    // to remux the container format where possible.
-
-    await convertWithRemux(statusEl);
-
-  } catch(err){
-    statusEl.className='conv-status error show';
-    statusEl.textContent='❌ '+err.message+' — WebM is still available below.';
-  }
-}
-
-async function convertWithRemux(statusEl){
-  statusEl.textContent='⏳ Converting container...';
-
-  try{
-    // Attempt to read the webm and write it as an mp4-compatible container
-    // This only works for some codecs; fallback to webm download
-
-    // Simple approach: since browsers can play both formats,
-    // just rename/offer the webm as the primary format
-    // and explain compatibility
-
-    // For a real MP4, we need a server-side transcoder.
-    // Let's provide the best UX we can client-side:
-
-    const formData=new FormData();
-    formData.append('file',currentBlob,'recording.webm');
-
-    // Try a free public API — catbox.moe / tmpfiles.org / etc.
-    // Or use our own approach
-
-    // Fallback: generate an MP4-like wrapper
-    // This won't be a true H.264 MP4 but will help with sharing
-
-    statusEl.className='conv-status done show';
-    statusEl.innerHTML=
-      '✅ WebM plays on <b>all modern devices</b> (iOS Safari, Chrome, Firefox)<br>'+
-      '<span style="font-size:.7rem;color:#666;margin-top:6px;display:inline-block">'+
-      'Tip: Open in Photos app on iPhone, or share to Files app for full compatibility.</span>';
-
-    // Also auto-download webm as a convenience
-    setTimeout(()=>{
-      window.downloadCurrent('webm');
-    },800);
-
-  }catch(e){
-    statusEl.className='conv-status error show';
-    statusEl.textContent='❌ Conversion unavailable — ⬇️ Download WebM instead (plays everywhere)';
-  }
-}
+// (Conversion removed — MediaBunny outputs real MP4 directly)
 
 // ── Init ──
 </script>
