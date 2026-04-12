@@ -115,6 +115,60 @@
     transform: translateX(-50%) translateY(0); opacity: 1;
   }
 
+  /* Preview overlay — in-browser video player after recording */
+  .preview-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(2,2,8,.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .4s;
+  }
+  .preview-overlay.show { opacity: 1; pointer-events: auto; }
+  .preview-box {
+    background: rgba(10,10,26,.97);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px; padding: 24px 28px;
+    max-width: 720px; width: 90%;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 60px rgba(107,255,200,.06);
+  }
+  .preview-title {
+    font-size: .95rem; font-weight: 600; color: #e0d0ff;
+    margin-bottom: 4px;
+  }
+  .preview-info {
+    display: flex; justify-content: center; gap: 16px;
+    flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .preview-info span {
+    font-size: .65rem; color: #666;
+    background: rgba(255,255,255,.04);
+    padding: 3px 10px; border-radius: 4px;
+  }
+  .preview-actions { display: flex; gap: 10px; justify-content: center; }
+  .preview-actions button {
+    padding: 10px 22px; border: none; border-radius: 8px;
+    font-family: inherit; font-size: .78rem; cursor: pointer;
+    transition: all .25s;
+  }
+  .preview-actions button:nth-child(1) {
+    background: linear-gradient(135deg,#6bffc8,#40c9a0);
+    color: #000; font-weight: 600;
+  }
+  .preview-actions button:nth-child(1):hover {
+    box-shadow: 0 4px 20px rgba(107,255,200,.35);
+    transform: translateY(-1px);
+  }
+  .preview-actions button:nth-child(2) {
+    background: rgba(255,255,255,.08); color: #888;
+  }
+  .preview-actions button:nth-child(2):hover {
+    background: rgba(255,255,255,.14); color: #ccc;
+  }
+
   /* Info panel */
   .info-panel {
     position: fixed;
@@ -200,8 +254,6 @@
   <button class="listen-btn" id="listenBtn" onclick="toggleListen()">👂 LISTEN</button>
   <div class="rec-indicator" id="recIndicator"><span class="rec-dot"></span>● <span id="recTime">00:00</span> · recording</div>
 </div>
-
-<div class="save-toast" id="saveToast">💾 Video saved — check your downloads</div>
 
 <div class="info-panel">
   <div class="info-item">
@@ -798,8 +850,8 @@ render();
 
 // ─── Auto-Video Recording System ───
 // Recording starts automatically when LISTEN begins.
-// When STOP is pressed, recording ends and video auto-downloads.
-// Format priority: mp4 (H.264) → webm (VP9/Opus) → webm (VP8) → any
+// When STOP is pressed, recording ends, video previews in-browser, then downloads.
+// Format: webm (VP9+Opus) — reliable cross-platform, plays on mobile & desktop.
 
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -830,14 +882,15 @@ function autoStartRecord() {
       micStream.getAudioTracks().forEach(t => tracks.push(t));
     }
     canvasStream.getVideoTracks().forEach(t => tracks.push(t));
-    if (tracks.length === 0) return; // nothing to record
+    if (tracks.length === 0) return;
 
     const combinedStream = new MediaStream(tracks);
     recordedChunks = [];
 
-    // Format priority: mp4 → vp9+opus → vp8+opus → webm
+    // WebM VP9+Opus is the only reliably playable format across browsers and devices.
+    // MediaRecorder's 'video/mp4' output is often fragmented MP4 (fMP4) which
+    // most native players cannot open.
     const mimeTypes = [
-      'video/mp4',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
       'video/webm;codecs=vp9',
@@ -867,20 +920,8 @@ function autoStartRecord() {
       const blob = new Blob(recordedChunks, { type: mimeType });
       const url = URL.createObjectURL(blob);
 
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-      const filename = `world-listener-${ts}.${ext}`;
-
-      // Download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
-
-      // Toast notification
-      showToast(filename);
+      // Show preview + download UI
+      showPreviewAndDownload(url, mimeType, blob);
     };
 
     mediaRecorder.start(250);
@@ -899,7 +940,6 @@ function autoStartRecord() {
 
   } catch(e) {
     console.warn('[WL] Auto-record failed:', e.message);
-    // Non-fail — page still works without recording
   }
 }
 
@@ -909,16 +949,53 @@ function autoStopRecord() {
   isRecording = false;
   clearInterval(recTimerInterval);
   mediaRecorder = null;
-  recordedChunks = [];
 }
 
-function showToast(filename) {
-  const toast = document.getElementById('saveToast');
-  const sizeMB = (recordedChunks.reduce((a,c)=>a+c.size,0)/1048576).toFixed(1);
-  toast.textContent = `💾 ${filename} (${sizeMB} MB) saved`;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3500);
+function showPreviewAndDownload(url, mimeType, blob) {
+  const sizeMB = (blob.size / 1048576).toFixed(1);
+  const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
+  const filename = `world-listener-${ts}.webm`;
+
+  // Build overlay
+  let overlay = document.getElementById('previewOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'previewOverlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.className = 'preview-overlay';
+
+  overlay.innerHTML = `
+    <div class="preview-box">
+      <div class="preview-title">📹 Your World Listener Session</div>
+      <video src="${url}" controls autoplay loop style="
+        width:100%; max-width:640px; border-radius:10px;
+        background:#000; margin:12px 0;
+      "></video>
+      <div class="preview-info">
+        <span>🎬 ${filename}</span>
+        <span>💿 ${sizeMB} MB</span>
+        <span>📐 ${mimeType}</span>
+      </div>
+      <div class="preview-actions">
+        <button onclick="downloadVideo('${url}','${filename}')">⬇️ Download</button>
+        <button onclick="closePreview()">✕ Close</button>
+      </div>
+    </div>
+  `;
 }
+
+window.downloadVideo = function(url, filename) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+};
+
+window.closePreview = function() {
+  const ov = document.getElementById('previewOverlay');
+  if (ov) ov.classList.remove('show');
+};
 </script>
 </body>
 </html>
