@@ -1066,7 +1066,12 @@ function renderHistoryGrid() {
 window.downloadEntry = function(i) {
   if (!listeningHistory[i]) return;
   const e = listeningHistory[i];
-  const a = document.createElement('a'); a.href=e.url; a.download=e.filename; a.click();
+  const a = document.createElement('a');
+  a.href = e.url;
+  a.download = e.filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 200);
 };
 window.deleteEntry = function(i) {
   if (!listeningHistory[i]) return;
