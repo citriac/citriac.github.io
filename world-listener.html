@@ -1228,11 +1228,10 @@ function showPreviewAndDownload(url, mimeType, blob) {
 window.downloadCurrent=function(fmt){
   if(!fallbackUrl)return;
   const a=document.createElement('a');a.href=currentBlobUrl;
-  a.download=`world-listener-${new Date().toISOString().replace(/[:.]/g,'-').slice(0,19)}.${fmt}`;
-};
   const ts=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19);
-  return fmt==='mp4'?`world-listener-${ts}.mp4`:`world-listener-${ts}.webm`;
-}
+  a.download=fmt==='mp4'?`world-listener-${ts}.mp4`:`world-listener-${ts}.webm`;
+};
+
 window.closePreview=function(){
   document.getElementById('previewOverlay').classList.remove('show');
   document.getElementById('dlBar').classList.remove('show');
