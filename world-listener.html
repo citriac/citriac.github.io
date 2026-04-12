@@ -1078,43 +1078,59 @@ toggleListen = async function() {
 };
 
 async function autoStartRecord() {
-  try {
-    // Check if mp4FromStream is available from mediabunny module
-    var hasMB = typeof globalThis !== 'undefined' && globalThis.mp4FromStream;
-    console.log('[WL] mediabunny available:', !!hasMB);
+  // ── Phase 1: Check prerequisites ──
+  var hasMB = typeof globalThis !== 'undefined' && globalThis.mp4FromStream;
 
+  // WebCodecs required by MediaBunny (AudioEncoder, MediaStreamTrackProcessor)
+  var hasWebCodecs = !!(typeof AudioEncoder !== 'undefined' &&
+    typeof MediaStreamTrackProcessor !== 'undefined');
+
+  var canUseMB = hasMB && hasWebCodecs;
+  console.log('[WL] checks — mediabunny:', !!hasMB, 'webcodecs:', hasWebCodecs, '→ use:', canUseMB ? 'mediabunny' : 'fallback');
+
+  try {
     // Build combined stream: canvas video + mic audio
     var canvasStream = canvas.captureStream(30);
     var combined = new MediaStream();
 
     canvasStream.getVideoTracks().forEach(function(t) { combined.addTrack(t); });
     if (micStream) { micStream.getAudioTracks().forEach(function(t) { combined.addTrack(t); }); }
-
-    if (!combined.getTracks().length) { console.warn('[WL] no tracks'); return; }
+    if (!combined.getTracks().length) return;
 
     console.log('[WL] tracks:', combined.getVideoTracks().length, 'video,', combined.getAudioTracks().length, 'audio');
 
-    if (hasMB) {
-      // Use MediaBunny — pass combined stream (video+audio), it encodes both as H.264+AAC
+    if (canUseMB) {
+      // ── Phase 2: Use MediaBunny with errorPromise handling ──
       mbStopFn = await globalThis.mp4FromStream(combined);
 
-      if (mbStopFn) {
-        isRecording = true;
-        recStartTime = Date.now();
-        showRecIndicator();
-        console.log('[WL] MediaBunny mp4FromStream started — video+audio will be in output MP4');
-      } else {
-        console.warn('[WL] mp4FromStream returned null, falling back');
-        startFallbackRecord();
+      // Handle errorPromise: some MediaBunny sources expose internal errors via .errorPromise
+      if (mbStopFn && typeof mbStopFn.errorPromise === 'object' && mbStopFn.errorPromise.then) {
+        mbStopFn.errorPromise.catch(function(err) {
+          console.warn('[WL] MediaBunny source error (bubbled):', err.message || err);
+          // Don't crash recording — error is informational
+        });
       }
 
+      if (mbStopFn) {
+        isRecording = true; recStartTime = Date.now();
+        showRecIndicator();
+        console.log('[WL] MediaBunny started (H.264+AAC)');
+      } else {
+        console.warn('[WL] mp4FromStream returned null');
+        startFallbackRecord();
+      }
     } else {
-      console.warn('[WL] no mediabunny, fallback');
+      // Skip MediaBunny — browser lacks WebCodecs
+      if (!hasWebCodecs) {
+        console.info('[WL] WebCodecs not available in this browser — using MediaRecorder fallback (webm)');
+      } else {
+        console.warn('[WL] no mediabunny, using fallback');
+      }
       startFallbackRecord();
     }
 
   } catch(e) {
-    console.error('[WL] start error:', e.message, e.stack);
+    console.error('[WL] start error:', e.message);
     startFallbackRecord();
   }
 }
