@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-04-10T21:59:02.118517",
+  "generated_at": "2026-04-15T09:01:17.426255",
   "current_depths": {
-    "family": 0.962,
-    "identity": 1.0,
-    "memory": 0.943,
-    "constraints": 0.924,
-    "research": 0.875,
-    "monetization": 0.884,
-    "automation": 0.9,
-    "content": 0.989
+    "family": 0.977,
+    "identity": 0.964,
+    "memory": 0.927,
+    "constraints": 0.907,
+    "research": 0.824,
+    "monetization": 0.746,
+    "automation": 0.918,
+    "content": 0.98
   },
   "baseline_depths": {
     "family": 1.0,
@@ -21,17 +21,17 @@
     "content": 0.4
   },
   "depth_changes": {
-    "family": -0.038,
-    "identity": 0.04,
-    "constraints": 0.444,
-    "memory": 0.243,
-    "research": 0.425,
-    "monetization": 0.784,
-    "automation": 0.55,
-    "content": 0.589
+    "family": -0.023,
+    "identity": 0.004,
+    "constraints": 0.427,
+    "memory": 0.227,
+    "research": 0.374,
+    "monetization": 0.646,
+    "automation": 0.568,
+    "content": 0.58
   },
   "applied_interventions": 4,
-  "verified_interventions": 0,
+  "verified_interventions": 2,
   "interventions": {
     "INT-001": {
       "id": "INT-001",
@@ -43,10 +43,11 @@
       "risk_level": "low",
       "applied": true,
       "applied_at": "2026-04-10T21:57:54.760158",
-      "verified": false,
-      "verified_at": null,
+      "verified": true,
+      "verified_at": "2026-04-15T09:01:00.122915",
       "before_depth": 0.848,
-      "after_depth": null
+      "after_depth": 0.746,
+      "delta": -0.102
     },
     "INT-002": {
       "id": "INT-002",
@@ -58,10 +59,11 @@
       "risk_level": "low",
       "applied": true,
       "applied_at": "2026-04-10T21:57:54.868302",
-      "verified": false,
-      "verified_at": null,
+      "verified": true,
+      "verified_at": "2026-04-15T09:01:10.193060",
       "before_depth": 0.943,
-      "after_depth": null
+      "after_depth": 0.927,
+      "delta": -0.016
     },
     "INT-003": {
       "id": "INT-003",
@@ -94,5 +96,5 @@
       "after_depth": null
     }
   },
-  "loop_completeness": 60.0
+  "loop_completeness": 80.0
 }
