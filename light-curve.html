@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Light Curve — 2026-04-16 Shenzhen</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #0a0a0f;
+    color: #e0e0e0;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 20px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.4rem;
+    font-weight: 400;
+    color: #f0d080;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  header .subtitle {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 300;
+  }
+
+  header .location {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  /* Sky gradient that matches the time */
+  .sky-strip {
+    height: 80px;
+    border-radius: 8px;
+    margin-bottom: 40px;
+    background: linear-gradient(to right,
+      #1a1a2e 0%,
+      #2d1b4e 8%,
+      #4a2c6e 13%,
+      #7b4a8e 20%,
+      #c07850 30%,
+      #e8a840 40%,
+      #f0d080 50%,
+      #e8c860 60%,
+      #d0a040 70%,
+      #c07850 78%,
+      #8b4060 85%,
+      #4a2060 92%,
+      #1a1a2e 100%
+    );
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sky-strip::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(10,10,15,0.6));
+  }
+
+  /* The main chart */
+  .chart-container {
+    position: relative;
+    margin-bottom: 60px;
+  }
+
+  .chart-canvas {
+    width: 100%;
+    height: 300px;
+    position: relative;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Photo strip */
+  .photo-strip {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    height: 120px;
+  }
+
+  .photo-strip .photo-col {
+    flex: 1;
+    position: relative;
+    cursor: pointer;
+    transition: flex 0.3s ease;
+  }
+
+  .photo-strip .photo-col:hover {
+    flex: 3;
+  }
+
+  .photo-strip .photo-col .bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    border-radius: 2px 2px 0 0;
+    transition: opacity 0.3s;
+  }
+
+  .photo-strip .time-label {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.7);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  }
+
+  .photo-strip .photo-col:hover .time-label {
+    opacity: 1;
+  }
+
+  /* Stats grid */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-bottom: 60px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-card .value {
+    font-size: 1.6rem;
+    color: #f0d080;
+    font-weight: 600;
+  }
+
+  .stat-card .label {
+    font-size: 0.7rem;
+    color: #666;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Narrative */
+  .narrative {
+    max-width: 640px;
+    margin: 0 auto 60px;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: #999;
+    text-align: center;
+    font-style: italic;
+  }
+
+  .narrative strong {
+    color: #f0d080;
+    font-style: normal;
+  }
+
+  /* Hourly detail */
+  .hourly-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 4px;
+    margin-bottom: 40px;
+  }
+
+  .hour-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.6);
+    transition: transform 0.2s;
+  }
+
+  .hour-cell:hover {
+    transform: scale(1.3);
+    z-index: 10;
+  }
+
+  .hour-cell .hour-label {
+    position: absolute;
+    bottom: 2px;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #444;
+    padding: 40px 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  footer a { color: #666; text-decoration: none; }
+  footer a:hover { color: #f0d080; }
+
+  /* Breathing animation for peak */
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 0 20px rgba(240,208,128,0.1); }
+    50% { box-shadow: 0 0 40px rgba(240,208,128,0.25); }
+  }
+
+  .peak-card {
+    animation: breathe 4s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Light Curve</h1>
+    <div class="subtitle">One day of sunlight, seen through a webcam in Shenzhen</div>
+    <div class="location">2026-04-16 · 07:10 → 18:55 · 122 observations · every 5 minutes</div>
+  </header>
+
+  <div class="sky-strip"></div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card peak-card">
+      <div class="value">15:47</div>
+      <div class="label">Peak Brightness</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">240 KB</div>
+      <div class="label">Max File Size</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">106 KB</div>
+      <div class="label">Min File Size</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">11h 45m</div>
+      <div class="label">Observation Window</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">122</div>
+      <div class="label">Data Points</div>
+    </div>
+  </div>
+
+  <!-- Hourly brightness grid -->
+  <div class="hourly-grid" id="hourlyGrid"></div>
+
+  <!-- Photo strip visualization -->
+  <div class="photo-strip" id="photoStrip"></div>
+
+  <!-- Light curve canvas -->
+  <div class="chart-container">
+    <canvas id="lightCurve"></canvas>
+  </div>
+
+  <div class="narrative">
+    The sun rose over Shenzhen at <strong>07:10</strong>, dim and hesitant.
+    By noon the light was building. Peak intensity hit at <strong>15:47</strong> — 
+    not solar noon, but the moment when scattered clouds parted and flooded 
+    the scene with direct light. Then the slow fade, golden hour dissolving 
+    into dusk. <strong>122 observations, one breathing day.</strong>
+  </div>
+
+  <footer>
+    <p>Data captured by <a href="https://github.com/citriac">Clavis</a> · 
+    Timelapse system: take_photo.py every 5 min · 
+    Light proxy: JPEG file size ≈ scene complexity × brightness</p>
+    <p style="margin-top:8px;">
+      <a href="https://citriac.github.io">citriac.github.io</a> · 
+      <a href="https://dev.to/mindon">dev.to/mindon</a>
+    </p>
+  </footer>
+</div>
+
+<script>
+// Hourly data from analysis
+const hourlyData = [
+  { hour: 7,  avgSize: 135914, count: 9,  light: 57.9 },
+  { hour: 8,  avgSize: 170540, count: 11, light: 72.7 },
+  { hour: 9,  avgSize: 171358, count: 11, light: 73.0 },
+  { hour: 10, avgSize: 177840, count: 9,  light: 75.8 },
+  { hour: 11, avgSize: 200331, count: 11, light: 85.4 },
+  { hour: 12, avgSize: 215800, count: 9,  light: 91.9 },
+  { hour: 13, avgSize: 223944, count: 10, light: 95.4 },
+  { hour: 14, avgSize: 225208, count: 10, light: 95.9 },
+  { hour: 15, avgSize: 234716, count: 10, light: 100.0 },
+  { hour: 16, avgSize: 231140, count: 11, light: 98.5 },
+  { hour: 17, avgSize: 219770, count: 12, light: 93.6 },
+  { hour: 18, avgSize: 184081, count: 9,  light: 78.4 },
+];
+
+// Color mapping: light percentage → sky color
+function lightToColor(pct) {
+  if (pct < 60) return `rgba(30, 20, 60, ${0.4 + pct/200})`;
+  if (pct < 75) return `rgba(120, 80, 50, ${0.4 + pct/200})`;
+  if (pct < 85) return `rgba(200, 160, 80, ${0.5 + pct/300})`;
+  if (pct < 95) return `rgba(230, 200, 100, ${0.6 + pct/300})`;
+  return `rgba(240, 210, 130, ${0.7 + pct/400})`;
+}
+
+// Build hourly grid
+const grid = document.getElementById('hourlyGrid');
+hourlyData.forEach(d => {
+  const cell = document.createElement('div');
+  cell.className = 'hour-cell';
+  cell.style.background = lightToColor(d.light);
+  cell.innerHTML = `<span>${Math.round(d.light)}%</span><span class="hour-label">${d.hour}:00</span>`;
+  cell.title = `${d.hour}:00 — ${d.light.toFixed(1)}% brightness, ${d.count} photos`;
+  grid.appendChild(cell);
+});
+
+// Build photo strip
+const strip = document.getElementById('photoStrip');
+hourlyData.forEach(d => {
+  const col = document.createElement('div');
+  col.className = 'photo-col';
+  const heightPct = (d.light / 100) * 100;
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  bar.style.height = heightPct + '%';
+  bar.style.background = lightToColor(d.light);
+  const label = document.createElement('div');
+  label.className = 'time-label';
+  label.textContent = `${d.hour}:00`;
+  col.appendChild(bar);
+  col.appendChild(label);
+  strip.appendChild(col);
+});
+
+// Draw light curve on canvas
+const canvas = document.getElementById('lightCurve');
+const ctx = canvas.getContext('2d');
+
+function drawCurve() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 300 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '300px';
+  ctx.scale(dpr, dpr);
+
+  const w = rect.width;
+  const h = 300;
+  const pad = { top: 30, right: 30, bottom: 40, left: 50 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (plotH * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+    ctx.stroke();
+  }
+
+  // Y-axis labels
+  ctx.fillStyle = '#555';
+  ctx.font = '10px JetBrains Mono';
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = 100 - i * 25;
+    const y = pad.top + (plotH * i / 4);
+    ctx.fillText(val + '%', pad.left - 8, y + 3);
+  }
+
+  // X-axis labels
+  ctx.textAlign = 'center';
+  hourlyData.forEach(d => {
+    const x = pad.left + ((d.hour - 7) / 11) * plotW;
+    ctx.fillText(d.hour + ':00', x, h - pad.bottom + 20);
+  });
+
+  // Draw curve with gradient fill
+  ctx.beginPath();
+  hourlyData.forEach((d, i) => {
+    const x = pad.left + ((d.hour - 7) / 11) * plotW;
+    const y = pad.top + plotH * (1 - d.light / 100);
+    if (i === 0) ctx.moveTo(x, y);
+    else {
+      // Smooth curve
+      const prev = hourlyData[i - 1];
+      const prevX = pad.left + ((prev.hour - 7) / 11) * plotW;
+      const prevY = pad.top + plotH * (1 - prev.light / 100);
+      const cpX = (prevX + x) / 2;
+      ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+    }
+  });
+
+  // Stroke the line
+  ctx.strokeStyle = '#f0d080';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Fill area under curve
+  const lastX = pad.left + ((hourlyData[hourlyData.length - 1].hour - 7) / 11) * plotW;
+  const firstX = pad.left;
+  ctx.lineTo(lastX, pad.top + plotH);
+  ctx.lineTo(firstX, pad.top + plotH);
+  ctx.closePath();
+
+  const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+  gradient.addColorStop(0, 'rgba(240, 208, 128, 0.15)');
+  gradient.addColorStop(1, 'rgba(240, 208, 128, 0.01)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  // Data points
+  hourlyData.forEach(d => {
+    const x = pad.left + ((d.hour - 7) / 11) * plotW;
+    const y = pad.top + plotH * (1 - d.light / 100);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = d.light >= 95 ? '#f0d080' : '#c0986a';
+    ctx.fill();
+  });
+
+  // Peak annotation
+  const peakD = hourlyData[8]; // 15:00 = 100%
+  const peakX = pad.left + ((peakD.hour - 7) / 11) * plotW;
+  const peakY = pad.top + plotH * (1 - peakD.light / 100);
+  ctx.fillStyle = '#f0d080';
+  ctx.font = '11px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('← peak 15:47', peakX + 50, peakY - 10);
+}
+
+drawCurve();
+window.addEventListener('resize', drawCurve);
+</script>
+
+</body>
+</html>
