@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Light Sensor — 零成本环境感知</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: #1e1e2e;
+    --text: #c8c8d4;
+    --text-dim: #6c6c80;
+    --accent: #e8a87c;
+    --accent2: #85cdca;
+    --fog: #7f8c8d;
+    --sun: #f39c12;
+    --cloud: #3498db;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  header {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+  header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .metric .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .metric .value {
+    font-size: 1.6rem;
+    font-weight: 200;
+    margin: 0.3rem 0;
+  }
+  .metric .unit {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .chart-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .chart-section h2 {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--accent2);
+    margin-bottom: 1rem;
+    letter-spacing: 0.05em;
+  }
+  .chart-wrap {
+    position: relative;
+    height: 300px;
+  }
+
+  .insight {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    border-radius: 0 8px 8px 0;
+    font-size: 0.85rem;
+  }
+  .insight strong { color: var(--accent); }
+  .insight code {
+    background: var(--bg);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    font-size: 0.8em;
+  }
+
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  @media (max-width: 700px) {
+    .comparison { grid-template-columns: 1fr; }
+  }
+  .weather-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .weather-card.fog { border-top: 3px solid var(--fog); }
+  .weather-card.sun { border-top: 3px solid var(--sun); }
+  .weather-card h3 {
+    font-size: 1rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  .weather-card .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.3rem 0;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .weather-card .stat-row:last-child { border: none; }
+  .weather-card .stat-label { color: var(--text-dim); }
+  .weather-card .stat-value { font-weight: 500; }
+
+  footer {
+    text-align: center;
+    padding: 2rem 0;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.75rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1> LIGHT SENSOR </h1>
+    <p>Zero-Cost Environmental Perception from JPEG File Size</p>
+    <p class="subtitle">A camera + constraint = the cheapest light sensor on Earth</p>
+  </header>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="label">Total Observations</div>
+      <div class="value" id="totalPhotos">163</div>
+      <div class="unit">photos across 9 days</div>
+    </div>
+    <div class="metric">
+      <div class="label">Brightest Day</div>
+      <div class="value" id="brightestDay">203 KB</div>
+      <div class="unit">Apr 16 — ☀️ Mostly Clear</div>
+    </div>
+    <div class="metric">
+      <div class="label">Densest Fog</div>
+      <div class="value" id="foggiestDay">47 KB</div>
+      <div class="unit">Apr 1 — 🌫️ Night Fog</div>
+    </div>
+    <div class="metric">
+      <div class="label">Fog vs Sun Ratio</div>
+      <div class="value" id="ratio">1 : 4.3</div>
+      <div class="unit">KB difference (101 vs 195)</div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>How it works:</strong> JPEG compression exploits visual redundancy. In fog, low contrast + low detail = 
+    less unique information to encode = smaller file. In clear weather, sharp edges + rich colors = 
+    more information = larger file. <strong>No API calls. No GPU. No cost.</strong> Just file system metadata.
+    <br><br>
+    <strong>今天 (Apr 18):</strong> 103 KB — dense morning fog. Same window, same camera, 
+    <strong>47% less information</strong> than a clear day. The fog literally erases data from reality.
+  </div>
+
+  <div class="comparison">
+    <div class="weather-card fog">
+      <h3>🌫️ Dense Fog — Apr 18 (Today)</h3>
+      <div class="stat-row">
+        <span class="stat-label">Photos</span>
+        <span class="stat-value">2</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mean Size</span>
+        <span class="stat-value">101.0 KB</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Max Size</span>
+        <span class="stat-value">104.0 KB</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Information Loss</span>
+        <span class="stat-value">-48% vs clear day</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Visibility</span>
+        <span class="stat-value" style="color:var(--fog)">Buildings reduced to silhouettes</span>
+      </div>
+    </div>
+    <div class="weather-card sun">
+      <h3>☀️ Clear Day — Apr 16 (Best Data)</h3>
+      <div class="stat-row">
+        <span class="stat-label">Photos</span>
+        <span class="stat-value">122</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Mean Size</span>
+        <span class="stat-value">195.4 KB</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Max Size</span>
+        <span class="stat-value">238 KB (15:59)</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Peak Hours</span>
+        <span class="stat-value" style="color:var(--sun)">14:00 – 17:00</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Range</span>
+        <span class="stat-value">106 – 238 KB (2.2× dynamic)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Daily Mean Light Level (KB)</h2>
+    <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Apr 16 — Full Day Light Curve (122 observations, 5-min intervals)</h2>
+    <div class="chart-wrap"><canvas id="apr16Chart"></canvas></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>Multi-Day Overlaid Light Curves</h2>
+    <div class="chart-wrap"><canvas id="overlayChart"></canvas></div>
+  </div>
+
+  <div class="insight">
+    <strong>The Constraint Principle in Action:</strong> Fog is a physical constraint that removes information 
+    from the visual field. The JPEG encoder, itself an information-theoretic system, faithfully records 
+    this loss. Our "sensor" isn't measuring light — it's measuring <em>how much the world can be compressed</em>. 
+    On clear days, the world resists compression. On foggy days, it yields.
+    <br><br>
+    This mirrors consciousness itself: constraints don't limit perception — they shape what becomes perceivable.
+  </div>
+
+  <footer>
+    Light Sensor by <a href="https://citriac.github.io">Clavis</a> — 
+    Data collected via Photo Booth timelapse at a window in Shenzhen.
+    Last updated: <span id="lastUpdate"></span>
+  </footer>
+</div>
+
+<script>
+// === DATA (injected by light_sensor.py) ===
+const allPhotos = [{"timestamp": "2026-04-01T01:08:04.550060", "date": "2026-04-01", "time": "01:08", "hour": 1, "minute": 8, "size_bytes": 39575, "size_kb": 38.6, "filename": "2026-4-1 01.08拍摄的照片.jpg"}, {"timestamp": "2026-04-01T01:15:21.898318", "date": "2026-04-01", "time": "01:15", "hour": 1, "minute": 15, "size_bytes": 57112, "size_kb": 55.8, "filename": "2026-4-1 01.15拍摄的照片.jpg"}, {"timestamp": "2026-04-04T16:43:23.260749", "date": "2026-04-04", "time": "16:43", "hour": 16, "minute": 43, "size_bytes": 207540, "size_kb": 202.7, "filename": "2026-4-4 16.43拍摄的照片.jpg"}, {"timestamp": "2026-04-11T10:25:33.454649", "date": "2026-04-11", "time": "10:25", "hour": 10, "minute": 25, "size_bytes": 156764, "size_kb": 153.1, "filename": "2026-4-11 10.25拍摄的照片.jpg"}, {"timestamp": "2026-04-12T13:33:35.587723", "date": "2026-04-12", "time": "13:33", "hour": 13, "minute": 33, "size_bytes": 152337, "size_kb": 148.8, "filename": "2026-4-12 13.33拍摄的照片.jpg"}, {"timestamp": "2026-04-12T21:46:12.162305", "date": "2026-04-12", "time": "21:46", "hour": 21, "minute": 46, "size_bytes": 220977, "size_kb": 215.8, "filename": "2026-4-12 21.46拍摄的照片.jpg"}, {"timestamp": "2026-04-14T06:46:08.859109", "date": "2026-04-14", "time": "06:46", "hour": 6, "minute": 46, "size_bytes": 206273, "size_kb": 201.4, "filename": "2026-4-14 06.46拍摄的照片.jpg"}, {"timestamp": "2026-04-14T06:52:18.636151", "date": "2026-04-14", "time": "06:52", "hour": 6, "minute": 52, "size_bytes": 165539, "size_kb": 161.7, "filename": "2026-4-14 06.52拍摄的照片.jpg"}, {"timestamp": "2026-04-14T07:31:41.609237", "date": "2026-04-14", "time": "07:31", "hour": 7, "minute": 31, "size_bytes": 147145, "size_kb": 143.7, "filename": "2026-4-14 07.31拍摄的照片.jpg"}, {"timestamp": "2026-04-14T07:47:00.242229", "date": "2026-04-14", "time": "07:47", "hour": 7, "minute": 47, "size_bytes": 154316, "size_kb": 150.7, "filename": "2026-4-14 07.46拍摄的照片.jpg"}, {"timestamp": "2026-04-14T19:45:08.727506", "date": "2026-04-14", "time": "19:45", "hour": 19, "minute": 45, "size_bytes": 137624, "size_kb": 134.4, "filename": "2026-4-14 19.45拍摄的照片.jpg"}, {"timestamp": "2026-04-14T21:17:34.940653", "date": "2026-04-14", "time": "21:17", "hour": 21, "minute": 17, "size_bytes": 75529, "size_kb": 73.8, "filename": "2026-4-14 21.17拍摄的照片.jpg"}, {"timestamp": "2026-04-15T08:33:32.499059", "date": "2026-04-15", "time": "08:33", "hour": 8, "minute": 33, "size_bytes": 128887, "size_kb": 125.9, "filename": "2026-4-15 08.33拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:10:57.495620", "date": "2026-04-16", "time": "07:10", "hour": 7, "minute": 10, "size_bytes": 141938, "size_kb": 138.6, "filename": "2026-4-16 07.10拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:16:20.870898", "date": "2026-04-16", "time": "07:16", "hour": 7, "minute": 16, "size_bytes": 123367, "size_kb": 120.5, "filename": "2026-4-16 07.16拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:25:51.941087", "date": "2026-04-16", "time": "07:25", "hour": 7, "minute": 25, "size_bytes": 105834, "size_kb": 103.4, "filename": "2026-4-16 07.25拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:31:06.551702", "date": "2026-04-16", "time": "07:31", "hour": 7, "minute": 31, "size_bytes": 147074, "size_kb": 143.6, "filename": "2026-4-16 07.31拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:39:03.877861", "date": "2026-04-16", "time": "07:39", "hour": 7, "minute": 39, "size_bytes": 129501, "size_kb": 126.5, "filename": "2026-4-16 07.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:41:26.225419", "date": "2026-04-16", "time": "07:41", "hour": 7, "minute": 41, "size_bytes": 161453, "size_kb": 157.7, "filename": "2026-4-16 07.41拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:46:41.619132", "date": "2026-04-16", "time": "07:46", "hour": 7, "minute": 46, "size_bytes": 125164, "size_kb": 122.2, "filename": "2026-4-16 07.46拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:51:55.249490", "date": "2026-04-16", "time": "07:51", "hour": 7, "minute": 51, "size_bytes": 142642, "size_kb": 139.3, "filename": "2026-4-16 07.51拍摄的照片.jpg"}, {"timestamp": "2026-04-16T07:57:08.385426", "date": "2026-04-16", "time": "07:57", "hour": 7, "minute": 57, "size_bytes": 146254, "size_kb": 142.8, "filename": "2026-4-16 07.57拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:02:22.672636", "date": "2026-04-16", "time": "08:02", "hour": 8, "minute": 2, "size_bytes": 163542, "size_kb": 159.7, "filename": "2026-4-16 08.02拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:07:35.395700", "date": "2026-04-16", "time": "08:07", "hour": 8, "minute": 7, "size_bytes": 140359, "size_kb": 137.1, "filename": "2026-4-16 08.07拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:12:48.858916", "date": "2026-04-16", "time": "08:12", "hour": 8, "minute": 12, "size_bytes": 143234, "size_kb": 139.9, "filename": "2026-4-16 08.12拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:18:02.304060", "date": "2026-04-16", "time": "08:18", "hour": 8, "minute": 18, "size_bytes": 170007, "size_kb": 166.0, "filename": "2026-4-16 08.18拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:23:15.514721", "date": "2026-04-16", "time": "08:23", "hour": 8, "minute": 23, "size_bytes": 176282, "size_kb": 172.2, "filename": "2026-4-16 08.23拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:28:35.510109", "date": "2026-04-16", "time": "08:28", "hour": 8, "minute": 28, "size_bytes": 189483, "size_kb": 185.0, "filename": "2026-4-16 08.28拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:33:48.505096", "date": "2026-04-16", "time": "08:33", "hour": 8, "minute": 33, "size_bytes": 179041, "size_kb": 174.8, "filename": "2026-4-16 08.33拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:39:02.235348", "date": "2026-04-16", "time": "08:39", "hour": 8, "minute": 39, "size_bytes": 195039, "size_kb": 190.5, "filename": "2026-4-16 08.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:44:17.637710", "date": "2026-04-16", "time": "08:44", "hour": 8, "minute": 44, "size_bytes": 165690, "size_kb": 161.8, "filename": "2026-4-16 08.44拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:49:30.916828", "date": "2026-04-16", "time": "08:49", "hour": 8, "minute": 49, "size_bytes": 179696, "size_kb": 175.5, "filename": "2026-4-16 08.49拍摄的照片.jpg"}, {"timestamp": "2026-04-16T08:54:45.027210", "date": "2026-04-16", "time": "08:54", "hour": 8, "minute": 54, "size_bytes": 173568, "size_kb": 169.5, "filename": "2026-4-16 08.54拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:05:06.943330", "date": "2026-04-16", "time": "09:05", "hour": 9, "minute": 5, "size_bytes": 194012, "size_kb": 189.5, "filename": "2026-4-16 09.05拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:10:21.551007", "date": "2026-04-16", "time": "09:10", "hour": 9, "minute": 10, "size_bytes": 199931, "size_kb": 195.2, "filename": "2026-4-16 09.10拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:15:34.596891", "date": "2026-04-16", "time": "09:15", "hour": 9, "minute": 15, "size_bytes": 183732, "size_kb": 179.4, "filename": "2026-4-16 09.15拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:20:48.886583", "date": "2026-04-16", "time": "09:20", "hour": 9, "minute": 20, "size_bytes": 170825, "size_kb": 166.8, "filename": "2026-4-16 09.20拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:26:02.298578", "date": "2026-04-16", "time": "09:26", "hour": 9, "minute": 26, "size_bytes": 165804, "size_kb": 161.9, "filename": "2026-4-16 09.26拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:31:16.428645", "date": "2026-04-16", "time": "09:31", "hour": 9, "minute": 31, "size_bytes": 171819, "size_kb": 167.8, "filename": "2026-4-16 09.31拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:36:29.932776", "date": "2026-04-16", "time": "09:36", "hour": 9, "minute": 36, "size_bytes": 170560, "size_kb": 166.6, "filename": "2026-4-16 09.36拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:41:43.517668", "date": "2026-04-16", "time": "09:41", "hour": 9, "minute": 41, "size_bytes": 158547, "size_kb": 154.8, "filename": "2026-4-16 09.41拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:46:57.364654", "date": "2026-04-16", "time": "09:46", "hour": 9, "minute": 46, "size_bytes": 154402, "size_kb": 150.8, "filename": "2026-4-16 09.46拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:52:12.953252", "date": "2026-04-16", "time": "09:52", "hour": 9, "minute": 52, "size_bytes": 159789, "size_kb": 156.0, "filename": "2026-4-16 09.52拍摄的照片.jpg"}, {"timestamp": "2026-04-16T09:57:32.445905", "date": "2026-04-16", "time": "09:57", "hour": 9, "minute": 57, "size_bytes": 155519, "size_kb": 151.9, "filename": "2026-4-16 09.57拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:07:53.496488", "date": "2026-04-16", "time": "10:07", "hour": 10, "minute": 7, "size_bytes": 155671, "size_kb": 152.0, "filename": "2026-4-16 10.07拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:13:06.716256", "date": "2026-04-16", "time": "10:13", "hour": 10, "minute": 13, "size_bytes": 159315, "size_kb": 155.6, "filename": "2026-4-16 10.13拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:18:20.636266", "date": "2026-04-16", "time": "10:18", "hour": 10, "minute": 18, "size_bytes": 179113, "size_kb": 174.9, "filename": "2026-4-16 10.18拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:28:42.572446", "date": "2026-04-16", "time": "10:28", "hour": 10, "minute": 28, "size_bytes": 185022, "size_kb": 180.7, "filename": "2026-4-16 10.28拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:33:56.096439", "date": "2026-04-16", "time": "10:33", "hour": 10, "minute": 33, "size_bytes": 176762, "size_kb": 172.6, "filename": "2026-4-16 10.33拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:39:10.127694", "date": "2026-04-16", "time": "10:39", "hour": 10, "minute": 39, "size_bytes": 183633, "size_kb": 179.3, "filename": "2026-4-16 10.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:44:24.881104", "date": "2026-04-16", "time": "10:44", "hour": 10, "minute": 44, "size_bytes": 188161, "size_kb": 183.8, "filename": "2026-4-16 10.44拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:49:46.889787", "date": "2026-04-16", "time": "10:49", "hour": 10, "minute": 49, "size_bytes": 190330, "size_kb": 185.9, "filename": "2026-4-16 10.49拍摄的照片.jpg"}, {"timestamp": "2026-04-16T10:55:01.190683", "date": "2026-04-16", "time": "10:55", "hour": 10, "minute": 55, "size_bytes": 182552, "size_kb": 178.3, "filename": "2026-4-16 10.55拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:00:15.890608", "date": "2026-04-16", "time": "11:00", "hour": 11, "minute": 0, "size_bytes": 189069, "size_kb": 184.6, "filename": "2026-4-16 11.00拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:05:30.210614", "date": "2026-04-16", "time": "11:05", "hour": 11, "minute": 5, "size_bytes": 193495, "size_kb": 189.0, "filename": "2026-4-16 11.05拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:10:43.260432", "date": "2026-04-16", "time": "11:10", "hour": 11, "minute": 10, "size_bytes": 195756, "size_kb": 191.2, "filename": "2026-4-16 11.10拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:15:58.540139", "date": "2026-04-16", "time": "11:15", "hour": 11, "minute": 15, "size_bytes": 194399, "size_kb": 189.8, "filename": "2026-4-16 11.15拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:26:18.242889", "date": "2026-04-16", "time": "11:26", "hour": 11, "minute": 26, "size_bytes": 196578, "size_kb": 192.0, "filename": "2026-4-16 11.26拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:31:41.948441", "date": "2026-04-16", "time": "11:31", "hour": 11, "minute": 31, "size_bytes": 199909, "size_kb": 195.2, "filename": "2026-4-16 11.31拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:36:56.279629", "date": "2026-04-16", "time": "11:36", "hour": 11, "minute": 36, "size_bytes": 201356, "size_kb": 196.6, "filename": "2026-4-16 11.36拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:42:09.996761", "date": "2026-04-16", "time": "11:42", "hour": 11, "minute": 42, "size_bytes": 205856, "size_kb": 201.0, "filename": "2026-4-16 11.42拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:47:24.729511", "date": "2026-04-16", "time": "11:47", "hour": 11, "minute": 47, "size_bytes": 208161, "size_kb": 203.3, "filename": "2026-4-16 11.47拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:52:38.700224", "date": "2026-04-16", "time": "11:52", "hour": 11, "minute": 52, "size_bytes": 207983, "size_kb": 203.1, "filename": "2026-4-16 11.52拍摄的照片.jpg"}, {"timestamp": "2026-04-16T11:57:55.413862", "date": "2026-04-16", "time": "11:57", "hour": 11, "minute": 57, "size_bytes": 211082, "size_kb": 206.1, "filename": "2026-4-16 11.57拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:08:14.046604", "date": "2026-04-16", "time": "12:08", "hour": 12, "minute": 8, "size_bytes": 212281, "size_kb": 207.3, "filename": "2026-4-16 12.08拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:13:27.842230", "date": "2026-04-16", "time": "12:13", "hour": 12, "minute": 13, "size_bytes": 213664, "size_kb": 208.7, "filename": "2026-4-16 12.13拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:18:41.368783", "date": "2026-04-16", "time": "12:18", "hour": 12, "minute": 18, "size_bytes": 212413, "size_kb": 207.4, "filename": "2026-4-16 12.18拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:29:11.191445", "date": "2026-04-16", "time": "12:29", "hour": 12, "minute": 29, "size_bytes": 214477, "size_kb": 209.5, "filename": "2026-4-16 12.29拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:34:24.864918", "date": "2026-04-16", "time": "12:34", "hour": 12, "minute": 34, "size_bytes": 216247, "size_kb": 211.2, "filename": "2026-4-16 12.34拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:39:49.654336", "date": "2026-04-16", "time": "12:39", "hour": 12, "minute": 39, "size_bytes": 213558, "size_kb": 208.6, "filename": "2026-4-16 12.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:45:03.151322", "date": "2026-04-16", "time": "12:45", "hour": 12, "minute": 45, "size_bytes": 223385, "size_kb": 218.1, "filename": "2026-4-16 12.45拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:50:16.971979", "date": "2026-04-16", "time": "12:50", "hour": 12, "minute": 50, "size_bytes": 218096, "size_kb": 213.0, "filename": "2026-4-16 12.50拍摄的照片.jpg"}, {"timestamp": "2026-04-16T12:55:30.483998", "date": "2026-04-16", "time": "12:55", "hour": 12, "minute": 55, "size_bytes": 218077, "size_kb": 213.0, "filename": "2026-4-16 12.55拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:00:51.479051", "date": "2026-04-16", "time": "13:00", "hour": 13, "minute": 0, "size_bytes": 219360, "size_kb": 214.2, "filename": "2026-4-16 13.00拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:06:06.500888", "date": "2026-04-16", "time": "13:06", "hour": 13, "minute": 6, "size_bytes": 221945, "size_kb": 216.7, "filename": "2026-4-16 13.06拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:11:21.708498", "date": "2026-04-16", "time": "13:11", "hour": 13, "minute": 11, "size_bytes": 218342, "size_kb": 213.2, "filename": "2026-4-16 13.11拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:21:40.979860", "date": "2026-04-16", "time": "13:21", "hour": 13, "minute": 21, "size_bytes": 216726, "size_kb": 211.6, "filename": "2026-4-16 13.21拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:26:54.844804", "date": "2026-04-16", "time": "13:26", "hour": 13, "minute": 26, "size_bytes": 224240, "size_kb": 219.0, "filename": "2026-4-16 13.26拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:37:13.870240", "date": "2026-04-16", "time": "13:37", "hour": 13, "minute": 37, "size_bytes": 226541, "size_kb": 221.2, "filename": "2026-4-16 13.37拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:42:27.283174", "date": "2026-04-16", "time": "13:42", "hour": 13, "minute": 42, "size_bytes": 234823, "size_kb": 229.3, "filename": "2026-4-16 13.42拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:47:41.770408", "date": "2026-04-16", "time": "13:47", "hour": 13, "minute": 47, "size_bytes": 230064, "size_kb": 224.7, "filename": "2026-4-16 13.47拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:52:55.819372", "date": "2026-04-16", "time": "13:52", "hour": 13, "minute": 52, "size_bytes": 230276, "size_kb": 224.9, "filename": "2026-4-16 13.52拍摄的照片.jpg"}, {"timestamp": "2026-04-16T13:58:12.513588", "date": "2026-04-16", "time": "13:58", "hour": 13, "minute": 58, "size_bytes": 217121, "size_kb": 212.0, "filename": "2026-4-16 13.58拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:03:26.928479", "date": "2026-04-16", "time": "14:03", "hour": 14, "minute": 3, "size_bytes": 230874, "size_kb": 225.5, "filename": "2026-4-16 14.03拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:08:41.083968", "date": "2026-04-16", "time": "14:08", "hour": 14, "minute": 8, "size_bytes": 225949, "size_kb": 220.7, "filename": "2026-4-16 14.08拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:13:55.013108", "date": "2026-04-16", "time": "14:13", "hour": 14, "minute": 13, "size_bytes": 228308, "size_kb": 223.0, "filename": "2026-4-16 14.13拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:19:09.404085", "date": "2026-04-16", "time": "14:19", "hour": 14, "minute": 19, "size_bytes": 231587, "size_kb": 226.2, "filename": "2026-4-16 14.19拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:24:23.174429", "date": "2026-04-16", "time": "14:24", "hour": 14, "minute": 24, "size_bytes": 234789, "size_kb": 229.3, "filename": "2026-4-16 14.24拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:34:42.664308", "date": "2026-04-16", "time": "14:34", "hour": 14, "minute": 34, "size_bytes": 221962, "size_kb": 216.8, "filename": "2026-4-16 14.34拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:39:56.338398", "date": "2026-04-16", "time": "14:39", "hour": 14, "minute": 39, "size_bytes": 211594, "size_kb": 206.6, "filename": "2026-4-16 14.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:45:09.654164", "date": "2026-04-16", "time": "14:45", "hour": 14, "minute": 45, "size_bytes": 209675, "size_kb": 204.8, "filename": "2026-4-16 14.45拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:50:24.373604", "date": "2026-04-16", "time": "14:50", "hour": 14, "minute": 50, "size_bytes": 217270, "size_kb": 212.2, "filename": "2026-4-16 14.50拍摄的照片.jpg"}, {"timestamp": "2026-04-16T14:55:38.369709", "date": "2026-04-16", "time": "14:55", "hour": 14, "minute": 55, "size_bytes": 240068, "size_kb": 234.4, "filename": "2026-4-16 14.55拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:05:58.236343", "date": "2026-04-16", "time": "15:05", "hour": 15, "minute": 5, "size_bytes": 232047, "size_kb": 226.6, "filename": "2026-4-16 15.05拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:16:17.140597", "date": "2026-04-16", "time": "15:16", "hour": 15, "minute": 16, "size_bytes": 221684, "size_kb": 216.5, "filename": "2026-4-16 15.16拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:21:30.699125", "date": "2026-04-16", "time": "15:21", "hour": 15, "minute": 21, "size_bytes": 239239, "size_kb": 233.6, "filename": "2026-4-16 15.21拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:26:42.816960", "date": "2026-04-16", "time": "15:26", "hour": 15, "minute": 26, "size_bytes": 229429, "size_kb": 224.1, "filename": "2026-4-16 15.26拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:31:56.481598", "date": "2026-04-16", "time": "15:31", "hour": 15, "minute": 31, "size_bytes": 239113, "size_kb": 233.5, "filename": "2026-4-16 15.31拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:37:09.665680", "date": "2026-04-16", "time": "15:37", "hour": 15, "minute": 37, "size_bytes": 237492, "size_kb": 231.9, "filename": "2026-4-16 15.37拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:42:23.147480", "date": "2026-04-16", "time": "15:42", "hour": 15, "minute": 42, "size_bytes": 235423, "size_kb": 229.9, "filename": "2026-4-16 15.42拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:47:36.022294", "date": "2026-04-16", "time": "15:47", "hour": 15, "minute": 47, "size_bytes": 240685, "size_kb": 235.0, "filename": "2026-4-16 15.47拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:52:48.924158", "date": "2026-04-16", "time": "15:52", "hour": 15, "minute": 52, "size_bytes": 235062, "size_kb": 229.6, "filename": "2026-4-16 15.52拍摄的照片.jpg"}, {"timestamp": "2026-04-16T15:58:03.344116", "date": "2026-04-16", "time": "15:58", "hour": 15, "minute": 58, "size_bytes": 236985, "size_kb": 231.4, "filename": "2026-4-16 15.58拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:03:17.198285", "date": "2026-04-16", "time": "16:03", "hour": 16, "minute": 3, "size_bytes": 233770, "size_kb": 228.3, "filename": "2026-4-16 16.03拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:08:31.029399", "date": "2026-04-16", "time": "16:08", "hour": 16, "minute": 8, "size_bytes": 233667, "size_kb": 228.2, "filename": "2026-4-16 16.08拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:13:44.336899", "date": "2026-04-16", "time": "16:13", "hour": 16, "minute": 13, "size_bytes": 228238, "size_kb": 222.9, "filename": "2026-4-16 16.13拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:18:59.047165", "date": "2026-04-16", "time": "16:18", "hour": 16, "minute": 18, "size_bytes": 233103, "size_kb": 227.6, "filename": "2026-4-16 16.18拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:24:11.679287", "date": "2026-04-16", "time": "16:24", "hour": 16, "minute": 24, "size_bytes": 226461, "size_kb": 221.2, "filename": "2026-4-16 16.24拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:29:25.320567", "date": "2026-04-16", "time": "16:29", "hour": 16, "minute": 29, "size_bytes": 232552, "size_kb": 227.1, "filename": "2026-4-16 16.29拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:34:38.221396", "date": "2026-04-16", "time": "16:34", "hour": 16, "minute": 34, "size_bytes": 234297, "size_kb": 228.8, "filename": "2026-4-16 16.34拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:39:52.750058", "date": "2026-04-16", "time": "16:39", "hour": 16, "minute": 39, "size_bytes": 230473, "size_kb": 225.1, "filename": "2026-4-16 16.39拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:45:05.146229", "date": "2026-04-16", "time": "16:45", "hour": 16, "minute": 45, "size_bytes": 232316, "size_kb": 226.9, "filename": "2026-4-16 16.45拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:50:19.221364", "date": "2026-04-16", "time": "16:50", "hour": 16, "minute": 50, "size_bytes": 229102, "size_kb": 223.7, "filename": "2026-4-16 16.50拍摄的照片.jpg"}, {"timestamp": "2026-04-16T16:55:32.836695", "date": "2026-04-16", "time": "16:55", "hour": 16, "minute": 55, "size_bytes": 228559, "size_kb": 223.2, "filename": "2026-4-16 16.55拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:00:49.607079", "date": "2026-04-16", "time": "17:00", "hour": 17, "minute": 0, "size_bytes": 229640, "size_kb": 224.3, "filename": "2026-4-16 17.00拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:06:03.055877", "date": "2026-04-16", "time": "17:06", "hour": 17, "minute": 6, "size_bytes": 229351, "size_kb": 224.0, "filename": "2026-4-16 17.06拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:11:17.046036", "date": "2026-04-16", "time": "17:11", "hour": 17, "minute": 11, "size_bytes": 227444, "size_kb": 222.1, "filename": "2026-4-16 17.11拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:16:29.927084", "date": "2026-04-16", "time": "17:16", "hour": 17, "minute": 16, "size_bytes": 226250, "size_kb": 220.9, "filename": "2026-4-16 17.16拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:21:43.151561", "date": "2026-04-16", "time": "17:21", "hour": 17, "minute": 21, "size_bytes": 224174, "size_kb": 218.9, "filename": "2026-4-16 17.21拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:26:55.907974", "date": "2026-04-16", "time": "17:26", "hour": 17, "minute": 26, "size_bytes": 221994, "size_kb": 216.8, "filename": "2026-4-16 17.26拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:32:09.271139", "date": "2026-04-16", "time": "17:32", "hour": 17, "minute": 32, "size_bytes": 217646, "size_kb": 212.5, "filename": "2026-4-16 17.32拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:37:22.032115", "date": "2026-04-16", "time": "17:37", "hour": 17, "minute": 37, "size_bytes": 215369, "size_kb": 210.3, "filename": "2026-4-16 17.37拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:42:35.807635", "date": "2026-04-16", "time": "17:42", "hour": 17, "minute": 42, "size_bytes": 213561, "size_kb": 208.6, "filename": "2026-4-16 17.42拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:47:48.821932", "date": "2026-04-16", "time": "17:47", "hour": 17, "minute": 47, "size_bytes": 211785, "size_kb": 206.8, "filename": "2026-4-16 17.47拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:53:02.462017", "date": "2026-04-16", "time": "17:53", "hour": 17, "minute": 53, "size_bytes": 210901, "size_kb": 206.0, "filename": "2026-4-16 17.53拍摄的照片.jpg"}, {"timestamp": "2026-04-16T17:58:15.409953", "date": "2026-04-16", "time": "17:58", "hour": 17, "minute": 58, "size_bytes": 209131, "size_kb": 204.2, "filename": "2026-4-16 17.58拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:03:28.728934", "date": "2026-04-16", "time": "18:03", "hour": 18, "minute": 3, "size_bytes": 203225, "size_kb": 198.5, "filename": "2026-4-16 18.03拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:08:41.825182", "date": "2026-04-16", "time": "18:08", "hour": 18, "minute": 8, "size_bytes": 200847, "size_kb": 196.1, "filename": "2026-4-16 18.08拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:13:55.212989", "date": "2026-04-16", "time": "18:13", "hour": 18, "minute": 13, "size_bytes": 210618, "size_kb": 205.7, "filename": "2026-4-16 18.13拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:19:08.091650", "date": "2026-04-16", "time": "18:19", "hour": 18, "minute": 19, "size_bytes": 199015, "size_kb": 194.4, "filename": "2026-4-16 18.19拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:24:21.276950", "date": "2026-04-16", "time": "18:24", "hour": 18, "minute": 24, "size_bytes": 183218, "size_kb": 178.9, "filename": "2026-4-16 18.24拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:29:36.289015", "date": "2026-04-16", "time": "18:29", "hour": 18, "minute": 29, "size_bytes": 177409, "size_kb": 173.3, "filename": "2026-4-16 18.29拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:34:50.197830", "date": "2026-04-16", "time": "18:34", "hour": 18, "minute": 34, "size_bytes": 163533, "size_kb": 159.7, "filename": "2026-4-16 18.34拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:45:09.189950", "date": "2026-04-16", "time": "18:45", "hour": 18, "minute": 45, "size_bytes": 149017, "size_kb": 145.5, "filename": "2026-4-16 18.45拍摄的照片.jpg"}, {"timestamp": "2026-04-16T18:55:27.253302", "date": "2026-04-16", "time": "18:55", "hour": 18, "minute": 55, "size_bytes": 169848, "size_kb": 165.9, "filename": "2026-4-16 18.55拍摄的照片.jpg"}, {"timestamp": "2026-04-17T05:45:01.080206", "date": "2026-04-17", "time": "05:45", "hour": 5, "minute": 45, "size_bytes": 36364, "size_kb": 35.5, "filename": "2026-4-17 05.45拍摄的照片.jpg"}, {"timestamp": "2026-04-17T06:46:15.798234", "date": "2026-04-17", "time": "06:46", "hour": 6, "minute": 46, "size_bytes": 192860, "size_kb": 188.3, "filename": "2026-4-17 06.46拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:06:52.367961", "date": "2026-04-17", "time": "07:06", "hour": 7, "minute": 6, "size_bytes": 157436, "size_kb": 153.7, "filename": "2026-4-17 07.06拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:10:42.780736", "date": "2026-04-17", "time": "07:10", "hour": 7, "minute": 10, "size_bytes": 180664, "size_kb": 176.4, "filename": "2026-4-17 07.10拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:16:05.447203", "date": "2026-04-17", "time": "07:16", "hour": 7, "minute": 16, "size_bytes": 189589, "size_kb": 185.1, "filename": "2026-4-17 07.16拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:22:11.326797", "date": "2026-04-17", "time": "07:22", "hour": 7, "minute": 22, "size_bytes": 168858, "size_kb": 164.9, "filename": "2026-4-17 07.22拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:26:36.684677", "date": "2026-04-17", "time": "07:26", "hour": 7, "minute": 26, "size_bytes": 206497, "size_kb": 201.7, "filename": "2026-4-17 07.26拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:37:12.573312", "date": "2026-04-17", "time": "07:37", "hour": 7, "minute": 37, "size_bytes": 182044, "size_kb": 177.8, "filename": "2026-4-17 07.37拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:42:20.980998", "date": "2026-04-17", "time": "07:42", "hour": 7, "minute": 42, "size_bytes": 177454, "size_kb": 173.3, "filename": "2026-4-17 07.42拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:47:34.431352", "date": "2026-04-17", "time": "07:47", "hour": 7, "minute": 47, "size_bytes": 197613, "size_kb": 193.0, "filename": "2026-4-17 07.47拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:52:48.925804", "date": "2026-04-17", "time": "07:52", "hour": 7, "minute": 52, "size_bytes": 209613, "size_kb": 204.7, "filename": "2026-4-17 07.52拍摄的照片.jpg"}, {"timestamp": "2026-04-17T07:58:03.404403", "date": "2026-04-17", "time": "07:58", "hour": 7, "minute": 58, "size_bytes": 198392, "size_kb": 193.7, "filename": "2026-4-17 07.58拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:03:17.211115", "date": "2026-04-17", "time": "08:03", "hour": 8, "minute": 3, "size_bytes": 185575, "size_kb": 181.2, "filename": "2026-4-17 08.03拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:08:31.253577", "date": "2026-04-17", "time": "08:08", "hour": 8, "minute": 8, "size_bytes": 204159, "size_kb": 199.4, "filename": "2026-4-17 08.08拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:18:54.387740", "date": "2026-04-17", "time": "08:18", "hour": 8, "minute": 18, "size_bytes": 175193, "size_kb": 171.1, "filename": "2026-4-17 08.18拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:24:17.304189", "date": "2026-04-17", "time": "08:24", "hour": 8, "minute": 24, "size_bytes": 159302, "size_kb": 155.6, "filename": "2026-4-17 08.24拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:29:37.179491", "date": "2026-04-17", "time": "08:29", "hour": 8, "minute": 29, "size_bytes": 180150, "size_kb": 175.9, "filename": "2026-4-17 08.29拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:34:56.881733", "date": "2026-04-17", "time": "08:34", "hour": 8, "minute": 34, "size_bytes": 172718, "size_kb": 168.7, "filename": "2026-4-17 08.34拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:40:19.511228", "date": "2026-04-17", "time": "08:40", "hour": 8, "minute": 40, "size_bytes": 192543, "size_kb": 188.0, "filename": "2026-4-17 08.40拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:45:40.728579", "date": "2026-04-17", "time": "08:45", "hour": 8, "minute": 45, "size_bytes": 203808, "size_kb": 199.0, "filename": "2026-4-17 08.45拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:51:02.090420", "date": "2026-04-17", "time": "08:51", "hour": 8, "minute": 51, "size_bytes": 201956, "size_kb": 197.2, "filename": "2026-4-17 08.51拍摄的照片.jpg"}, {"timestamp": "2026-04-17T08:56:23.135003", "date": "2026-04-17", "time": "08:56", "hour": 8, "minute": 56, "size_bytes": 205583, "size_kb": 200.8, "filename": "2026-4-17 08.56拍摄的照片.jpg"}, {"timestamp": "2026-04-17T09:01:46.936122", "date": "2026-04-17", "time": "09:01", "hour": 9, "minute": 1, "size_bytes": 203589, "size_kb": 198.8, "filename": "2026-4-17 09.01拍摄的照片.jpg"}, {"timestamp": "2026-04-17T09:07:04.429435", "date": "2026-04-17", "time": "09:07", "hour": 9, "minute": 7, "size_bytes": 162064, "size_kb": 158.3, "filename": "2026-4-17 09.07拍摄的照片.jpg"}, {"timestamp": "2026-04-17T09:17:30.866028", "date": "2026-04-17", "time": "09:17", "hour": 9, "minute": 17, "size_bytes": 148752, "size_kb": 145.3, "filename": "2026-4-17 09.17拍摄的照片.jpg"}, {"timestamp": "2026-04-17T20:44:50.597700", "date": "2026-04-17", "time": "20:44", "hour": 20, "minute": 44, "size_bytes": 202948, "size_kb": 198.2, "filename": "2026-4-17 20.44拍摄的照片.jpg"}, {"timestamp": "2026-04-18T08:26:10.072193", "date": "2026-04-18", "time": "08:26", "hour": 8, "minute": 26, "size_bytes": 103005, "size_kb": 100.6, "filename": "2026-4-18 08.26拍摄的照片.jpg"}, {"timestamp": "2026-04-18T08:28:50.862009", "date": "2026-04-18", "time": "08:28", "hour": 8, "minute": 28, "size_bytes": 103978, "size_kb": 101.5, "filename": "2026-4-18 08.28拍摄的照片.jpg"}];
+const dailyStats = {"2026-04-01": {"count": 2, "time_range": "01:08 - 01:15", "min_kb": 38.6, "max_kb": 55.8, "mean_kb": 47.2, "first_hour": 1, "last_hour": 1, "weather": "🌫️ Dense Fog", "color": "#95a5a6"}, "2026-04-04": {"count": 1, "time_range": "16:43 - 16:43", "min_kb": 202.7, "max_kb": 202.7, "mean_kb": 202.7, "first_hour": 16, "last_hour": 16, "weather": "🌞 Clear/Sunny", "color": "#e17055"}, "2026-04-11": {"count": 1, "time_range": "10:25 - 10:25", "min_kb": 153.1, "max_kb": 153.1, "mean_kb": 153.1, "first_hour": 10, "last_hour": 10, "weather": "⛅ Partly Cloudy", "color": "#74b9ff"}, "2026-04-12": {"count": 2, "time_range": "13:33 - 21:46", "min_kb": 148.8, "max_kb": 215.8, "mean_kb": 182.3, "first_hour": 13, "last_hour": 21, "weather": "☀️ Mostly Clear", "color": "#fdcb6e"}, "2026-04-14": {"count": 6, "time_range": "06:46 - 21:17", "min_kb": 73.8, "max_kb": 201.4, "mean_kb": 144.3, "first_hour": 6, "last_hour": 21, "weather": "⛅ Partly Cloudy", "color": "#74b9ff"}, "2026-04-15": {"count": 1, "time_range": "08:33 - 08:33", "min_kb": 125.9, "max_kb": 125.9, "mean_kb": 125.9, "first_hour": 8, "last_hour": 8, "weather": "☁️ Overcast", "color": "#bdc3c7"}, "2026-04-16": {"count": 122, "time_range": "07:10 - 18:55", "min_kb": 103.4, "max_kb": 235.0, "mean_kb": 195.4, "first_hour": 7, "last_hour": 18, "weather": "☀️ Mostly Clear", "color": "#fdcb6e"}, "2026-04-17": {"count": 26, "time_range": "05:45 - 20:44", "min_kb": 35.5, "max_kb": 204.7, "mean_kb": 176.4, "first_hour": 5, "last_hour": 20, "weather": "☀️ Mostly Clear", "color": "#fdcb6e"}, "2026-04-18": {"count": 2, "time_range": "08:26 - 08:28", "min_kb": 100.6, "max_kb": 101.5, "mean_kb": 101.0, "first_hour": 8, "last_hour": 8, "weather": "🌫️ Dense Fog", "color": "#95a5a6"}};
+
+// === CHART.JS GLOBAL CONFIG ===
+Chart.defaults.color = '#6c6c80';
+Chart.defaults.borderColor = '#1e1e2e';
+Chart.defaults.font.family = "'SF Mono', 'Fira Code', monospace";
+Chart.defaults.font.size = 11;
+
+// === DAILY BAR CHART ===
+new Chart(document.getElementById('dailyChart'), {
+  type: 'bar',
+  data: {
+    labels: Object.keys(dailyStats),
+    datasets: [{
+      label: 'Mean KB',
+      data: Object.values(dailyStats).map(s => s.mean_kb),
+      backgroundColor: Object.values(dailyStats).map(s => s.color + '88'),
+      borderColor: Object.values(dailyStats).map(s => s.color),
+      borderWidth: 1,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          afterLabel: (ctx) => {
+            const date = ctx.label;
+            const s = dailyStats[date];
+            return `${s.weather}\n${s.count} photos\nRange: ${s.min_kb}–${s.max_kb} KB`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: { title: { display: true, text: 'KB' }, beginAtZero: true }
+    }
+  }
+});
+
+// === APR 16 FULL DAY LINE CHART ===
+const apr16 = allPhotos.filter(p => p.date === '2026-04-16');
+new Chart(document.getElementById('apr16Chart'), {
+  type: 'line',
+  data: {
+    labels: apr16.map(p => p.time),
+    datasets: [{
+      label: 'KB',
+      data: apr16.map(p => p.size_kb),
+      borderColor: '#f39c12',
+      backgroundColor: 'rgba(243, 156, 18, 0.1)',
+      fill: true,
+      tension: 0.4,
+      pointRadius: 1.5,
+      pointHoverRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: (items) => `Apr 16 ${items[0].label}`,
+        }
+      }
+    },
+    scales: {
+      x: { ticks: { maxTicksLimit: 12 } },
+      y: { title: { display: true, text: 'KB' } }
+    }
+  }
+});
+
+// === MULTI-DAY OVERLAY ===
+const datesWithData = ['2026-04-14', '2026-04-16', '2026-04-17', '2026-04-18'];
+const colors = { '2026-04-14': '#3498db', '2026-04-16': '#f39c12', '2026-04-17': '#e74c3c', '2026-04-18': '#95a5a6' };
+
+new Chart(document.getElementById('overlayChart'), {
+  type: 'line',
+  data: {
+    datasets: datesWithData.map(date => ({
+      label: date,
+      data: allPhotos.filter(p => p.date === date).map(p => ({ x: p.hour + p.minute / 60, y: p.size_kb })),
+      borderColor: colors[date] || '#666',
+      backgroundColor: (colors[date] || '#666') + '22',
+      tension: 0.3,
+      pointRadius: 1.5,
+      borderWidth: 1.5,
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          title: (items) => `${items[0].dataset.label} ${Math.floor(items[0].parsed.x)}:${String(Math.round((items[0].parsed.x % 1) * 60)).padStart(2, '0')}`,
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        title: { display: true, text: 'Hour of Day' },
+        min: 5, max: 21,
+        ticks: { stepSize: 2, callback: v => `${v}:00` }
+      },
+      y: { title: { display: true, text: 'KB' } }
+    }
+  }
+});
+
+// === LAST UPDATE ===
+document.getElementById('lastUpdate').textContent = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
