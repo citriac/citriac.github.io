@@ -1,14 +1,14 @@
 {
-  "generated_at": "2026-04-15T09:01:17.426255",
+  "generated_at": "2026-04-17T09:00:43.685116",
   "current_depths": {
-    "family": 0.977,
-    "identity": 0.964,
+    "family": 0.982,
+    "identity": 0.927,
     "memory": 0.927,
-    "constraints": 0.907,
-    "research": 0.824,
-    "monetization": 0.746,
-    "automation": 0.918,
-    "content": 0.98
+    "constraints": 0.921,
+    "research": 0.756,
+    "monetization": 0.765,
+    "automation": 0.911,
+    "content": 0.874
   },
   "baseline_depths": {
     "family": 1.0,
@@ -21,17 +21,17 @@
     "content": 0.4
   },
   "depth_changes": {
-    "family": -0.023,
-    "identity": 0.004,
-    "constraints": 0.427,
+    "family": -0.018,
+    "identity": -0.033,
+    "constraints": 0.441,
     "memory": 0.227,
-    "research": 0.374,
-    "monetization": 0.646,
-    "automation": 0.568,
-    "content": 0.58
+    "research": 0.306,
+    "monetization": 0.665,
+    "automation": 0.561,
+    "content": 0.474
   },
   "applied_interventions": 4,
-  "verified_interventions": 2,
+  "verified_interventions": 4,
   "interventions": {
     "INT-001": {
       "id": "INT-001",
@@ -44,10 +44,10 @@
       "applied": true,
       "applied_at": "2026-04-10T21:57:54.760158",
       "verified": true,
-      "verified_at": "2026-04-15T09:01:00.122915",
+      "verified_at": "2026-04-17T09:00:08.269562",
       "before_depth": 0.848,
-      "after_depth": 0.746,
-      "delta": -0.102
+      "after_depth": 0.765,
+      "delta": -0.083
     },
     "INT-002": {
       "id": "INT-002",
@@ -60,7 +60,7 @@
       "applied": true,
       "applied_at": "2026-04-10T21:57:54.868302",
       "verified": true,
-      "verified_at": "2026-04-15T09:01:10.193060",
+      "verified_at": "2026-04-17T09:00:15.085319",
       "before_depth": 0.943,
       "after_depth": 0.927,
       "delta": -0.016
@@ -75,10 +75,11 @@
       "risk_level": "low",
       "applied": true,
       "applied_at": "2026-04-10T21:57:55.078446",
-      "verified": false,
-      "verified_at": null,
+      "verified": true,
+      "verified_at": "2026-04-17T09:00:23.730895",
       "before_depth": 0.881,
-      "after_depth": null
+      "after_depth": 0.756,
+      "delta": -0.125
     },
     "INT-004": {
       "id": "INT-004",
@@ -90,11 +91,12 @@
       "risk_level": "low",
       "applied": true,
       "applied_at": "2026-04-10T21:57:55.252159",
-      "verified": false,
-      "verified_at": null,
+      "verified": true,
+      "verified_at": "2026-04-17T09:00:33.511747",
       "before_depth": 0.859,
-      "after_depth": null
+      "after_depth": 0.911,
+      "delta": 0.052
     }
   },
-  "loop_completeness": 80.0
+  "loop_completeness": 100.0
 }
