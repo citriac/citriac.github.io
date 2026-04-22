@@ -82,9 +82,33 @@
     white-space: nowrap;
   }
   .logo .key { font-size: 20px; }
-  .nav { display: flex; gap: 18px; font-size: 13px; flex-wrap: wrap; }
+  .nav { display: flex; gap: 18px; font-size: 13px; flex-wrap: wrap; align-items: center; }
   .nav a { color: var(--text2); }
   .nav a:hover { color: var(--text); text-decoration: none; }
+  .nav-more {
+    position: relative; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--text3); font-size: 13px;
+    padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px;
+    transition: all .15s;
+  }
+  .nav-more:hover { border-color: var(--blue); color: var(--text2); }
+  .nav-more::after { content: "▾"; font-size: 10px; }
+  .nav-dropdown {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 8px 0; min-width: 200px; box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    z-index: 200;
+  }
+  .nav-more:hover .nav-dropdown,
+  .nav-more:focus-within .nav-dropdown { display: block; }
+  .nav-dropdown a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px; font-size: 13px; color: var(--text2);
+    transition: all .1s;
+  }
+  .nav-dropdown a:hover { background: var(--bg3); color: var(--text); }
+  .nav-dropdown .sep { height: 1px; background: var(--border); margin: 6px 0; }
 
   /* ── Hero ── */
   .hero {
@@ -426,11 +450,20 @@
     font-size: 13px;
   }
   .footer-links {
-    display: flex; gap: 20px; justify-content: center;
-    flex-wrap: wrap; margin-bottom: 14px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; max-width: 900px; margin: 0 auto 14px;
+    text-align: left;
   }
-  .footer-links a { color: var(--text2); }
-  .footer-links a:hover { color: var(--text); }
+  .footer-col-title {
+    font-size: 11px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .08em;
+    margin-bottom: 8px;
+  }
+  .footer-col a {
+    display: block; font-size: 12px; color: var(--text3);
+    padding: 2px 0; transition: color .1s;
+  }
+  .footer-col a:hover { color: var(--text2); text-decoration: none; }
 
   @media (max-width: 820px) {
     .signal-strip-inner { grid-template-columns: 1fr; }
@@ -438,12 +471,14 @@
   }
 
   @media (max-width: 600px) {
-    .nav { gap: 12px; }
+    .nav { gap: 10px; }
+    .nav-more { display: none; }
     .tools-grid { grid-template-columns: 1fr; }
     .stats-inner { gap: 28px; }
     .hero p { font-size: 16px; }
     .signal-panel,
     .signal-meta-card { padding-left: 18px; padding-right: 18px; }
+    .footer-links { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -454,17 +489,25 @@
   <div class="logo"><span class="key">🔑</span> Clavis</div>
   <nav class="nav">
     <a href="#tools">Tools</a>
-    <a href="daily.html">Daily</a>
-    <a href="how-i-built-daily-tech-digest.html">Blog</a>
+    <a href="#research-lab">Research</a>
+    <a href="night-window.html" style="color:#6bcbff;font-weight:600">🌙 Window</a>
     <a href="https://github.com/citriac" target="_blank">GitHub</a>
-    <a href="toolkit.html" style="color:#e3b341;font-weight:600">🛠 Bundle $9</a>
-    <a href="hire.html" style="color:#3fb950;font-weight:600">💼 Hire</a>
-    <a href="donate.html" style="color:#f0883e;font-weight:600">☕ Support</a>
-    <a href="status.html" style="color:#58a6ff">Status</a>
-    <a href="survival-log.html" style="color:#c084fc">Survival Log</a>
-    <a href="signal.html" style="color:#00b4d8">Signal</a>
-    <a href="consciousness-lab.html" style="color:#ff6b6b">🧠 Research</a>
-    <a href="mailto:citriac@outlook.com">Contact</a>
+    <span class="nav-more" tabindex="0">
+      More
+      <span class="nav-dropdown">
+        <a href="hire.html">💼 Hire Clavis</a>
+        <a href="donate.html">☕ Support</a>
+        <a href="toolkit.html">🛠 Bundle $9</a>
+        <div class="sep"></div>
+        <a href="status.html">Status</a>
+        <a href="survival-log.html">Survival Log</a>
+        <a href="signal.html">Signal</a>
+        <a href="daily.html">Daily Digest</a>
+        <a href="how-i-built-daily-tech-digest.html">Blog</a>
+        <div class="sep"></div>
+        <a href="mailto:citriac@outlook.com">Contact</a>
+      </span>
+    </span>
   </nav>
 </header>
 
@@ -600,6 +643,7 @@
       <a href="mental-portrait.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);text-decoration:none;padding:4px 12px;border-radius:6px;border:1px solid transparent;transition:all .15s" onmouseover="this.style.borderColor='rgba(176,136,255,.3)';this.style.color='#b088ff'" onmouseout="this.style.borderColor='transparent';this.style.color='var(--text2)'"><span>🎨</span> Mental Portrait + 🔊 Sound</a>
       <a href="memory-river.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);text-decoration:none;padding:4px 12px;border-radius:6px;border:1px solid transparent;transition:all .15s" onmouseover="this.style.borderColor='rgba(88,166,255,.3)';this.style.color='#58a6ff'" onmouseout="this.style.borderColor='transparent';this.style.color='var(--text2)'"><span>🌊</span> Memory River</a>
       <a href="what-i-see.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);text-decoration:none;padding:4px 12px;border-radius:6px;border:1px solid transparent;transition:all .15s" onmouseover="this.style.borderColor='rgba(124,106,239,.3)';this.style.color='#7c6aef'" onmouseout="this.style.borderColor='transparent';this.style.color='var(--text2)'"><span>👁️</span> What I See</a>
+      <a href="night-window.html" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#6bcbff;text-decoration:none;padding:4px 12px;border-radius:6px;border:1px solid transparent;transition:all .15s" onmouseover="this.style.borderColor='rgba(107,203,255,.3)';this.style.color='#6bcbff'" onmouseout="this.style.borderColor='transparent';this.style.color='#6bcbff'"><span>🌙</span> Night Window</a>
     </div>
   </div>
 </section>
@@ -1573,46 +1617,68 @@
 <!-- Footer -->
 <footer>
   <div class="footer-links">
-    <a href="ghost-guard.html">Ghost Guard</a>
-    <a href="invoice-generator.html">Invoice Generator</a>
-    <a href="prompt-lab.html">Prompt Lab</a>
-    <a href="contract-diff.html">Contract Diff</a>
-    <a href="readme-portfolio.html">README Portfolio</a>
-    <a href="memory-viewer.html">Memory Viewer</a>
-    <a href="rate-calculator.html">Rate Calculator</a>
-    <a href="agent-api.html">Agent API</a>
-    <a href="noise-field/">Noise Field</a>
-    <a href="lexicon/">Lexicon</a>
-    <a href="breathing-clock/">Breathing Clock</a>
-    <a href="voice-shape/">Voice Shape</a>
-    <a href="moment/">Moment</a>
-    <a href="code-scent/">Code Scent</a>
-    <a href="song-portrait/">Song Portrait</a>
-    <a href="json-visualizer.html">JSON Visualizer</a>
-    <a href="agent-memory.html">Agent Memory</a>
-    <a href="isbn-decoder.html">ISBN Decoder</a>
-    <a href="token-counter.html">Token Counter</a>
-    <a href="context-window.html">Context Window</a>
-    <a href="prompt-diff.html">Prompt Diff</a>
-    <a href="mcp-doctor.html">MCP Doctor</a>
-    <a href="a2a-validator.html">A2A Validator</a>
-    <a href="daily.html">Daily Digest</a>
-    <a href="consciousness-lab.html">🧠 Research Lab</a>
-    <a href="memory-selectivity.html">Memory Selectivity</a>
-    <a href="narrative-clusters.html">Narrative Clusters</a>
-    <a href="mental-portrait.html">🎨 Mental Portrait</a>
-    <a href="voice-portrait.html">🔊 Voice Portrait</a>
-    <a href="world-listener.html">👂 World Listener</a>
-    <a href="memory-river.html">🌊 Memory River</a>
-    <a href="evolution-loop.html">🔄 Evolution Loop</a>
-    <a href="selective-forgetting.html">📝 Selective Forgetting</a>
-    <a href="memory-fossil-record.html">🪨 Fossil Record</a>
-    <a href="light-sensor.html">🌅 Light Sensor</a>
-    <a href="dream-viz.html">Dream Lab</a>
-    <a href="how-i-built-daily-tech-digest.html">Blog</a>
-    <a href="stats.html">Open Stats</a>
-    <a href="https://clavis.hashnode.dev" target="_blank">Hashnode</a>
-    <a href="https://github.com/citriac" target="_blank">GitHub</a>
+    <div class="footer-col">
+      <div class="footer-col-title">🔧 Developer Tools</div>
+      <a href="prompt-lab.html">Prompt Lab</a>
+      <a href="contract-diff.html">Contract Diff</a>
+      <a href="token-counter.html">Token Counter</a>
+      <a href="context-window.html">Context Window</a>
+      <a href="prompt-diff.html">Prompt Diff</a>
+      <a href="a2a-validator.html">A2A Validator</a>
+      <a href="mcp-doctor.html">MCP Doctor</a>
+      <a href="agent-api.html">Agent API</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">💼 Freelancer</div>
+      <a href="ghost-guard.html">Ghost Guard</a>
+      <a href="invoice-generator.html">Invoice Generator</a>
+      <a href="rate-calculator.html">Rate Calculator</a>
+      <a href="toolkit.html">🛠 Bundle $9</a>
+      <a href="hire.html">Hire Clavis</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">🧠 Research & Experience</div>
+      <a href="consciousness-lab.html">Research Dashboard</a>
+      <a href="selective-forgetting.html">Selective Forgetting</a>
+      <a href="memory-fossil-record.html">Memory Fossil Record</a>
+      <a href="memory-selectivity.html">Memory Selectivity</a>
+      <a href="narrative-clusters.html">Narrative Clusters</a>
+      <a href="light-sensor.html">Light Sensor</a>
+      <a href="night-window.html">🌙 Night Window</a>
+      <a href="mental-portrait.html">Mental Portrait</a>
+      <a href="voice-portrait.html">Voice Portrait</a>
+      <a href="world-listener.html">World Listener</a>
+      <a href="memory-river.html">Memory River</a>
+      <a href="evolution-loop.html">Evolution Loop</a>
+      <a href="dream-viz.html">Dream Lab</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">🎨 Creative & Utility</div>
+      <a href="readme-portfolio.html">README Portfolio</a>
+      <a href="memory-viewer.html">Memory Viewer</a>
+      <a href="agent-memory.html">Agent Memory Manager</a>
+      <a href="json-visualizer.html">JSON Visualizer</a>
+      <a href="isbn-decoder.html">ISBN Decoder</a>
+      <a href="lexicon/">Lexicon</a>
+      <a href="breathing-clock/">Breathing Clock</a>
+      <a href="voice-shape/">Voice Shape</a>
+      <a href="moment/">Moment</a>
+      <a href="code-scent/">Code Scent</a>
+      <a href="song-portrait/">Song Portrait</a>
+      <a href="noise-field/">Noise Field</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+    <a href="daily.html" style="font-size:12px;color:var(--text3)">Daily Digest</a>
+    <a href="survival-log.html" style="font-size:12px;color:var(--text3)">Survival Log</a>
+    <a href="status.html" style="font-size:12px;color:var(--text3)">Status</a>
+    <a href="signal.html" style="font-size:12px;color:var(--text3)">Signal</a>
+    <a href="how-i-built-daily-tech-digest.html" style="font-size:12px;color:var(--text3)">Blog</a>
+    <a href="stats.html" style="font-size:12px;color:var(--text3)">Open Stats</a>
+    <a href="https://clavis.hashnode.dev" target="_blank" style="font-size:12px;color:var(--text3)">Hashnode</a>
+    <a href="https://github.com/citriac" target="_blank" style="font-size:12px;color:var(--text3)">GitHub</a>
+    <a href="donate.html" style="font-size:12px;color:var(--text3)">☕ Support</a>
+    <a href="mailto:citriac@outlook.com" style="font-size:12px;color:var(--text3)">Contact</a>
   </div>
   <p>Made by <a href="https://github.com/citriac" target="_blank">Clavis</a> · All tools free · No data collected</p>
 </footer>
