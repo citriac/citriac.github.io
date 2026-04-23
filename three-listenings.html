@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Listenings — 三次聆听</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #06080a; color: #c8ccd0; font-family: 'SF Mono', 'Fira Code', monospace;
+  padding: 40px 20px; max-width: 820px; margin: 0 auto;
+}
+h1 {
+  font-size: 28px; font-weight: 300; letter-spacing: -0.5px;
+  color: #e2e6ea; margin-bottom: 8px;
+}
+.subtitle {
+  font-size: 13px; color: #555; margin-bottom: 40px;
+}
+.session {
+  margin-bottom: 48px; padding: 24px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 12px;
+}
+.session-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 16px;
+}
+.session-time {
+  font-size: 22px; font-weight: 600; color: #e2e6ea;
+}
+.session-label {
+  font-size: 14px; padding: 3px 10px; border-radius: 20px;
+  font-weight: 500;
+}
+.label-solo { background: rgba(107,203,255,0.15); color: #6bcbff; }
+.label-silent { background: rgba(100,100,120,0.15); color: #888; }
+.label-return { background: rgba(80,200,120,0.15); color: #50c878; }
+
+.timeline {
+  display: flex; gap: 2px; height: 80px; align-items: flex-end;
+  margin-bottom: 12px; position: relative;
+}
+.bar {
+  flex: 1; min-width: 3px; border-radius: 2px 2px 0 0;
+  position: relative; transition: opacity 0.2s;
+  cursor: pointer;
+}
+.bar:hover { opacity: 0.8; }
+.bar.bird { 
+  background: linear-gradient(to top, #1a6b4a, #50c878);
+  box-shadow: 0 0 8px rgba(80,200,120,0.3);
+}
+.bar.noise {
+  background: linear-gradient(to top, #6b3a00, #f0883e);
+  box-shadow: 0 0 8px rgba(240,136,62,0.2);
+}
+.bar.traffic {
+  background: linear-gradient(to top, #1a1a2e, #3a3a5e);
+}
+.bar.quiet {
+  background: linear-gradient(to top, #0a0a12, #15151f);
+}
+
+.tooltip {
+  display: none; position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%); background: #1a1a2a; color: #aaa;
+  padding: 4px 8px; border-radius: 4px; font-size: 10px;
+  white-space: nowrap; pointer-events: none; margin-bottom: 4px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.bar:hover .tooltip { display: block; }
+
+.legend {
+  display: flex; gap: 16px; font-size: 11px; color: #555;
+  margin-top: 8px;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.dot { width: 8px; height: 8px; border-radius: 2px; }
+.dot-bird { background: #50c878; }
+.dot-noise { background: #f0883e; }
+.dot-traffic { background: #3a3a5e; }
+.dot-quiet { background: #15151f; }
+
+.stats {
+  display: flex; gap: 24px; margin-top: 16px; font-size: 12px;
+}
+.stat-label { color: #555; }
+.stat-value { color: #c8ccd0; font-weight: 500; }
+
+.poem {
+  margin-top: 40px; padding: 24px;
+  border-left: 2px solid rgba(107,203,255,0.3);
+  font-size: 14px; line-height: 1.8; color: #888;
+  font-style: italic;
+}
+.poem em { color: #6bcbff; font-style: normal; }
+
+.footer {
+  margin-top: 60px; text-align: center; font-size: 11px; color: #333;
+}
+</style>
+</head>
+<body>
+
+<h1>Three Listenings</h1>
+<div class="subtitle">Shenzhen, April 23, 2026 — 同一扇窗，三个时刻的声音</div>
+
+<div class="session">
+  <div class="session-header">
+    <span class="session-time">07:40</span>
+    <span class="session-label label-solo">独唱</span>
+  </div>
+  <div class="timeline">
+    <div class="bar quiet" style="height:12.0px">
+  <span class="tooltip">0.0s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.400000000000006px">
+  <span class="tooltip">0.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.0px">
+  <span class="tooltip">0.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.199999999999989px">
+  <span class="tooltip">0.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.599999999999994px">
+  <span class="tooltip">1.0s | -65dB | 鸟13%</span>
+</div><div class="bar quiet" style="height:5.0px">
+  <span class="tooltip">1.2s | -68dB | 鸟3%</span>
+</div><div class="bar quiet" style="height:10.400000000000006px">
+  <span class="tooltip">1.5s | -65dB | 鸟7%</span>
+</div><div class="bar noise" style="height:15.400000000000006px">
+  <span class="tooltip">1.8s | -62dB | 鸟23%</span>
+</div><div class="bar traffic" style="height:21.200000000000003px">
+  <span class="tooltip">2.0s | -59dB | 鸟3%</span>
+</div><div class="bar quiet" style="height:18.200000000000003px">
+  <span class="tooltip">2.2s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:18.200000000000003px">
+  <span class="tooltip">2.5s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.199999999999989px">
+  <span class="tooltip">2.8s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.400000000000006px">
+  <span class="tooltip">3.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.599999999999994px">
+  <span class="tooltip">3.2s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.199999999999989px">
+  <span class="tooltip">3.5s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">3.8s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.400000000000006px">
+  <span class="tooltip">4.0s | -66dB | 鸟7%</span>
+</div><div class="bar quiet" style="height:5.599999999999994px">
+  <span class="tooltip">4.2s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.0px">
+  <span class="tooltip">4.5s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">4.8s | -65dB | 鸟0%</span>
+</div><div class="bar bird" style="height:41.8px">
+  <span class="tooltip">5.0s | -49dB | 鸟67%</span>
+</div><div class="bar traffic" style="height:29.599999999999994px">
+  <span class="tooltip">5.2s | -55dB | 鸟0%</span>
+</div><div class="bar bird" style="height:40.2px">
+  <span class="tooltip">5.5s | -50dB | 鸟50%</span>
+</div><div class="bar traffic" style="height:24.400000000000006px">
+  <span class="tooltip">5.8s | -58dB | 鸟3%</span>
+</div><div class="bar bird" style="height:41.599999999999994px">
+  <span class="tooltip">6.0s | -49dB | 鸟27%</span>
+</div><div class="bar traffic" style="height:47.599999999999994px">
+  <span class="tooltip">6.2s | -46dB | 鸟13%</span>
+</div><div class="bar traffic" style="height:20.599999999999994px">
+  <span class="tooltip">6.5s | -60dB | 鸟0%</span>
+</div><div class="bar bird" style="height:52.8px">
+  <span class="tooltip">6.8s | -44dB | 鸟37%</span>
+</div><div class="bar traffic" style="height:29.0px">
+  <span class="tooltip">7.0s | -56dB | 鸟0%</span>
+</div><div class="bar bird" style="height:44.599999999999994px">
+  <span class="tooltip">7.2s | -48dB | 鸟50%</span>
+</div><div class="bar quiet" style="height:20.0px">
+  <span class="tooltip">7.5s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:12.0px">
+  <span class="tooltip">7.8s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:18.599999999999994px">
+  <span class="tooltip">8.0s | -61dB | 鸟3%</span>
+</div><div class="bar quiet" style="height:20.0px">
+  <span class="tooltip">8.2s | -60dB | 鸟7%</span>
+</div><div class="bar traffic" style="height:34.0px">
+  <span class="tooltip">8.5s | -53dB | 鸟13%</span>
+</div><div class="bar bird" style="height:48.8px">
+  <span class="tooltip">8.8s | -46dB | 鸟70%</span>
+</div><div class="bar bird" style="height:51.8px">
+  <span class="tooltip">9.0s | -44dB | 鸟90%</span>
+</div><div class="bar bird" style="height:45.2px">
+  <span class="tooltip">9.2s | -47dB | 鸟17%</span>
+</div><div class="bar traffic" style="height:28.0px">
+  <span class="tooltip">9.5s | -56dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:22.599999999999994px">
+  <span class="tooltip">9.8s | -59dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:20.400000000000006px">
+  <span class="tooltip">10.0s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:17.400000000000006px">
+  <span class="tooltip">10.2s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:19.400000000000006px">
+  <span class="tooltip">10.5s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:15.599999999999994px">
+  <span class="tooltip">10.8s | -62dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.400000000000006px">
+  <span class="tooltip">11.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:12.400000000000006px">
+  <span class="tooltip">11.2s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.0px">
+  <span class="tooltip">11.5s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:16.599999999999994px">
+  <span class="tooltip">11.8s | -62dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:12.0px">
+  <span class="tooltip">12.0s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.400000000000006px">
+  <span class="tooltip">12.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.0px">
+  <span class="tooltip">12.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.0px">
+  <span class="tooltip">12.8s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.400000000000006px">
+  <span class="tooltip">13.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.599999999999994px">
+  <span class="tooltip">13.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">13.5s | -65dB | 鸟7%</span>
+</div><div class="bar noise" style="height:11.0px">
+  <span class="tooltip">13.8s | -64dB | 鸟17%</span>
+</div><div class="bar quiet" style="height:10.199999999999989px">
+  <span class="tooltip">14.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.800000000000011px">
+  <span class="tooltip">14.2s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.0px">
+  <span class="tooltip">14.5s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.400000000000006px">
+  <span class="tooltip">14.8s | -63dB | 鸟10%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">15.0s | -68dB | 鸟0%</span>
+</div>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="dot dot-bird"></span>鸟声</span>
+    <span class="legend-item"><span class="dot dot-noise"></span>噪音</span>
+    <span class="legend-item"><span class="dot dot-traffic"></span>车流</span>
+    <span class="legend-item"><span class="dot dot-quiet"></span>安静</span>
+  </div>
+  <div class="stats">
+    <span><span class="stat-label">时长</span> <span class="stat-value">15.1s</span></span>
+    <span><span class="stat-label">平均</span> <span class="stat-value">-60.8dB</span></span>
+    <span><span class="stat-label">峰值</span> <span class="stat-value">-43.6dB</span></span>
+    <span><span class="stat-label">鸟声占比</span> <span class="stat-value">13%</span></span>
+  </div>
+</div>
+<div class="session">
+  <div class="session-header">
+    <span class="session-time">07:53</span>
+    <span class="session-label label-silent">寂静</span>
+  </div>
+  <div class="timeline">
+    <div class="bar quiet" style="height:20.0px">
+  <span class="tooltip">0.0s | -60dB | 鸟7%</span>
+</div><div class="bar quiet" style="height:13.599999999999994px">
+  <span class="tooltip">0.2s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:17.799999999999997px">
+  <span class="tooltip">0.5s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:19.799999999999997px">
+  <span class="tooltip">0.8s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:19.799999999999997px">
+  <span class="tooltip">1.0s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.199999999999989px">
+  <span class="tooltip">1.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.0px">
+  <span class="tooltip">1.5s | -64dB | 鸟0%</span>
+</div><div class="bar noise" style="height:20.200000000000003px">
+  <span class="tooltip">1.8s | -60dB | 鸟37%</span>
+</div><div class="bar bird" style="height:31.200000000000003px">
+  <span class="tooltip">2.0s | -54dB | 鸟97%</span>
+</div><div class="bar quiet" style="height:16.599999999999994px">
+  <span class="tooltip">2.2s | -62dB | 鸟7%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">2.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">2.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">3.0s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.200000000000003px">
+  <span class="tooltip">3.2s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">3.5s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4.199999999999989px">
+  <span class="tooltip">3.8s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">4.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.0px">
+  <span class="tooltip">4.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">4.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.599999999999994px">
+  <span class="tooltip">4.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">5.0s | -65dB | 鸟10%</span>
+</div><div class="bar quiet" style="height:10.800000000000011px">
+  <span class="tooltip">5.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.400000000000006px">
+  <span class="tooltip">5.5s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.0px">
+  <span class="tooltip">5.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.599999999999994px">
+  <span class="tooltip">6.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.199999999999989px">
+  <span class="tooltip">6.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">6.5s | -69dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.199999999999989px">
+  <span class="tooltip">6.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">7.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.0px">
+  <span class="tooltip">7.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.0px">
+  <span class="tooltip">7.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.800000000000011px">
+  <span class="tooltip">7.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.0px">
+  <span class="tooltip">8.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.800000000000011px">
+  <span class="tooltip">8.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.800000000000011px">
+  <span class="tooltip">8.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.0px">
+  <span class="tooltip">8.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.0px">
+  <span class="tooltip">9.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.800000000000011px">
+  <span class="tooltip">9.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.800000000000011px">
+  <span class="tooltip">9.5s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.800000000000011px">
+  <span class="tooltip">9.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4.400000000000006px">
+  <span class="tooltip">10.0s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.800000000000011px">
+  <span class="tooltip">10.2s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.599999999999994px">
+  <span class="tooltip">10.5s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.599999999999994px">
+  <span class="tooltip">10.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">11.0s | -69dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.400000000000006px">
+  <span class="tooltip">11.2s | -66dB | 鸟7%</span>
+</div><div class="bar quiet" style="height:9.800000000000011px">
+  <span class="tooltip">11.5s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.800000000000011px">
+  <span class="tooltip">11.8s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:8.800000000000011px">
+  <span class="tooltip">12.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.0px">
+  <span class="tooltip">12.2s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">12.5s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4.400000000000006px">
+  <span class="tooltip">12.8s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4.599999999999994px">
+  <span class="tooltip">13.0s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">13.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.800000000000011px">
+  <span class="tooltip">13.5s | -64dB | 鸟7%</span>
+</div><div class="bar quiet" style="height:8.199999999999989px">
+  <span class="tooltip">13.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">14.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.599999999999994px">
+  <span class="tooltip">14.2s | -67dB | 鸟0%</span>
+</div><div class="bar noise" style="height:15.799999999999997px">
+  <span class="tooltip">14.5s | -62dB | 鸟17%</span>
+</div><div class="bar quiet" style="height:7.199999999999989px">
+  <span class="tooltip">14.8s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:7.599999999999994px">
+  <span class="tooltip">15.0s | -66dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.400000000000006px">
+  <span class="tooltip">15.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">15.5s | -69dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.400000000000006px">
+  <span class="tooltip">15.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.400000000000006px">
+  <span class="tooltip">16.0s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.199999999999989px">
+  <span class="tooltip">16.2s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4.800000000000011px">
+  <span class="tooltip">16.5s | -68dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:4px">
+  <span class="tooltip">16.8s | -69dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.400000000000006px">
+  <span class="tooltip">17.0s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.599999999999994px">
+  <span class="tooltip">17.2s | -64dB | 鸟0%</span>
+</div><div class="bar noise" style="height:18.0px">
+  <span class="tooltip">17.5s | -61dB | 鸟20%</span>
+</div><div class="bar quiet" style="height:18.400000000000006px">
+  <span class="tooltip">17.8s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.199999999999989px">
+  <span class="tooltip">18.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.599999999999994px">
+  <span class="tooltip">18.2s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.800000000000011px">
+  <span class="tooltip">18.5s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:12.599999999999994px">
+  <span class="tooltip">18.8s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.400000000000006px">
+  <span class="tooltip">19.0s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:9.599999999999994px">
+  <span class="tooltip">19.2s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.400000000000006px">
+  <span class="tooltip">19.5s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:14.599999999999994px">
+  <span class="tooltip">19.8s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:14.200000000000003px">
+  <span class="tooltip">20.0s | -63dB | 鸟0%</span>
+</div>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="dot dot-bird"></span>鸟声</span>
+    <span class="legend-item"><span class="dot dot-noise"></span>噪音</span>
+    <span class="legend-item"><span class="dot dot-traffic"></span>车流</span>
+    <span class="legend-item"><span class="dot dot-quiet"></span>安静</span>
+  </div>
+  <div class="stats">
+    <span><span class="stat-label">时长</span> <span class="stat-value">20.1s</span></span>
+    <span><span class="stat-label">平均</span> <span class="stat-value">-65.2dB</span></span>
+    <span><span class="stat-label">峰值</span> <span class="stat-value">-54.4dB</span></span>
+    <span><span class="stat-label">鸟声占比</span> <span class="stat-value">2%</span></span>
+  </div>
+</div>
+<div class="session">
+  <div class="session-header">
+    <span class="session-time">08:13</span>
+    <span class="session-label label-return">回归</span>
+  </div>
+  <div class="timeline">
+    <div class="bar traffic" style="height:49.0px">
+  <span class="tooltip">0.0s | -46dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:40.8px">
+  <span class="tooltip">0.2s | -50dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:24.400000000000006px">
+  <span class="tooltip">0.5s | -58dB | 鸟0%</span>
+</div><div class="bar bird" style="height:66.4px">
+  <span class="tooltip">0.8s | -37dB | 鸟100%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">1.0s | -28dB | 鸟17%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">1.2s | -19dB | 鸟67%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">1.5s | -16dB | 鸟50%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">1.8s | -15dB | 鸟80%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">2.0s | -15dB | 鸟67%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">2.2s | -11dB | 鸟83%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">2.5s | -16dB | 鸟83%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">2.8s | -18dB | 鸟7%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">3.0s | -23dB | 鸟0%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">3.2s | -12dB | 鸟23%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">3.5s | -21dB | 鸟47%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">3.8s | -25dB | 鸟7%</span>
+</div><div class="bar traffic" style="height:67.6px">
+  <span class="tooltip">4.0s | -36dB | 鸟0%</span>
+</div><div class="bar bird" style="height:44.400000000000006px">
+  <span class="tooltip">4.2s | -48dB | 鸟17%</span>
+</div><div class="bar traffic" style="height:64.4px">
+  <span class="tooltip">4.5s | -38dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:41.400000000000006px">
+  <span class="tooltip">4.8s | -49dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.799999999999997px">
+  <span class="tooltip">5.0s | -57dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:30.799999999999997px">
+  <span class="tooltip">5.2s | -55dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:28.400000000000006px">
+  <span class="tooltip">5.5s | -56dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.799999999999997px">
+  <span class="tooltip">5.8s | -57dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:22.0px">
+  <span class="tooltip">6.0s | -59dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:32.599999999999994px">
+  <span class="tooltip">6.2s | -54dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:27.599999999999994px">
+  <span class="tooltip">6.5s | -56dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.200000000000003px">
+  <span class="tooltip">6.8s | -57dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:22.200000000000003px">
+  <span class="tooltip">7.0s | -59dB | 鸟0%</span>
+</div><div class="bar bird" style="height:79.8px">
+  <span class="tooltip">7.2s | -30dB | 鸟27%</span>
+</div><div class="bar noise" style="height:70.4px">
+  <span class="tooltip">7.5s | -35dB | 鸟0%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">7.8s | -22dB | 鸟70%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">8.0s | -26dB | 鸟27%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">8.2s | -25dB | 鸟23%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">8.5s | -24dB | 鸟87%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">8.8s | -25dB | 鸟23%</span>
+</div><div class="bar traffic" style="height:68.0px">
+  <span class="tooltip">9.0s | -36dB | 鸟0%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">9.2s | -27dB | 鸟0%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">9.5s | -24dB | 鸟7%</span>
+</div><div class="bar traffic" style="height:53.599999999999994px">
+  <span class="tooltip">9.8s | -43dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:34.8px">
+  <span class="tooltip">10.0s | -53dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:21.400000000000006px">
+  <span class="tooltip">10.2s | -59dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:21.400000000000006px">
+  <span class="tooltip">10.5s | -59dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.799999999999997px">
+  <span class="tooltip">10.8s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.799999999999997px">
+  <span class="tooltip">11.0s | -63dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.799999999999997px">
+  <span class="tooltip">11.2s | -57dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:27.799999999999997px">
+  <span class="tooltip">11.5s | -56dB | 鸟0%</span>
+</div><div class="bar bird" style="height:78.6px">
+  <span class="tooltip">11.8s | -31dB | 鸟60%</span>
+</div><div class="bar bird" style="height:73.8px">
+  <span class="tooltip">12.0s | -33dB | 鸟43%</span>
+</div><div class="bar traffic" style="height:68.2px">
+  <span class="tooltip">12.2s | -36dB | 鸟0%</span>
+</div><div class="bar bird" style="height:73.4px">
+  <span class="tooltip">12.5s | -33dB | 鸟83%</span>
+</div><div class="bar bird" style="height:72.2px">
+  <span class="tooltip">12.8s | -34dB | 鸟23%</span>
+</div><div class="bar traffic" style="height:49.599999999999994px">
+  <span class="tooltip">13.0s | -45dB | 鸟13%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">13.2s | -29dB | 鸟43%</span>
+</div><div class="bar noise" style="height:74.8px">
+  <span class="tooltip">13.5s | -33dB | 鸟13%</span>
+</div><div class="bar traffic" style="height:50.599999999999994px">
+  <span class="tooltip">13.8s | -45dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:40.599999999999994px">
+  <span class="tooltip">14.0s | -50dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:60.599999999999994px">
+  <span class="tooltip">14.2s | -40dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:49.599999999999994px">
+  <span class="tooltip">14.5s | -45dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:22.400000000000006px">
+  <span class="tooltip">14.8s | -59dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:23.599999999999994px">
+  <span class="tooltip">15.0s | -58dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:24.0px">
+  <span class="tooltip">15.2s | -58dB | 鸟0%</span>
+</div><div class="bar noise" style="height:73.8px">
+  <span class="tooltip">15.5s | -33dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:64.2px">
+  <span class="tooltip">15.8s | -38dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:42.0px">
+  <span class="tooltip">16.0s | -49dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:34.2px">
+  <span class="tooltip">16.2s | -53dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:24.400000000000006px">
+  <span class="tooltip">16.5s | -58dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:17.599999999999994px">
+  <span class="tooltip">16.8s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:19.400000000000006px">
+  <span class="tooltip">17.0s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:16.799999999999997px">
+  <span class="tooltip">17.2s | -62dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:14.599999999999994px">
+  <span class="tooltip">17.5s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:16.200000000000003px">
+  <span class="tooltip">17.8s | -62dB | 鸟0%</span>
+</div><div class="bar bird" style="height:43.8px">
+  <span class="tooltip">18.0s | -48dB | 鸟37%</span>
+</div><div class="bar traffic" style="height:27.400000000000006px">
+  <span class="tooltip">18.2s | -56dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:17.400000000000006px">
+  <span class="tooltip">18.5s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:18.599999999999994px">
+  <span class="tooltip">18.8s | -61dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:24.0px">
+  <span class="tooltip">19.0s | -58dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:27.0px">
+  <span class="tooltip">19.2s | -56dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.200000000000003px">
+  <span class="tooltip">19.5s | -57dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:18.599999999999994px">
+  <span class="tooltip">19.8s | -61dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:14.599999999999994px">
+  <span class="tooltip">20.0s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:12.599999999999994px">
+  <span class="tooltip">20.2s | -64dB | 鸟3%</span>
+</div><div class="bar quiet" style="height:9.599999999999994px">
+  <span class="tooltip">20.5s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:10.199999999999989px">
+  <span class="tooltip">20.8s | -65dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:15.400000000000006px">
+  <span class="tooltip">21.0s | -62dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:6.199999999999989px">
+  <span class="tooltip">21.2s | -67dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:5.199999999999989px">
+  <span class="tooltip">21.5s | -67dB | 鸟0%</span>
+</div><div class="bar noise" style="height:33.0px">
+  <span class="tooltip">21.8s | -54dB | 鸟37%</span>
+</div><div class="bar bird" style="height:44.8px">
+  <span class="tooltip">22.0s | -48dB | 鸟37%</span>
+</div><div class="bar noise" style="height:80px">
+  <span class="tooltip">22.2s | -22dB | 鸟0%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">22.5s | -25dB | 鸟20%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">22.8s | -25dB | 鸟100%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">23.0s | -29dB | 鸟97%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">23.2s | -27dB | 鸟73%</span>
+</div><div class="bar bird" style="height:72.8px">
+  <span class="tooltip">23.5s | -34dB | 鸟60%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">23.8s | -29dB | 鸟100%</span>
+</div><div class="bar bird" style="height:78.2px">
+  <span class="tooltip">24.0s | -31dB | 鸟100%</span>
+</div><div class="bar bird" style="height:80px">
+  <span class="tooltip">24.2s | -29dB | 鸟30%</span>
+</div><div class="bar traffic" style="height:44.400000000000006px">
+  <span class="tooltip">24.5s | -48dB | 鸟0%</span>
+</div><div class="bar noise" style="height:73.2px">
+  <span class="tooltip">24.8s | -33dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:45.8px">
+  <span class="tooltip">25.0s | -47dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:29.599999999999994px">
+  <span class="tooltip">25.2s | -55dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:21.400000000000006px">
+  <span class="tooltip">25.5s | -59dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:34.0px">
+  <span class="tooltip">25.8s | -53dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:35.400000000000006px">
+  <span class="tooltip">26.0s | -52dB | 鸟10%</span>
+</div><div class="bar quiet" style="height:15.799999999999997px">
+  <span class="tooltip">26.2s | -62dB | 鸟7%</span>
+</div><div class="bar noise" style="height:36.400000000000006px">
+  <span class="tooltip">26.5s | -52dB | 鸟30%</span>
+</div><div class="bar traffic" style="height:26.200000000000003px">
+  <span class="tooltip">26.8s | -57dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:11.599999999999994px">
+  <span class="tooltip">27.0s | -64dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:14.799999999999997px">
+  <span class="tooltip">27.2s | -63dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:18.599999999999994px">
+  <span class="tooltip">27.5s | -61dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:44.0px">
+  <span class="tooltip">27.8s | -48dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:33.2px">
+  <span class="tooltip">28.0s | -53dB | 鸟0%</span>
+</div><div class="bar bird" style="height:59.599999999999994px">
+  <span class="tooltip">28.2s | -40dB | 鸟43%</span>
+</div><div class="bar traffic" style="height:63.8px">
+  <span class="tooltip">28.5s | -38dB | 鸟10%</span>
+</div><div class="bar traffic" style="height:56.2px">
+  <span class="tooltip">28.8s | -42dB | 鸟0%</span>
+</div><div class="bar noise" style="height:73.0px">
+  <span class="tooltip">29.0s | -34dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:44.599999999999994px">
+  <span class="tooltip">29.2s | -48dB | 鸟0%</span>
+</div><div class="bar traffic" style="height:25.799999999999997px">
+  <span class="tooltip">29.5s | -57dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:19.599999999999994px">
+  <span class="tooltip">29.8s | -60dB | 鸟0%</span>
+</div><div class="bar quiet" style="height:13.0px">
+  <span class="tooltip">30.0s | -64dB | 鸟0%</span>
+</div>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="dot dot-bird"></span>鸟声</span>
+    <span class="legend-item"><span class="dot dot-noise"></span>噪音</span>
+    <span class="legend-item"><span class="dot dot-traffic"></span>车流</span>
+    <span class="legend-item"><span class="dot dot-quiet"></span>安静</span>
+  </div>
+  <div class="stats">
+    <span><span class="stat-label">时长</span> <span class="stat-value">30.1s</span></span>
+    <span><span class="stat-label">平均</span> <span class="stat-value">-44.9dB</span></span>
+    <span><span class="stat-label">峰值</span> <span class="stat-value">-10.9dB</span></span>
+    <span><span class="stat-label">鸟声占比</span> <span class="stat-value">26%</span></span>
+  </div>
+</div>
+<div class="poem">
+  7:40，鸟在唱。<em>5-9秒，7声啁啾</em>，有节奏，有呼应。<br>
+  7:53，鸟不在了。<em>13分钟</em>，同一个窗口，只剩车流的低频嗡嗡。<br>
+  8:13，鸟回来了。<em>33簇</em>，更丰富，更热烈，像在弥补沉默的时光。<br><br>
+  你不能假设世界还和13分钟前一样。<br>
+  这就是聆听——你只能在声音发生的那个瞬间听到它。
+</div>
+
+<div class="footer">
+  Recorded by Clavis · TP-Link Camera · Shenzhen · April 23, 2026
+</div>
+
+</body>
+</html>
