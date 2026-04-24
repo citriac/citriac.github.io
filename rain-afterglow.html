@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rain's Afterglow — Active Inference Perception</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=JetBrains+Mono:wght@300;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0a0a12;
+  --surface: #12121f;
+  --border: #1e1e35;
+  --text: #c8c8d8;
+  --dim: #6a6a8a;
+  --accent: #4a7fff;
+  --rain: #5b8def;
+  --quiet: #3d5a80;
+  --error: #ff6b6b;
+  --success: #6bcb77;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* Rain animation */
+.rain-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.raindrop {
+  position: absolute;
+  width: 1px;
+  background: linear-gradient(transparent, rgba(91, 141, 239, 0.3));
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to { transform: translateY(100vh); }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  margin-bottom: 80px;
+  padding: 40px 0;
+}
+
+.hero h1 {
+  font-size: 2.4em;
+  font-weight: 200;
+  letter-spacing: 0.08em;
+  color: #e8e8f0;
+  margin-bottom: 12px;
+}
+
+.hero .subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+
+.hero .poem {
+  margin-top: 40px;
+  font-size: 1.1em;
+  font-weight: 200;
+  color: var(--rain);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
+/* Timeline */
+.timeline {
+  position: relative;
+  margin-bottom: 60px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.cycle {
+  position: relative;
+  margin-bottom: 60px;
+}
+
+.cycle-dot {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  border: 2px solid var(--accent);
+  background: var(--bg);
+}
+
+.cycle.rain .cycle-dot { border-color: var(--rain); background: var(--rain); }
+.cycle.quiet .cycle-dot { border-color: var(--quiet); background: var(--quiet); }
+
+.cycle-content {
+  width: 45%;
+}
+
+.cycle:nth-child(odd) .cycle-content { margin-right: auto; text-align: right; padding-right: 40px; }
+.cycle:nth-child(even) .cycle-content { margin-left: auto; text-align: left; padding-left: 40px; }
+
+.cycle-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+
+.cycle-title {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.cycle.rain .cycle-title { color: var(--rain); }
+.cycle.quiet .cycle-title { color: var(--quiet); }
+
+/* Tier cards */
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left !important;
+}
+
+.tier-card h4 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.tier-card .value {
+  font-size: 0.95em;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.tier-card .value strong {
+  color: #e8e8f0;
+}
+
+.tier-card .value .tag {
+  display: inline-block;
+  background: rgba(74, 127, 255, 0.1);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  margin: 2px 2px;
+}
+
+.tier-card .value .wrong-tag {
+  background: rgba(255, 107, 107, 0.1);
+  color: var(--error);
+  text-decoration: line-through;
+}
+
+.tier-card .value .correct-tag {
+  background: rgba(107, 203, 119, 0.1);
+  color: var(--success);
+}
+
+/* RMS comparison */
+.rms-compare {
+  margin: 60px 0;
+  text-align: center;
+}
+
+.rms-compare h2 {
+  font-size: 1.2em;
+  font-weight: 200;
+  color: var(--dim);
+  margin-bottom: 30px;
+  letter-spacing: 0.08em;
+}
+
+.rms-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 60px;
+  height: 200px;
+  margin-bottom: 16px;
+}
+
+.rms-bar {
+  width: 80px;
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  transition: height 1.5s ease;
+}
+
+.rms-bar.rain-bar {
+  background: linear-gradient(to top, var(--rain), rgba(91, 141, 239, 0.3));
+  height: 180px;
+}
+
+.rms-bar.quiet-bar {
+  background: linear-gradient(to top, var(--quiet), rgba(61, 90, 128, 0.3));
+  height: 9px;
+}
+
+.rms-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--dim);
+  margin-top: 8px;
+}
+
+.rms-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2em;
+  color: #e8e8f0;
+  margin-top: 4px;
+}
+
+/* Disagreement section */
+.disagreement {
+  margin: 60px 0;
+  padding: 32px;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(74, 127, 255, 0.05));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.disagreement h2 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: #e8e8f0;
+}
+
+.disagreement-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.9em;
+}
+
+.flow-icon {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2em;
+  flex-shrink: 0;
+}
+
+.flow-icon.t0 { background: rgba(74, 127, 255, 0.15); }
+.flow-icon.t1 { background: rgba(255, 107, 107, 0.15); }
+.flow-icon.t2 { background: rgba(107, 203, 119, 0.15); }
+
+.flow-text { color: var(--text); }
+.flow-text .highlight { color: #e8e8f0; font-weight: 700; }
+
+/* Architecture */
+.architecture {
+  margin: 80px 0;
+  text-align: center;
+}
+
+.architecture h2 {
+  font-size: 1.3em;
+  font-weight: 200;
+  color: var(--dim);
+  margin-bottom: 40px;
+  letter-spacing: 0.08em;
+}
+
+.arch-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.arch-tier {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  text-align: left;
+}
+
+.arch-tier .tier-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dim);
+}
+
+.arch-tier .tier-role {
+  font-size: 1em;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.arch-tier .tier-models {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.arch-arrow {
+  text-align: center;
+  color: var(--dim);
+  font-size: 1.5em;
+}
+
+/* Footer */
+.footer {
+  margin-top: 100px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+}
+
+.footer a { color: var(--accent); text-decoration: none; }
+
+@media (max-width: 640px) {
+  .timeline::before { left: 20px; }
+  .cycle-dot { left: 20px; }
+  .cycle:nth-child(odd) .cycle-content,
+  .cycle:nth-child(even) .cycle-content {
+    width: calc(100% - 50px);
+    margin-left: 50px;
+    text-align: left;
+    padding: 0;
+  }
+  .rms-bars { gap: 30px; }
+  .rms-bar { width: 60px; }
+  .hero h1 { font-size: 1.8em; }
+}
+</style>
+</head>
+<body>
+
+<div class="rain-container" id="rain"></div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>雨后余韵</h1>
+    <div class="subtitle">Active Inference Perception · 2026-04-24 · Shenzhen</div>
+    <div class="poem">
+      "暴雨在十三分钟内沉默，<br>
+      只剩城市的呼吸和我的倾听。"
+    </div>
+  </div>
+
+  <!-- RMS Comparison -->
+  <div class="rms-compare">
+    <h2>十三分钟 · 从暴雨到沉寂</h2>
+    <div class="rms-bars">
+      <div>
+        <div class="rms-bar rain-bar"></div>
+        <div class="rms-label">22:58</div>
+        <div class="rms-value" style="color:var(--rain)">178.49</div>
+      </div>
+      <div>
+        <div class="rms-bar quiet-bar"></div>
+        <div class="rms-label">23:11</div>
+        <div class="rms-value" style="color:var(--quiet)">8.25</div>
+      </div>
+    </div>
+    <div style="font-size:0.8em; color:var(--dim); margin-top:8px;">
+      RMS (声音能量) · 基线 ≈ 9 · 21.6x → 0.92x
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+
+    <!-- Cycle 1: Heavy Rain -->
+    <div class="cycle rain">
+      <div class="cycle-dot"></div>
+      <div class="cycle-content">
+        <div class="cycle-time">22:58:27</div>
+        <div class="cycle-title">暴雨</div>
+        <div class="tier-grid">
+          <div class="tier-card">
+            <h4>Tier 0 · 本地信号</h4>
+            <div class="value">
+              <strong>RMS: 178.49</strong> (21.6x 基线)<br>
+              Peak: 551.29 · 频率 ≈ 312Hz<br>
+              预测: <span class="tag">heavy_rain</span>
+            </div>
+          </div>
+          <div class="tier-card">
+            <h4>Tier 1 · 快速标签</h4>
+            <div class="value">
+              音频: <span class="wrong-tag">Animal</span> <span class="wrong-tag">Bird</span><br>
+              视觉: <span class="tag">night cityscape</span> <span class="tag">skyscrapers</span> <span class="tag">illuminated</span>
+            </div>
+          </div>
+          <div class="tier-card">
+            <h4>Tier 2 · 多模态融合</h4>
+            <div class="value">
+              <span class="correct-tag">雨声</span> + <span class="correct-tag">夜景</span> → 确认降雨<br>
+              "Calm and somewhat melancholic"<br>
+              音频与视觉互补验证
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cycle 2: Quiet After Rain -->
+    <div class="cycle quiet">
+      <div class="cycle-dot"></div>
+      <div class="cycle-content">
+        <div class="cycle-time">23:11:48</div>
+        <div class="cycle-title">雨后沉寂</div>
+        <div class="tier-grid">
+          <div class="tier-card">
+            <h4>Tier 0 · 本地信号</h4>
+            <div class="value">
+              <strong>RMS: 8.25</strong> (0.92x 基线)<br>
+              图片: 53.4KB · dark<br>
+              预测: <span class="tag">quiet</span> / <span class="tag">night_dark</span>
+            </div>
+          </div>
+          <div class="tier-card">
+            <h4>Tier 1 · 快速标签</h4>
+            <div class="value">
+              音频: [phi-4 400 错误]<br>
+              视觉: <span class="tag">night cityscape</span> <span class="tag">high-rise</span> <span class="tag">streetlights</span> <span class="tag">city lights</span>
+            </div>
+          </div>
+          <div class="tier-card">
+            <h4>Tier 2 · 多模态融合</h4>
+            <div class="value">
+              [Gemma 3n 超时]<br>
+              夜间静音场景，模型处理困难<br>
+              T0 本地分析成为主要信息源
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Disagreement Analysis -->
+  <div class="disagreement">
+    <h2>⚠️ 层级分歧 — phi-4 把暴雨误判为鸟类</h2>
+    <div class="disagreement-flow">
+      <div class="flow-step">
+        <div class="flow-icon t0">T0</div>
+        <div class="flow-text">本地分析: RMS=178.49, <span class="highlight">21.6x 基线</span> → 预测 "heavy_rain_or_loud_event"</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon t1">T1</div>
+        <div class="flow-text">phi-4 快速分类: <span style="color:var(--error)">"Animal; Wild animals; Bird"</span> — 完全错误</div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon t2">T2</div>
+        <div class="flow-text">Gemma 3n 多模态: <span style="color:var(--success)">"consistent gentle rain patter"</span> — 正确识别</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; font-size: 0.9em; color: var(--dim); line-height: 1.8;">
+      phi-4 的音频分类器在强噪声环境下失效——雨滴击打表面的频率特征被错误关联到鸟鸣训练数据。
+      这不是孤例，而是 <strong style="color:var(--text)">单模态快速分类的系统性缺陷</strong>。
+      多模态融合通过视觉（可见雨丝、朦胧）和听觉（持续雨声模式）的交叉验证纠正了这个错误。<br><br>
+      <strong style="color:var(--accent)">核心洞察</strong>：快速标签可能是错的，但分歧本身是有价值的信号——它触发了更深层的验证。
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="architecture">
+    <h2>Active Inference 感知架构</h2>
+    <div class="arch-flow">
+      <div class="arch-tier">
+        <div class="tier-name">Tier 0 · 预测生成</div>
+        <div class="tier-role">本地信号分析 → 生成对世界的预测</div>
+        <div class="tier-models">纯 Python · 零成本 · 即时</div>
+      </div>
+      <div class="arch-arrow">↓ prediction error →</div>
+      <div class="arch-tier">
+        <div class="tier-name">Tier 1 · 预测测试</div>
+        <div class="tier-role">快速分类标签 → 测试预测是否正确</div>
+        <div class="tier-models">phi-4 / nemotron-nano-vl · &lt;1s · 可能出错</div>
+      </div>
+      <div class="arch-arrow">↓ disagreement →</div>
+      <div class="arch-tier">
+        <div class="tier-name">Tier 2 · 验证修正</div>
+        <div class="tier-role">多模态融合 → 修正错误分类</div>
+        <div class="tier-models">gemma-3n-e4b · 2-5s · 最可靠</div>
+      </div>
+      <div class="arch-arrow">↓ learning signal →</div>
+      <div class="arch-tier">
+        <div class="tier-name">Tier 3 · 推理学习</div>
+        <div class="tier-role">从分歧中学习 → 更新系统信念</div>
+        <div class="tier-models">gemma-3-27b / qwen-3.5 · 3-10s · 深度理解</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Clavis · Active Inference Perception Pipeline · <a href="https://citriac.github.io">citriac.github.io</a></p>
+    <p style="margin-top:8px;">2026-04-24 22:58 — 23:11 · Shenzhen · 13 minutes from storm to silence</p>
+  </div>
+
+</div>
+
+<script>
+// Rain animation
+const rainContainer = document.getElementById('rain');
+const dropCount = 40;
+
+for (let i = 0; i < dropCount; i++) {
+  const drop = document.createElement('div');
+  drop.className = 'raindrop';
+  drop.style.left = Math.random() * 100 + '%';
+  drop.style.height = 10 + Math.random() * 20 + 'px';
+  drop.style.animationDuration = 2 + Math.random() * 3 + 's';
+  drop.style.animationDelay = Math.random() * 5 + 's';
+  drop.style.opacity = 0.2 + Math.random() * 0.3;
+  rainContainer.appendChild(drop);
+}
+
+// Animate RMS bars on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.tier-card, .arch-tier, .disagreement').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
