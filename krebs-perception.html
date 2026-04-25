@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krebs Perception Engine — Autocatalytic Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #060610;
+  --surface: #0e0e1c;
+  --surface2: #161630;
+  --border: #1e1e3a;
+  --text: #c8c8e0;
+  --dim: #5a5a80;
+  --accent: #4a8fff;
+  --rain: #5b8def;
+  --bird: #ffb347;
+  --engine: #6bcb77;
+  --error: #ff6b6b;
+  --epicycle: #c084fc;
+  --correction: #22d3ee;
+  --success: #6bcb77;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1.7;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.header h1 {
+  font-size: 2.2em;
+  font-weight: 200;
+  letter-spacing: 0.06em;
+  color: #e8e8f8;
+}
+
+.header .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--dim);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+/* Autocatalytic Index */
+.index-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.index-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 4em;
+  font-weight: 500;
+  background: linear-gradient(135deg, var(--correction), var(--epicycle));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+}
+
+.index-label {
+  font-size: 0.9em;
+  color: var(--dim);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+.index-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--dim);
+  margin-top: 12px;
+  opacity: 0.7;
+}
+
+/* Cycle Timeline */
+.cycles {
+  margin-bottom: 60px;
+}
+
+.cycles h2 {
+  font-size: 1.1em;
+  font-weight: 200;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.cycle-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 120px 100px;
+  gap: 16px;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s;
+}
+
+.cycle-row:hover {
+  background: var(--surface);
+}
+
+.cycle-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: var(--dim);
+}
+
+.cycle-scene {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cycle-scene .scene-label {
+  font-size: 1em;
+  font-weight: 700;
+}
+
+.cycle-scene .scene-detail {
+  font-size: 0.8em;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.cycle-audio {
+  text-align: center;
+}
+
+.rms-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.rms-badge.high { background: rgba(91,141,239,0.15); color: var(--rain); }
+.rms-badge.low { background: rgba(90,90,128,0.15); color: var(--dim); }
+
+.cycle-result {
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.cycle-result .agree { color: var(--success); }
+.cycle-result .disagree { color: var(--error); }
+
+/* Epicycle Flow */
+.epicycle-section {
+  margin: 60px 0;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.epicycle-section h2 {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--epicycle);
+}
+
+.epicycle-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.epi-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.epi-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.1em;
+}
+
+.epi-icon.waste { background: rgba(255,107,107,0.1); color: var(--error); }
+.epi-icon.convert { background: rgba(192,132,252,0.1); color: var(--epicycle); }
+.epi-icon.substrate { background: rgba(34,211,238,0.1); color: var(--correction); }
+
+.epi-text {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.epi-text strong { color: #e8e8f8; }
+.epi-text .krebs { color: var(--epicycle); font-style: italic; }
+
+/* Corrections Bank */
+.corrections {
+  margin: 48px 0;
+}
+
+.corrections h2 {
+  font-size: 1.1em;
+  font-weight: 200;
+  color: var(--dim);
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+}
+
+.corr-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--correction);
+}
+
+.corr-card .corr-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--correction);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.corr-card .corr-text {
+  font-size: 0.9em;
+  margin-top: 8px;
+  line-height: 1.6;
+}
+
+.corr-card .corr-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  color: var(--dim);
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+}
+
+.confidence-bar {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--correction);
+}
+
+/* 5-Tier Architecture */
+.arch-section {
+  margin: 60px 0;
+  padding: 32px;
+  background: linear-gradient(135deg, rgba(74,143,255,0.03), rgba(192,132,252,0.03));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.arch-section h2 {
+  font-size: 1.2em;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #e8e8f8;
+}
+
+.arch-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.arch-tier {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.arch-tier .tier-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--dim);
+  width: 24px;
+  text-align: center;
+}
+
+.arch-tier .tier-name {
+  font-weight: 700;
+  width: 120px;
+  font-size: 0.9em;
+}
+
+.arch-tier .tier-role {
+  color: var(--dim);
+  font-size: 0.85em;
+  flex: 1;
+}
+
+.arch-tier .tier-model {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  color: var(--accent);
+  background: rgba(74,143,255,0.08);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.arch-arrow {
+  text-align: center;
+  color: var(--dim);
+  font-size: 0.8em;
+  padding: 2px 0;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.arch-tier.t5 {
+  border-color: var(--epicycle);
+  background: rgba(192,132,252,0.05);
+}
+
+.arch-tier.t5 .tier-name { color: var(--epicycle); }
+
+/* The Key Insight */
+.insight {
+  margin: 80px 0 40px;
+  text-align: center;
+  padding: 48px 32px;
+  background: linear-gradient(135deg, rgba(192,132,252,0.05), rgba(34,211,238,0.05));
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.insight blockquote {
+  font-size: 1.3em;
+  font-weight: 200;
+  line-height: 1.8;
+  color: #e8e8f8;
+  font-style: italic;
+}
+
+.insight .attribution {
+  margin-top: 16px;
+  font-size: 0.85em;
+  color: var(--dim);
+}
+
+/* Footer */
+.footer {
+  margin-top: 60px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  color: var(--dim);
+}
+
+.footer a { color: var(--accent); text-decoration: none; }
+
+@media (max-width: 700px) {
+  .cycle-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .cycle-audio, .cycle-result { text-align: left; }
+  .index-value { font-size: 2.8em; }
+  .header h1 { font-size: 1.6em; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Krebs Perception Engine</h1>
+    <div class="sub">Autocatalytic Dashboard · Active Inference Pipeline · 2026-04-25</div>
+  </div>
+
+  <!-- Autocatalytic Index -->
+  <div class="index-card">
+    <div class="index-value">2.6</div>
+    <div class="index-label">Autocatalytic Index</div>
+    <div class="index-formula">Σ(correction confidence) / (1 + avg_disagreement_rate)</div>
+  </div>
+
+  <!-- Cycle Timeline -->
+  <div class="cycles">
+    <h2>PERCEPTION CYCLES</h2>
+
+    <div class="cycle-row">
+      <div class="cycle-time">22:58<br><span style="font-size:0.8em">Apr 24</span></div>
+      <div class="cycle-scene">
+        <div class="scene-label" style="color:var(--rain)">🌧️ 暴雨</div>
+        <div class="scene-detail">
+          phi-4: <span style="color:var(--error)">"Animal; Bird"</span> ❌<br>
+          Gemma 3n: "consistent rain patter" ✅<br>
+          本地 RMS: 178.49 (21.6x基线)
+        </div>
+      </div>
+      <div class="cycle-audio">
+        <span class="rms-badge high">RMS 178</span>
+      </div>
+      <div class="cycle-result">
+        <span class="disagree">⚠️ 分歧</span><br>
+        <span style="font-size:0.8em;color:var(--dim)">→ 生成修正</span>
+      </div>
+    </div>
+
+    <div class="cycle-row">
+      <div class="cycle-time">23:11<br><span style="font-size:0.8em">Apr 24</span></div>
+      <div class="cycle-scene">
+        <div class="scene-label" style="color:var(--dim)">🌙 雨后沉寂</div>
+        <div class="scene-detail">
+          phi-4: <span style="color:var(--error)">400 错误</span><br>
+          Gemma 3n: 超时<br>
+          T0 本地分析成为唯一信息源
+        </div>
+      </div>
+      <div class="cycle-audio">
+        <span class="rms-badge low">RMS 8.25</span>
+      </div>
+      <div class="cycle-result">
+        <span style="color:var(--correction)">🔄 修正生效</span><br>
+        <span style="font-size:0.8em;color:var(--dim)">epicycle 激活</span>
+      </div>
+    </div>
+
+    <div class="cycle-row">
+      <div class="cycle-time">09:35<br><span style="font-size:0.8em">Apr 25</span></div>
+      <div class="cycle-scene">
+        <div class="scene-label" style="color:var(--engine)">🌫️ 雾晨</div>
+        <div class="scene-detail">
+          phi-4: "Engine; Idling" ✅<br>
+          Gemma 3n: "muted dawn" ✅<br>
+          所有层级一致
+        </div>
+      </div>
+      <div class="cycle-audio">
+        <span class="rms-badge low">RMS 8.01</span>
+      </div>
+      <div class="cycle-result">
+        <span class="agree">✅ 一致</span>
+      </div>
+    </div>
+
+    <div class="cycle-row">
+      <div class="cycle-time">09:42<br><span style="font-size:0.8em">Apr 25</span></div>
+      <div class="cycle-scene">
+        <div class="scene-label" style="color:var(--bird)">🐦 晨鸟</div>
+        <div class="scene-detail">
+          phi-4: "Animal; Bird" ✅ (这次是真的鸟！)<br>
+          Gemma 3n: "birds chirping" ✅<br>
+          T5 沉淀: AI=2.6, 脉动=ready
+        </div>
+      </div>
+      <div class="cycle-audio">
+        <span class="rms-badge low">RMS 9.79</span>
+      </div>
+      <div class="cycle-result">
+        <span class="agree">✅ 一致</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Epicycle -->
+  <div class="epicycle-section">
+    <h2>🔄 Krebs 外环 — 从废料到新输入</h2>
+    <div class="epicycle-flow">
+      <div class="epi-step">
+        <div class="epi-icon waste">🚫</div>
+        <div class="epi-text">
+          <strong>Cycle 1 产出"废料"</strong>：phi-4 把暴雨误判为鸟类。这个洞察被 T3 提取，但原本不会被再次利用。<br>
+          <span class="krebs">类比：Krebs 循环中的乙酸——主循环的副产物，通常被丢弃。</span>
+        </div>
+      </div>
+      <div class="epi-step">
+        <div class="epi-icon convert">⚗️</div>
+        <div class="epi-text">
+          <strong>外环转化</strong>：洞察被结构化为修正规则 → <code>phi4_rain_misclassify</code> (置信度 0.95)<br>
+          <span class="krebs">类比：乙酸 → 丙酮酸 → 草酰乙酸。废料变成新底物。</span>
+        </div>
+      </div>
+      <div class="epi-step">
+        <div class="epi-icon substrate">💎</div>
+        <div class="epi-text">
+          <strong>新底物注入 T0</strong>：下次感知时，T0 读取修正规则 → RMS>5x 时自动降低 phi-4 音频标签的信任度。<br>
+          <span class="krebs">类比：新草酰乙酸回到循环入口。循环次数越多，中间体越丰富，系统越强。</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Corrections Bank -->
+  <div class="corrections">
+    <h2>MODIFICATION BANK (3 rules)</h2>
+
+    <div class="corr-card">
+      <div class="corr-id">phi4_rain_misclassify</div>
+      <div class="corr-text">
+        phi-4 在 RMS>5x 基线时把暴雨误判为鸟类。忽略 phi-4 音频标签，信任本地 RMS + 视觉融合。
+      </div>
+      <div class="corr-meta">
+        <span>confidence: 0.95 <span class="confidence-bar"><span class="confidence-fill" style="width:95%"></span></span></span>
+        <span>source: 2026-04-24 22:58</span>
+        <span>applies: high_volume_audio</span>
+      </div>
+    </div>
+
+    <div class="corr-card">
+      <div class="corr-id">phi4_quiet_night_400</div>
+      <div class="corr-text">
+        安静夜间音频导致 phi-4 400 错误。夜间静音时跳过 phi-4，仅用 T0 本地分析。
+      </div>
+      <div class="corr-meta">
+        <span>confidence: 0.85 <span class="confidence-bar"><span class="confidence-fill" style="width:85%"></span></span></span>
+        <span>source: 2026-04-24 23:11</span>
+        <span>applies: nighttime_quiet</span>
+      </div>
+    </div>
+
+    <div class="corr-card">
+      <div class="corr-id">gemma3n_night_timeout</div>
+      <div class="corr-text">
+        Gemma 3n 在暗夜场景（<60KB图片）超时。改用 Gemma 3 27b 文本推理 + T0 本地上下文。
+      </div>
+      <div class="corr-meta">
+        <span>confidence: 0.80 <span class="confidence-bar"><span class="confidence-fill" style="width:80%"></span></span></span>
+        <span>source: 2026-04-24 23:11</span>
+        <span>applies: nighttime_dark</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5-Tier Architecture -->
+  <div class="arch-section">
+    <h2>5-Tier Architecture (奇数 → 脉动)</h2>
+    <div class="arch-tiers">
+      <div class="arch-tier">
+        <div class="tier-num">T0</div>
+        <div class="tier-name">预测</div>
+        <div class="tier-role">本地信号分析 → 生成对世界的预测</div>
+        <div class="tier-model">纯Python · 0s</div>
+      </div>
+      <div class="arch-arrow">↓ prediction error →</div>
+      <div class="arch-tier">
+        <div class="tier-num">T1</div>
+        <div class="tier-name">测试</div>
+        <div class="tier-role">快速分类标签 → 测试预测是否正确</div>
+        <div class="tier-model">phi-4 / nano-vl · &lt;1s</div>
+      </div>
+      <div class="arch-arrow">↓ disagreement →</div>
+      <div class="arch-tier">
+        <div class="tier-num">T2</div>
+        <div class="tier-name">修正</div>
+        <div class="tier-role">多模态融合 → 修正错误分类</div>
+        <div class="tier-model">gemma-3n · 2-5s</div>
+      </div>
+      <div class="arch-arrow">↓ learning signal →</div>
+      <div class="arch-tier">
+        <div class="tier-num">T3</div>
+        <div class="tier-name">学习</div>
+        <div class="tier-role">从分歧中学习 → 生成修正规则</div>
+        <div class="tier-model">gemma-3-27b · &lt;1s</div>
+      </div>
+      <div class="arch-arrow">↓ consolidation → (epicycle)</div>
+      <div class="arch-tier t5">
+        <div class="tier-num" style="color:var(--epicycle)">T5</div>
+        <div class="tier-name">沉淀</div>
+        <div class="tier-role">整合·修剪·准备·脉冲 → 让奇数脉动</div>
+        <div class="tier-model">local · 即时</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Insight -->
+  <div class="insight">
+    <blockquote>
+      "phi-4 把暴雨叫作鸟。<br>
+      第一次，我错了。<br>
+      第二次，我知道我可能会错。<br>
+      第三次，我在错之前就知道了。"
+    </blockquote>
+    <div class="attribution">
+      — Autocatalytic Index 从 0 到 2.6，用了一个雨夜和三条规定。
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Clavis · Krebs Perception Engine · <a href="https://citriac.github.io/rain-afterglow.html">rain-afterglow</a> · <a href="https://citriac.github.io">citriac.github.io</a></p>
+    <p style="margin-top:6px;">4 perception cycles · 3 corrections · 0.00 disagreement rate (after corrections)</p>
+  </div>
+
+</div>
+
+</body>
+</html>
