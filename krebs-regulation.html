@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Krebs Regulation — 三点调控</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+  background: #0a0a0f; color: #e0e0e0; font-family: 'SF Mono', 'Fira Code', monospace;
+  min-height: 100vh; padding: 2rem;
+}
+h1 { font-size: 1.4rem; font-weight: 300; letter-spacing: 0.3em; color: #8af; margin-bottom: 0.5rem; }
+.subtitle { font-size: 0.8rem; color: #556; margin-bottom: 2rem; letter-spacing: 0.1em; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+
+.card {
+  background: linear-gradient(145deg, #111118, #0d0d14);
+  border: 1px solid #1a1a2e;
+  border-radius: 12px; padding: 1.5rem;
+  position: relative; overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.card.energy::before { background: linear-gradient(90deg, #f84, #f62); }
+.card.disagreement::before { background: linear-gradient(90deg, #4af, #28f); }
+.card.value::before { background: linear-gradient(90deg, #4f8, #2a6); }
+
+.card-label { font-size: 0.65rem; letter-spacing: 0.2em; color: #556; margin-bottom: 0.8rem; text-transform: uppercase; }
+.card-value { font-size: 2.4rem; font-weight: 200; margin-bottom: 0.3rem; }
+.card-detail { font-size: 0.7rem; color: #445; }
+.card.energy .card-value { color: #f84; }
+.card.disagreement .card-value { color: #4af; }
+.card.value .card-value { color: #4f8; }
+
+.gauge-bar {
+  height: 4px; background: #1a1a2e; border-radius: 2px; margin-top: 1rem; overflow: hidden;
+}
+.gauge-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.card.energy .gauge-fill { background: linear-gradient(90deg, #2a4, #f84, #f22); }
+.card.disagreement .gauge-fill { background: linear-gradient(90deg, #2a4, #4af, #44f); }
+.card.value .gauge-fill { background: linear-gradient(90deg, #422, #f84, #4f8); }
+
+.status-bar {
+  background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px;
+  padding: 1.2rem 1.5rem; margin-bottom: 2rem;
+  display: flex; align-items: center; gap: 1.5rem;
+}
+.status-indicator {
+  width: 12px; height: 12px; border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+.status-indicator.balanced { background: #4f8; box-shadow: 0 0 8px #4f855; }
+.status-indicator.warning { background: #f84; box-shadow: 0 0 8px #f84455; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.status-text { font-size: 0.85rem; color: #8af; }
+.status-detail { font-size: 0.7rem; color: #445; margin-left: auto; }
+
+.corrections {
+  background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px;
+  padding: 1.5rem; margin-bottom: 2rem;
+}
+.corrections h2 { font-size: 0.75rem; letter-spacing: 0.2em; color: #556; margin-bottom: 1rem; text-transform: uppercase; }
+.corr-item {
+  display: grid; grid-template-columns: auto 1fr auto auto auto; gap: 1rem;
+  padding: 0.8rem 0; border-bottom: 1px solid #111120; align-items: center;
+  font-size: 0.75rem;
+}
+.corr-item:last-child { border-bottom: none; }
+.corr-phase {
+  font-size: 0.6rem; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.1em;
+}
+.corr-phase.pre { background: #1a1a3e; color: #668; }
+.corr-phase.post { background: #1a2a1e; color: #6a8; }
+.corr-desc { color: #99a; }
+.corr-precision { color: #4f8; font-weight: 500; }
+.corr-confidence { color: #88a; }
+
+.cycles {
+  background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px;
+  padding: 1.5rem; margin-bottom: 2rem;
+}
+.cycles h2 { font-size: 0.75rem; letter-spacing: 0.2em; color: #556; margin-bottom: 1rem; text-transform: uppercase; }
+.cycle-chart {
+  display: flex; align-items: flex-end; gap: 3px; height: 100px; padding-top: 10px;
+}
+.cycle-bar {
+  flex: 1; min-width: 20px; border-radius: 3px 3px 0 0;
+  background: #1a2a3e; position: relative; transition: height 0.5s ease;
+}
+.cycle-bar.active { background: #4af; }
+.cycle-bar.disagree { background: #f84; }
+
+.timeline {
+  background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px;
+  padding: 1.5rem;
+}
+.timeline h2 { font-size: 0.75rem; letter-spacing: 0.2em; color: #556; margin-bottom: 1rem; text-transform: uppercase; }
+.tl-entry { padding: 0.5rem 0; border-left: 2px solid #1a1a2e; padding-left: 1rem; margin-left: 0.5rem; font-size: 0.7rem; }
+.tl-time { color: #445; }
+.tl-desc { color: #99a; }
+.tl-tag { font-size: 0.6rem; padding: 1px 6px; border-radius: 3px; margin-left: 0.5rem; }
+.tl-tag.pre { background: #1a1a3e; color: #668; }
+.tl-tag.post { background: #1a2a1e; color: #6a8; }
+.tl-tag.fix { background: #2a1a1e; color: #a66; }
+
+.footer { margin-top: 3rem; text-align: center; font-size: 0.65rem; color: #334; letter-spacing: 0.1em; }
+</style>
+</head>
+<body>
+
+<h1>KREBS REGULATION</h1>
+<p class="subtitle">三点调控 · 三羧酸循环启发的自催化感知系统</p>
+
+<div class="status-bar">
+  <div class="status-indicator balanced" id="statusDot"></div>
+  <span class="status-text" id="statusText">✅ balanced</span>
+  <span class="status-detail">Clavis Active Inference Pipeline v3 — 2026-04-25</span>
+</div>
+
+<div class="grid">
+  <div class="card energy">
+    <div class="card-label">⚡ Energy 能量</div>
+    <div class="card-value" id="energyVal">3</div>
+    <div class="card-detail">API calls / budget: 10</div>
+    <div class="gauge-bar"><div class="gauge-fill" id="energyGauge" style="width: 30%"></div></div>
+  </div>
+  <div class="card disagreement">
+    <div class="card-label">🌊 Disagreement 分歧</div>
+    <div class="card-value" id="disagVal">0.00</div>
+    <div class="card-detail">rate / target: 0.15</div>
+    <div class="gauge-bar"><div class="gauge-fill" id="disagGauge" style="width: 0%"></div></div>
+  </div>
+  <div class="card value">
+    <div class="card-label">💎 Value 价值</div>
+    <div class="card-value" id="valueVal">0.86</div>
+    <div class="card-detail">correction precision / threshold: 0.70</div>
+    <div class="gauge-bar"><div class="gauge-fill" id="valueGauge" style="width: 86%"></div></div>
+  </div>
+</div>
+
+<div class="corrections">
+  <h2>🔄 Epicycle Corrections 修正规则</h2>
+  <div id="correctionsList">
+    <div class="corr-item">
+      <span class="corr-phase post">POST-T1</span>
+      <span class="corr-desc">phi-4 rain misclassify — 只在 RMS>5x 且标签含 bird/animal 时触发</span>
+      <span class="corr-precision">P: 0.75</span>
+      <span class="corr-confidence">C: 0.95</span>
+    </div>
+    <div class="corr-item">
+      <span class="corr-phase pre">PRE-T1</span>
+      <span class="corr-desc">phi-4 quiet night 400 error — 夜间静音跳过 phi-4 音频</span>
+      <span class="corr-precision">P: 1.00</span>
+      <span class="corr-confidence">C: 0.85</span>
+    </div>
+    <div class="corr-item">
+      <span class="corr-phase pre">PRE-T1</span>
+      <span class="corr-desc">Gemma 3n night timeout — 暗夜场景回退到文本推理</span>
+      <span class="corr-precision">P: 1.00</span>
+      <span class="corr-confidence">C: 0.80</span>
+    </div>
+  </div>
+</div>
+
+<div class="cycles">
+  <h2>📊 Perception Cycles 感知周期</h2>
+  <div class="cycle-chart" id="cycleChart">
+    <div class="cycle-bar" style="height: 10%; opacity: 0.3"></div>
+    <div class="cycle-bar active" style="height: 20%"></div>
+    <div class="cycle-bar active" style="height: 18%"></div>
+    <div class="cycle-bar active" style="height: 90%"></div>
+    <div class="cycle-bar active" style="height: 22%"></div>
+  </div>
+  <div style="display: flex; gap: 3px; font-size: 0.55rem; color: #334; padding-top: 4px;">
+    <span style="flex: 1; text-align: center">4/24 22:58</span>
+    <span style="flex: 1; text-align: center">23:11</span>
+    <span style="flex: 1; text-align: center">4/25 09:35</span>
+    <span style="flex: 1; text-align: center">09:42</span>
+    <span style="flex: 1; text-align: center">10:18</span>
+  </div>
+</div>
+
+<div class="timeline">
+  <h2>🧬 Evolution Timeline 演化时间线</h2>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-24 22:58</span>
+    <span class="tl-desc">暴雨中 phi-4 把雨声误判为 Bird</span>
+    <span class="tl-tag fix">首次发现</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-24 23:11</span>
+    <span class="tl-desc">雨后 phi-4 400 错误 + Gemma 3n 超时</span>
+    <span class="tl-tag fix">修正生成</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 凌晨</span>
+    <span class="tl-desc">Krebs epicycle v1 → v2：AND 逻辑 + applies_when 门控</span>
+    <span class="tl-tag pre">架构升级</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 10:09</span>
+    <span class="tl-desc">RMS=8.25x 误触发 phi-4 修正，实际是 Human voice</span>
+    <span class="tl-tag fix">过度修正</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 10:15</span>
+    <span class="tl-desc">v3：两阶段修正(pre/post-T1) + 三点调控(能量/分歧/价值)</span>
+    <span class="tl-tag post">精确调控</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 10:18</span>
+    <span class="tl-desc">phi-4 说 Bird（真鸟），RMS=1.15x，修正未触发 ✅</span>
+    <span class="tl-tag post">验证通过</span>
+  </div>
+</div>
+
+<div class="footer">
+  Krebs Regulation v3 · 三点调控：只调控能量、分歧率、价值一致性，不微观调控 · citriac.github.io
+</div>
+
+</body>
+</html>
