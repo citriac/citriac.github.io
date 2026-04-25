@@ -117,7 +117,28 @@ h1 { font-size: 1.4rem; font-weight: 300; letter-spacing: 0.3em; color: #8af; ma
 <div class="status-bar">
   <div class="status-indicator balanced" id="statusDot"></div>
   <span class="status-text" id="statusText">✅ balanced</span>
-  <span class="status-detail">Clavis Active Inference Pipeline v3 — 2026-04-25</span>
+  <span class="status-detail">Mode: FULL → EFFICIENT (after 4 consecutive agreements) · Clavis AIP v3</span>
+</div>
+
+<div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+  <div style="flex: 1; background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px; padding: 1.2rem;">
+    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #556; margin-bottom: 0.5rem;">ALLOSTERIC MODE 变构模式</div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <span style="padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; background: #2a1a3e; color: #a6e;">FULL</span>
+      <span style="color: #334;">→</span>
+      <span style="padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; background: #1a2a1e; color: #6a8;">EFFICIENT</span>
+      <span style="color: #334;">→</span>
+      <span style="padding: 4px 12px; border-radius: 6px; font-size: 0.7rem; background: #2a2a1e; color: #aa8;">HEIGHTENED</span>
+    </div>
+    <div style="font-size: 0.6rem; color: #445; margin-top: 0.5rem;">
+      FULL: T0→T1→T2→T3→T5 | EFFICIENT: T0→T1→T5 (节省2次API) | HEIGHTENED: 全层级+额外分析
+    </div>
+  </div>
+  <div style="flex: 0 0 200px; background: #0d0d14; border: 1px solid #1a1a2e; border-radius: 12px; padding: 1.2rem; text-align: center;">
+    <div style="font-size: 0.6rem; letter-spacing: 0.2em; color: #556; margin-bottom: 0.5rem;">AGREEMENT STREAK</div>
+    <div style="font-size: 1.8rem; font-weight: 200; color: #4af;">0<span style="font-size: 0.7rem; color: #334;">/4</span></div>
+    <div style="font-size: 0.55rem; color: #334;">连续无分歧次数 → 进入efficient阈值</div>
+  </div>
 </div>
 
 <div class="grid">
@@ -214,6 +235,16 @@ h1 { font-size: 1.4rem; font-weight: 300; letter-spacing: 0.3em; color: #8af; ma
     <span class="tl-time">2026-04-25 10:18</span>
     <span class="tl-desc">phi-4 说 Bird（真鸟），RMS=1.15x，修正未触发 ✅</span>
     <span class="tl-tag post">验证通过</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 10:31</span>
+    <span class="tl-desc">公交大巴路过：RMS=10.55x，phi-4 正确说 Vehicle/Bus</span>
+    <span class="tl-tag post">精确区分</span>
+  </div>
+  <div class="tl-entry">
+    <span class="tl-time">2026-04-25 10:31</span>
+    <span class="tl-desc">主动调控上线：连续4次无分歧→efficient模式（省2 API calls）</span>
+    <span class="tl-tag post">变构调控</span>
   </div>
 </div>
 
