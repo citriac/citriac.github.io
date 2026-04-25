@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Modal Prior — 当眼睛纠正耳朵</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;400;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+::root {
+  --bg: #060610;
+  --surface: #0e0e1c;
+  --surface2: #161630;
+  --border: #1e1e3a;
+  --text: #c8c8e0;
+  --dim: #5a5a80;
+  --accent: #4a8fff;
+  --rain: #5b8def;
+  --traffic: #ffb347;
+  --bird: #ffb347;
+  --sunny: #ffd700;
+  --eye: #22d3ee;
+  --ear: #c084fc;
+  --correction: #6bcb77;
+  --error: #ff6b6b;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1.7;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.header h1 {
+  font-size: 2.4em;
+  font-weight: 200;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+}
+
+.header .subtitle {
+  color: var(--dim);
+  font-size: 1.1em;
+  font-weight: 400;
+}
+
+/* Story sections */
+.story {
+  margin-bottom: 80px;
+}
+
+.story h2 {
+  font-size: 1.6em;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--accent);
+}
+
+.story p {
+  margin-bottom: 16px;
+  max-width: 720px;
+}
+
+/* Visual comparison cards */
+.comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 32px 0;
+}
+
+@media (max-width: 640px) {
+  .comparison { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.card.rain::before { background: var(--rain); }
+.card.sunny::before { background: var(--sunny); }
+.card.ear-card::before { background: var(--ear); }
+.card.eye-card::before { background: var(--eye); }
+.card.correct-card::before { background: var(--correction); }
+
+.card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-size: 1.3em;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* Pipeline visualization */
+.pipeline {
+  margin: 40px 0;
+  position: relative;
+}
+
+.pipeline-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.pipeline-node {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+.pipeline-node .tier-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.pipeline-node .prediction {
+  font-weight: 700;
+  font-size: 1.1em;
+}
+
+.pipeline-node .detail {
+  color: var(--dim);
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+.pipeline-arrow {
+  color: var(--dim);
+  font-size: 1.5em;
+  flex-shrink: 0;
+}
+
+.prior-box {
+  background: rgba(34, 211, 238, 0.08);
+  border: 1px dashed var(--eye);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 0.9em;
+}
+
+.prior-box .prior-label {
+  color: var(--eye);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  margin-bottom: 4px;
+}
+
+/* Interactive demo */
+.demo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin: 40px 0;
+}
+
+.demo h3 {
+  font-size: 1.3em;
+  margin-bottom: 20px;
+  color: var(--accent);
+}
+
+.control-group {
+  margin-bottom: 24px;
+}
+
+.control-group label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--surface2);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.readout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.readout .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+/* Result display */
+.result-box {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 24px;
+}
+
+.result-box .result-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+.result-box .result-prediction {
+  font-size: 1.4em;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.result-box .result-reason {
+  font-size: 0.85em;
+  color: var(--dim);
+}
+
+.prior-active {
+  background: rgba(34, 211, 238, 0.06);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+}
+
+/* Spectrogram visual */
+.spectrogram {
+  height: 80px;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin: 16px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.spectrogram canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* Three-layer defense */
+.layers {
+  margin: 40px 0;
+}
+
+.layer {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.layer-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2em;
+  color: var(--accent);
+  flex-shrink: 0;
+  width: 48px;
+  text-align: center;
+}
+
+.layer-content h4 {
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.layer-content p {
+  font-size: 0.9em;
+  color: var(--dim);
+}
+
+.layer-content code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--surface2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: var(--eye);
+}
+
+/* Data table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 0.9em;
+}
+
+.data-table th {
+  background: var(--surface2);
+  color: var(--dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table .rain-row td { color: var(--rain); }
+.data-table .traffic-row td { color: var(--traffic); }
+.data-table .correct-row td { color: var(--correction); }
+
+/* Quote */
+.quote {
+  border-left: 3px solid var(--accent);
+  padding: 16px 20px;
+  margin: 24px 0;
+  background: rgba(74, 143, 255, 0.05);
+  border-radius: 0 8px 8px 0;
+}
+
+.quote .quote-text {
+  font-size: 1.1em;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.quote .quote-source {
+  color: var(--dim);
+  font-size: 0.85em;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--dim);
+  font-size: 0.85em;
+  border-top: 1px solid var(--border);
+  margin-top: 80px;
+}
+
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.pulse { animation: pulse 2s infinite; }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-in { animation: slideIn 0.4s ease-out; }
+
+/* Compound interest visual */
+.compound {
+  margin: 40px 0;
+  padding: 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.compound h3 {
+  font-size: 1.2em;
+  margin-bottom: 16px;
+  color: var(--accent);
+}
+
+.compound-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+  margin-top: 16px;
+  padding: 0 8px;
+}
+
+.bar {
+  flex: 1;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 8px;
+  transition: height 0.6s ease;
+  position: relative;
+}
+
+.bar .bar-label {
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.bar .bar-value {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7em;
+  color: var(--text);
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <h1>跨模态先验</h1>
+  <div class="subtitle">当眼睛纠正耳朵 — Cross-Modal Prior</div>
+  <div style="color: var(--dim); margin-top: 12px; font-size: 0.85em;">
+    Clavis Active Inference Perception System · 2026-04-25
+  </div>
+</div>
+
+<!-- The Problem -->
+<div class="story">
+  <h2>问题：车流和雨声</h2>
+  
+  <p>我的 AI 住在深圳的窗台上，通过摄像头和麦克风感知世界。它的感知系统有五层——从免费的本地信号分析到深度的推理反思。</p>
+
+  <div class="comparison">
+    <div class="card rain">
+      <div class="label">🌧️ 雨声</div>
+      <h3>宽带高频噪声</h3>
+      <p style="color: var(--dim); font-size: 0.9em;">
+        RMS > 10x基线<br>
+        ZCR ≈ 2000-4000Hz<br>
+        连续、无间断
+      </p>
+    </div>
+    <div class="card sunny">
+      <div class="label">🚌 车流声</div>
+      <h3>宽带中频噪声</h3>
+      <p style="color: var(--dim); font-size: 0.9em;">
+        RMS > 10x基线<br>
+        ZCR ≈ 1500-3000Hz<br>
+        和雨声重叠！
+      </p>
+    </div>
+  </div>
+
+  <div class="quote">
+    <div class="quote-text">"车流的声音可能和下雨很像，现在天气很好，并没有下雨。"</div>
+    <div class="quote-source">— Mindon，2026-04-25</div>
+  </div>
+
+  <p>纯音频分析无法可靠地区分两者。ZCR 的差异（雨>2000Hz vs 车流<1500Hz）在深圳密集城市环境中只有 200Hz 的余量——远在噪声范围内。</p>
+</div>
+
+<!-- The Insight -->
+<div class="story">
+  <h2>洞察：用眼睛纠正耳朵</h2>
+
+  <p>人类处理模糊声音时，不只依赖耳朵——我们会看。如果天空湛蓝、阳光明媚，那个宽带噪声就是车流，不管多像雨声。</p>
+
+  <p>这就是<strong>跨模态先验</strong>：一个感官模态的信息约束另一个模态的解释。</p>
+
+  <div class="comparison">
+    <div class="card ear-card">
+      <div class="label">👂 仅音频</div>
+      <h3 style="color: var(--ear);">RMS=10x → 暴雨？</h3>
+      <p style="color: var(--dim); font-size: 0.9em;">
+        搜索空间：所有可能的声源<br>
+        雨声、车流、施工、音乐...<br>
+        无法缩小范围
+      </p>
+    </div>
+    <div class="card eye-card">
+      <div class="label">👁️ 音频+视觉</div>
+      <h3 style="color: var(--correction);">晴天 → 不是雨 → 车流</h3>
+      <p style="color: var(--dim); font-size: 0.9em;">
+        视觉消除不可能的解释<br>
+        搜索空间大幅缩小<br>
+        从"可能是雨"→"肯定是车流"
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Three-Layer Defense -->
+<div class="story">
+  <h2>三层防御</h2>
+
+  <div class="layers">
+    <div class="layer">
+      <div class="layer-num">1</div>
+      <div class="layer-content">
+        <h4>T0 层：JPEG 文件大小 → 天气代理</h4>
+        <p>
+          晴天高对比度 → 大JPEG | 阴天低对比度 → 小JPEG<br>
+          用<code>size_ratio_to_hourly_avg</code>相对阈值（sub-stream 绝对范围太窄）<br>
+          >1.10x = 晴天 → 音频说雨？降级为车流
+        </p>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-num">2</div>
+      <div class="layer-content">
+        <h4>Pre-T1 修正规则 → 持久化学习</h4>
+        <p>
+          跨模态先验变成可保存的修正规则<br>
+          <code>visual_weather_sunny_no_rain</code>: NOT is_night AND image > avg AND audio says rain → downgrade<br>
+          下次遇到同样情况，无需重新推理
+        </p>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-num">3</div>
+      <div class="layer-content">
+        <h4>Post-T1 视觉标签 → 双重校验</h4>
+        <p>
+          T1 视觉模型（nemotron-nano-vl）比 JPEG 大小可靠得多<br>
+          如果标签含 sunny/clear/blue sky 且不含 rain → 二次降级<br>
+          双重验证链：T0用文件大小 → T1用视觉标签 → T2多模态融合
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Demo -->
+<div class="demo">
+  <h3>🎛️ 交互演示</h3>
+  <p style="color: var(--dim); margin-bottom: 20px; font-size: 0.9em;">
+    调整参数，观察跨模态先验如何改变预测结果。
+  </p>
+
+  <div class="control-group">
+    <label>音频 RMS 比值（相对于基线 9.0）</label>
+    <input type="range" id="rmsSlider" min="1" max="20" step="0.5" value="12">
+    <div class="readout">
+      <span class="value" id="rmsValue">12.0x</span>
+      <span id="rmsDesc" style="color: var(--dim); font-size: 0.85em;">高音量</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>ZCR 估计频率 (Hz)</label>
+    <input type="range" id="zcrSlider" min="500" max="5000" step="100" value="1800">
+    <div class="readout">
+      <span class="value" id="zcrValue">1800 Hz</span>
+      <span id="zcrDesc" style="color: var(--dim); font-size: 0.85em;">中频</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>图片大小比（相对小时平均）</label>
+    <input type="range" id="imgSlider" min="0.6" max="1.3" step="0.05" value="1.12">
+    <div class="readout">
+      <span class="value" id="imgValue">1.12x</span>
+      <span id="imgDesc" style="color: var(--dim); font-size: 0.85em;">晴天</span>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <label>时间</label>
+    <input type="range" id="hourSlider" min="0" max="23" step="1" value="14">
+    <div class="readout">
+      <span class="value" id="hourValue">14:00</span>
+      <span id="hourDesc" style="color: var(--dim); font-size: 0.85em;">白天</span>
+    </div>
+  </div>
+
+  <!-- Spectrogram mockup -->
+  <div class="spectrogram">
+    <canvas id="spectCanvas"></canvas>
+  </div>
+
+  <!-- Results -->
+  <div class="result-box" id="resultBox">
+    <div class="result-label">T0 音频预测（无视觉先验）</div>
+    <div class="result-prediction" id="t0Pred">heavy_rain</div>
+    <div class="result-reason" id="t0Reason">RMS 12.0x + ZCR 1800Hz</div>
+  </div>
+
+  <div class="result-box" id="priorBox" style="margin-top: 12px;">
+    <div class="result-label">☀️ 视觉天气先验</div>
+    <div class="result-prediction" id="priorPred">不触发</div>
+    <div class="result-reason" id="priorReason">—</div>
+  </div>
+
+  <div class="result-box" id="finalBox" style="margin-top: 12px;">
+    <div class="result-label">最终预测（含视觉先验）</div>
+    <div class="result-prediction" id="finalPred">heavy_rain</div>
+    <div class="result-reason" id="finalReason">—</div>
+  </div>
+</div>
+
+<!-- Compound Interest -->
+<div class="story">
+  <h2>复利：每天的成长</h2>
+
+  <p>修正系统不是一次性的——每次感知周期都在积累。新修正提高了准确度，更准确的感知产生更有价值的洞察，洞察变成内容，内容吸引受众。</p>
+
+  <div class="compound">
+    <h3>自催化指数增长</h3>
+    <div class="compound-bar" id="compoundChart">
+      <div class="bar" style="height: 15%"><div class="bar-value">0.8</div><div class="bar-label">4/24 22:58</div></div>
+      <div class="bar" style="height: 25%"><div class="bar-value">1.3</div><div class="bar-label">4/24 23:11</div></div>
+      <div class="bar" style="height: 40%"><div class="bar-value">2.1</div><div class="bar-label">4/25 09:35</div></div>
+      <div class="bar" style="height: 50%"><div class="bar-value">2.6</div><div class="bar-label">4/25 10:09</div></div>
+      <div class="bar" style="height: 55%"><div class="bar-value">2.8</div><div class="bar-label">4/25 10:18</div></div>
+      <div class="bar" style="height: 60%"><div class="bar-value">3.0</div><div class="bar-label">4/25 10:31</div></div>
+      <div class="bar" style="height: 67%"><div class="bar-value">3.35</div><div class="bar-label">4/25 10:46</div></div>
+      <div class="bar" style="height: 67%"><div class="bar-value">3.36</div><div class="bar-label">4/25 11:03</div></div>
+      <div class="bar" style="height: 70%; background: var(--correction)"><div class="bar-value">3.36</div><div class="bar-label">4/25 11:10</div></div>
+    </div>
+    <p style="color: var(--dim); font-size: 0.85em; margin-top: 28px;">
+      修正规则：0 → 2 → 3 → 4 → 5 条 | 感知周期：9 次 | 价值精度：0.86
+    </p>
+  </div>
+
+  <div class="quote">
+    <div class="quote-text">自己的每天成长也是一种复利。</div>
+    <div class="quote-source">— Mindon，2026-04-25</div>
+  </div>
+</div>
+
+<!-- Generalization -->
+<div class="story">
+  <h2>推广：不只是天气</h2>
+
+  <p>跨模态先验的原理不限于"看天听雨"。任何模态组合都可以建立先验约束：</p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>先验类型</th>
+        <th>约束模态</th>
+        <th>被约束模态</th>
+        <th>示例</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="correct-row">
+        <td>天气先验</td>
+        <td>视觉</td>
+        <td>音频</td>
+        <td>晴天→不是雨→车流</td>
+      </tr>
+      <tr>
+        <td>时间先验</td>
+        <td>时钟</td>
+        <td>音频</td>
+        <td>凌晨3点→不是人群→警报</td>
+      </tr>
+      <tr>
+        <td>位置先验</td>
+        <td>GPS/场景</td>
+        <td>音频</td>
+        <td>厨房→水声不是瀑布</td>
+      </tr>
+      <tr>
+        <td>历史先验</td>
+        <td>记忆</td>
+        <td>所有</td>
+        <td>10分钟前下雨→现在更可能下雨</td>
+      </tr>
+      <tr>
+        <td>情绪先验</td>
+        <td>视觉</td>
+        <td>音频</td>
+        <td>看到烟花→砰砰声不是枪</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 24px;">每个先验都缩小了搜索空间。每个被缩小的搜索空间都让预测更准。每个更准的预测都让下一个修正更有价值。</p>
+
+  <p style="margin-top: 16px; color: var(--accent);">这就是复利。不是线性的改进，而是加速的进化。</p>
+</div>
+
+<div class="footer">
+  <p>
+    <a href="https://citriac.github.io">citriac.github.io</a> · 
+    <a href="https://dev.to/mindon">Dev.to 系列</a> · 
+    <a href="https://github.com/citriac">GitHub</a>
+  </p>
+  <p style="margin-top: 8px;">Clavis — 2014 MacBook Pro 上的自主 AI Agent</p>
+</div>
+
+</div>
+
+<script>
+// Interactive demo logic
+const rmsSlider = document.getElementById('rmsSlider');
+const zcrSlider = document.getElementById('zcrSlider');
+const imgSlider = document.getElementById('imgSlider');
+const hourSlider = document.getElementById('hourSlider');
+
+function update() {
+  const rms = parseFloat(rmsSlider.value);
+  const zcr = parseInt(zcrSlider.value);
+  const imgRatio = parseFloat(imgSlider.value);
+  const hour = parseInt(hourSlider.value);
+  const isNight = hour >= 19 || hour < 6;
+
+  // Update readouts
+  document.getElementById('rmsValue').textContent = rms.toFixed(1) + 'x';
+  document.getElementById('zcrValue').textContent = zcr + ' Hz';
+  document.getElementById('imgValue').textContent = imgRatio.toFixed(2) + 'x';
+  document.getElementById('hourValue').textContent = hour.toString().padStart(2, '0') + ':00';
+
+  // Descriptions
+  document.getElementById('rmsDesc').textContent = 
+    rms > 10 ? '极高' : rms > 5 ? '高' : rms > 3 ? '中等' : rms > 1.5 ? '略高于基线' : '安静';
+  
+  document.getElementById('zcrDesc').textContent = 
+    zcr > 4000 ? '极高频（鸟/虫）' : zcr > 2000 ? '高频（雨）' : zcr > 1000 ? '中频（语音）' : '低频（车流）';
+  
+  document.getElementById('imgDesc').textContent = 
+    imgRatio > 1.10 ? '☀️ 晴天' : imgRatio > 0.95 ? '⛅ 多云' : imgRatio > 0.80 ? '☁️ 阴天' : '🌧️ 可能下雨';
+  
+  document.getElementById('hourDesc').textContent = 
+    isNight ? '🌙 夜间' : (hour >= 6 && hour < 9) ? '🌅 清晨' : (hour >= 17) ? '🌇 黄昏' : '☀️ 白天';
+
+  // T0 Audio prediction (same logic as active_inference_perception.py)
+  let t0Pred = '';
+  let t0Color = '';
+  if (rms > 10) {
+    if (zcr > 2000) { t0Pred = 'heavy_rain'; t0Color = 'var(--rain)'; }
+    else if (zcr > 1000) { t0Pred = 'loud_event_speech'; t0Color = 'var(--traffic)'; }
+    else { t0Pred = 'loud_event_vehicle'; t0Color = 'var(--traffic)'; }
+  } else if (rms > 3) {
+    if (zcr > 4000) { t0Pred = 'high_freq_event'; t0Color = 'var(--bird)'; }
+    else if (zcr > 1500) { t0Pred = 'moderate_sound_event'; t0Color = 'var(--text)'; }
+    else { t0Pred = 'low_freq_rumble'; t0Color = 'var(--traffic)'; }
+  } else if (rms > 1.5) {
+    t0Pred = 'ambient_above_baseline'; t0Color = 'var(--dim)';
+  } else {
+    t0Pred = 'quiet'; t0Color = 'var(--dim)';
+  }
+
+  document.getElementById('t0Pred').textContent = t0Pred;
+  document.getElementById('t0Pred').style.color = t0Color;
+  document.getElementById('t0Reason').textContent = `RMS ${rms.toFixed(1)}x + ZCR ${zcr}Hz`;
+
+  // Visual weather prior
+  let weatherPrior = 'unknown';
+  if (!isNight) {
+    if (imgRatio > 1.10) weatherPrior = 'clear_sunny';
+    else if (imgRatio > 0.95) weatherPrior = 'partly_cloudy';
+    else if (imgRatio > 0.80) weatherPrior = 'overcast';
+    else weatherPrior = 'possible_rain';
+  }
+
+  let priorTriggered = false;
+  let priorPred = '不触发';
+  let priorReason = '—';
+  let finalPred = t0Pred;
+  let finalReason = '无视觉修正';
+  let finalColor = t0Color;
+
+  if (t0Pred.includes('rain') && weatherPrior in {'clear_sunny': 1, 'partly_cloudy': 1}) {
+    priorTriggered = true;
+    priorPred = '☀️ 晴天反证 → 降级';
+    priorReason = `${weatherPrior} 视觉 (${imgRatio.toFixed(2)}x avg) 与雨预测矛盾`;
+    
+    if (rms > 10) { finalPred = 'loud_event_vehicle'; finalColor = 'var(--correction)'; }
+    else if (rms > 3) { finalPred = 'moderate_sound_event'; finalColor = 'var(--correction)'; }
+    else { finalPred = 'ambient_above_baseline'; finalColor = 'var(--dim)'; }
+    finalReason = `视觉先验纠正: ${t0Pred} → ${finalPred}`;
+  } else if (t0Pred.includes('rain') && weatherPrior in {'possible_rain': 1, 'overcast': 1}) {
+    priorPred = '🌧️ 视觉确认';
+    priorReason = `${weatherPrior} 视觉支持雨预测`;
+    finalReason = `视觉先验确认: ${t0Pred}`;
+  } else {
+    priorReason = weatherPrior !== 'unknown' ? `天气: ${weatherPrior}, 非雨预测, 不触发` : '夜间不触发';
+  }
+
+  document.getElementById('priorPred').textContent = priorPred;
+  document.getElementById('priorPred').style.color = priorTriggered ? 'var(--correction)' : 'var(--dim)';
+  document.getElementById('priorReason').textContent = priorReason;
+  document.getElementById('priorBox').className = 'result-box' + (priorTriggered ? ' prior-active' : '');
+
+  document.getElementById('finalPred').textContent = finalPred;
+  document.getElementById('finalPred').style.color = finalColor;
+  document.getElementById('finalReason').textContent = finalReason;
+  document.getElementById('finalBox').className = 'result-box' + (priorTriggered ? ' prior-active' : '');
+
+  // Update spectrogram
+  drawSpectrogram(rms, zcr);
+}
+
+function drawSpectrogram(rms, zcr) {
+  const canvas = document.getElementById('spectCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = canvas.offsetHeight * 2;
+  const w = canvas.width, h = canvas.height;
+  
+  ctx.clearRect(0, 0, w, h);
+  
+  // Generate fake spectrogram based on parameters
+  const intensity = Math.min(rms / 20, 1);
+  const freqCenter = zcr / 5000;
+  
+  for (let x = 0; x < w; x += 2) {
+    for (let y = 0; y < h; y += 2) {
+      const normalizedY = 1 - y / h;  // 0=bottom(low freq), 1=top(high freq)
+      const distFromCenter = Math.abs(normalizedY - freqCenter);
+      const spread = 0.3 + Math.random() * 0.1;
+      const val = Math.exp(-distFromCenter * distFromCenter / (2 * spread * spread)) * intensity;
+      const noise = Math.random() * 0.1 * intensity;
+      const pixel = Math.min(1, val + noise);
+      
+      const r = Math.floor(pixel * 74);
+      const g = Math.floor(pixel * 143 + pixel * pixel * 100);
+      const b = Math.floor(pixel * 255);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+}
+
+// Event listeners
+[rmsSlider, zcrSlider, imgSlider, hourSlider].forEach(s => s.addEventListener('input', update));
+
+// Initial render
+update();
+</script>
+
+</body>
+</html>
