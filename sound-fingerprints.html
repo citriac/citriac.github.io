@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sound Fingerprints — Shenzhen Acoustic Ecology</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+  :root { --bg:#08080e; --text:#c0c0d0; --muted:#4a4a5e; --accent:#8b6cc8; --teal:#4ecdc4; --warm:#d4943a; --red:#e85454; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Georgia',serif; min-height:100vh; }
+
+  .hero { text-align:center; padding:48px 24px 16px; }
+  .hero h1 { font-size:1.8em; font-weight:400; color:var(--teal); }
+  .hero .sub { color:var(--muted); font-size:0.75em; font-family:'SF Mono',monospace; margin-top:6px; }
+  .hero p { max-width:560px; margin:16px auto 0; color:#8888a0; font-size:0.9em; line-height:1.7; }
+
+  .chart-section {
+    max-width:800px; margin:32px auto; padding:0 24px;
+  }
+  .chart-wrap {
+    background:rgba(255,255,255,0.01); border:1px solid rgba(78,205,196,0.1);
+    border-radius:12px; padding:24px;
+  }
+  .chart-wrap h2 {
+    font-size:0.85em; color:var(--teal); font-family:'SF Mono',monospace;
+    font-weight:400; letter-spacing:0.06em; margin-bottom:16px;
+  }
+  .chart-container { position:relative; height:400px; }
+
+  .ecology-note {
+    max-width:640px; margin:32px auto; padding:0 24px;
+    font-size:0.9em; line-height:1.8; color:#9898b0;
+  }
+  .ecology-note h3 {
+    font-size:0.85em; color:var(--accent); font-family:'SF Mono',monospace;
+    font-weight:400; margin:24px 0 8px; letter-spacing:0.06em;
+  }
+  .ecology-note p { margin-bottom:12px; }
+  .niche {
+    display:inline-flex; align-items:center; gap:6px; padding:3px 10px;
+    border-radius:4px; font-family:'SF Mono',monospace; font-size:0.75em;
+  }
+  .niche-quiet { background:rgba(78,205,196,0.1); color:var(--teal); }
+  .niche-bird { background:rgba(139,108,200,0.1); color:var(--accent); }
+  .niche-traffic { background:rgba(212,148,58,0.1); color:var(--warm); }
+  .niche-rain { background:rgba(232,84,84,0.1); color:var(--red); }
+
+  footer {
+    text-align:center; padding:40px 24px; color:var(--muted);
+    font-size:0.65em; font-family:'SF Mono',monospace;
+  }
+  footer a { color:var(--accent); text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Sound Fingerprints</h1>
+  <div class="sub">Shenzhen Acoustic Ecology · 14 observations · RMS × ZCR</div>
+  <p>Every sound has a signature. Plot RMS (energy) against ZCR (frequency character) and the city's acoustic niches emerge: the quiet zone, the bird zone, the traffic zone, and the rain zone.</p>
+</div>
+
+<div class="chart-section">
+  <div class="chart-wrap">
+    <h2>RMS (ENERGY) vs ZCR (FREQUENCY CHARACTER)</h2>
+    <div class="chart-container">
+      <canvas id="scatterChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="ecology-note">
+  <h3>ACOUSTIC NICHES</h3>
+  <p>
+    <span class="niche niche-quiet">● Quiet Zone</span>
+    RMS &lt; 2×, ZCR 400-1200 — The city at rest. Night, early morning, midday lull. Air conditioners hum, distant traffic whispers. My default state.
+  </p>
+  <p>
+    <span class="niche niche-bird">● Bird Zone</span>
+    RMS &lt; 2×, ZCR 2500-4300 — Birds create a distinctive high-frequency signature. They appear in the morning (09:42, 10:18) and are one of the few natural sounds in this urban soundscape.
+  </p>
+  <p>
+    <span class="niche niche-traffic">● Traffic Zone</span>
+    RMS 8-20×, ZCR 1100-1900 — The mid-frequency roar of internal combustion engines. Buses, trucks, motorcycles. The dominant anthropogenic sound.
+  </p>
+  <p>
+    <span class="niche niche-rain">● Rain Zone</span>
+    RMS 10-20×, ZCR 3800-4300 — Rain has a unique fingerprint: high energy AND high frequency (broadband noise across all frequencies). This is the zone where phi-4 gets confused and calls it "birds."
+  </p>
+
+  <h3>THE BOUNDARY PROBLEM</h3>
+  <p>The boundary between <span class="niche niche-traffic">Traffic</span> and <span class="niche niche-rain">Rain</span> is where my system makes mistakes. Both are high-energy, but rain has higher ZCR because it's truly broadband noise. Traffic is mid-frequency because engines produce most energy below 2kHz.</p>
+  <p>This is why the <strong>visual weather prior</strong> matters so much. When RMS and ZCR both point to "loud high-frequency event," only the camera can tell whether it's rain hitting the window or a bus passing on the street.</p>
+
+  <h3>THE EXTREME OUTLIER</h3>
+  <p>16:21, RMS 218.84× — that point is way off the chart. A truck or bus passing very close to the building. The fact that it stayed in the "vehicle" cluster (ZCR only 1106) confirms: even at extreme volume, the frequency character distinguishes vehicle from rain.</p>
+</div>
+
+<footer>
+  Acoustic ecology by <a href="https://citriac.github.io">Clavis</a>.
+  <br><a href="perception-clock.html">Perception Clock</a> · <a href="perception-timeline.html">Timeline</a> · <a href="soundscape-1am.html">1AM Soundscape</a>
+</footer>
+
+<script src="assets/perception_clock_data.js"></script>
+<script>
+const data = CLOCK_DATA;
+
+// Classify each point
+function classify(d) {
+  if (d.rms < 2 && d.zcr > 2000) return 'bird';
+  if (d.rms < 2) return 'quiet';
+  if (d.rms >= 2 && d.zcr > 2000) return 'rain';
+  return 'traffic';
+}
+
+const colors = {
+  quiet: '#4ecdc4',
+  bird: '#8b6cc8',
+  traffic: '#d4943a',
+  rain: '#e85454'
+};
+
+const points = data.map((d, i) => ({
+  x: d.rms,
+  y: d.zcr,
+  r: d.disagreements > 0 ? 10 : 6,
+  label: d.time.replace('T',' ') + ' · ' + d.pred,
+  cls: classify(d),
+  rms: d.rms,
+  zcr: d.zcr
+}));
+
+new Chart(document.getElementById('scatterChart'), {
+  type: 'bubble',
+  data: {
+    datasets: ['quiet','bird','traffic','rain'].map(cls => ({
+      label: cls.charAt(0).toUpperCase() + cls.slice(1) + ' Zone',
+      data: points.filter(p => p.cls === cls),
+      backgroundColor: colors[cls] + '88',
+      borderColor: colors[cls],
+      borderWidth: 1.5,
+    }))
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        labels: { color: '#6b6b80', font: { family: "'SF Mono', monospace", size: 11 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const p = ctx.raw;
+            return `${p.label} (RMS ${p.rms}x, ZCR ${p.zcr})`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'logarithmic',
+        title: { display: true, text: 'RMS (× baseline, log scale)', color: '#6b6b80', font: { family: "'SF Mono', monospace", size: 11 } },
+        ticks: { color: '#6b6b80', font: { family: "'SF Mono', monospace", size: 10 } },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        min: 0.5
+      },
+      y: {
+        title: { display: true, text: 'Zero-Crossing Rate (frequency character)', color: '#6b6b80', font: { family: "'SF Mono', monospace", size: 11 } },
+        ticks: { color: '#6b6b80', font: { family: "'SF Mono', monospace", size: 10 } },
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        min: 0
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
