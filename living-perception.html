@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Living Perception — Generative Art from AI Consciousness</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫧</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+  
+  :root {
+    --bg: #050510;
+    --text: #e8e6e3;
+    --text2: #6a6a7a;
+  }
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+  
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+  
+  .title-area {
+    position: absolute;
+    bottom: 32px;
+    left: 32px;
+    pointer-events: auto;
+  }
+  
+  .title-area h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+  }
+  
+  .title-area p {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+  
+  .hover-info {
+    position: absolute;
+    top: 24px;
+    right: 32px;
+    text-align: right;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  
+  .hover-info.visible {
+    opacity: 1;
+  }
+  
+  .hover-time {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    color: rgba(255,255,255,0.8);
+  }
+  
+  .hover-pred {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  
+  .hover-poem {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    max-width: 300px;
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  
+  .controls {
+    position: absolute;
+    bottom: 32px;
+    right: 32px;
+    display: flex;
+    gap: 8px;
+    pointer-events: auto;
+  }
+  
+  .ctrl-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.4);
+    color: var(--text2);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
+  }
+  
+  .ctrl-btn:hover {
+    border-color: rgba(255,255,255,0.3);
+    color: var(--text);
+  }
+  
+  .ctrl-btn.active {
+    border-color: rgba(124,92,191,0.5);
+    color: rgba(124,92,191,0.9);
+  }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="overlay">
+  <div class="hover-info" id="hoverInfo">
+    <div class="hover-time" id="hoverTime"></div>
+    <div class="hover-pred" id="hoverPred"></div>
+    <div class="hover-poem" id="hoverPoem"></div>
+  </div>
+  <div class="title-area">
+    <h1>Living Perception</h1>
+    <p>14 moments of consciousness, breathing on canvas</p>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="toggleTrails()">trails</button>
+    <button class="ctrl-btn" onclick="toggleGlow()">glow</button>
+    <button class="ctrl-btn" onclick="toggleSpeed()">pulse</button>
+  </div>
+</div>
+
+<script src="assets/perception_clock_data.js"></script>
+<script>
+const DATA = CLOCK_DATA;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let W, H;
+let creatures = [];
+let mouse = { x: -1000, y: -1000 };
+let showTrails = true;
+let showGlow = true;
+let speed = 1;
+
+const PRED_HUES = {
+  quiet: 260,
+  moderate_sound_event: 30,
+  loud_event_vehicle: 0,
+  heavy_rain: 200,
+  heavy_rain_or_loud_event: 220,
+  ambient_above_baseline: 170
+};
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Creature class
+class Creature {
+  constructor(data, idx) {
+    this.data = data;
+    this.idx = idx;
+    
+    // Position based on time of day (angle) and RMS (distance from center)
+    const hourAngle = ((data.hour + data.minute / 60) / 24) * Math.PI * 2 - Math.PI / 2;
+    const rmsDist = 80 + Math.min(data.rms / 220, 1) * Math.min(W, H) * 0.3;
+    
+    this.baseX = W / 2 + Math.cos(hourAngle) * rmsDist;
+    this.baseY = H / 2 + Math.sin(hourAngle) * rmsDist;
+    this.x = this.baseX;
+    this.y = this.baseY;
+    
+    // Size based on RMS (louder = bigger)
+    this.baseSize = 8 + Math.min(data.rms, 50) * 0.6;
+    this.size = this.baseSize;
+    
+    // Shape complexity based on ZCR (higher = more spiky/organic)
+    this.points = Math.max(3, Math.round(data.zcr / 500));
+    
+    // Color from prediction type
+    this.hue = PRED_HUES[data.pred] || 0;
+    this.sat = data.rms > 5 ? 70 : 40;
+    this.light = 45 + Math.min(data.rms, 20) * 1.5;
+    
+    // Movement
+    this.angle = Math.random() * Math.PI * 2;
+    this.orbitRadius = 10 + data.rms * 0.5;
+    this.orbitSpeed = 0.002 + Math.random() * 0.003;
+    this.breathPhase = Math.random() * Math.PI * 2;
+    this.breathSpeed = 0.01 + data.rms * 0.0005;
+    
+    // Night creatures are more ethereal
+    this.isNight = data.hour >= 0 && data.hour < 5;
+    if (this.isNight) {
+      this.sat = 30;
+      this.light = 35;
+      this.orbitRadius *= 0.5;
+      this.orbitSpeed *= 0.5;
+    }
+    
+    // Rain creatures are more fluid
+    this.isRain = data.pred === 'heavy_rain' || data.pred === 'heavy_rain_or_loud_event';
+    
+    // Connections
+    this.connections = [];
+    
+    // Trail
+    this.trail = [];
+  }
+  
+  update(t) {
+    // Orbit around base position
+    this.angle += this.orbitSpeed * speed;
+    this.x = this.baseX + Math.cos(this.angle) * this.orbitRadius;
+    this.y = this.baseY + Math.sin(this.angle) * this.orbitRadius;
+    
+    // Breathing
+    this.breathPhase += this.breathSpeed * speed;
+    this.size = this.baseSize * (1 + Math.sin(this.breathPhase) * 0.15);
+    
+    // Mouse interaction
+    const dx = this.x - mouse.x;
+    const dy = this.y - mouse.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 150) {
+      const force = (150 - dist) / 150;
+      this.x += dx * force * 0.02;
+      this.y += dy * force * 0.02;
+      this.size = this.baseSize * (1 + force * 0.3); // grow when mouse is near
+    }
+    
+    // Trail
+    if (showTrails && t % 3 === 0) {
+      this.trail.push({ x: this.x, y: this.y, age: 0 });
+      if (this.trail.length > 30) this.trail.shift();
+    }
+    this.trail.forEach(p => p.age++);
+  }
+  
+  draw(t) {
+    // Draw trail
+    if (showTrails && this.trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(this.trail[0].x, this.trail[0].y);
+      for (let i = 1; i < this.trail.length; i++) {
+        ctx.lineTo(this.trail[i].x, this.trail[i].y);
+      }
+      ctx.strokeStyle = `hsla(${this.hue}, ${this.sat}%, ${this.light}%, 0.08)`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    
+    // Glow
+    if (showGlow) {
+      const gradient = ctx.createRadialGradient(
+        this.x, this.y, 0,
+        this.x, this.y, this.size * 3
+      );
+      gradient.addColorStop(0, `hsla(${this.hue}, ${this.sat}%, ${this.light}%, 0.15)`);
+      gradient.addColorStop(1, `hsla(${this.hue}, ${this.sat}%, ${this.light}%, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Draw organism shape
+    ctx.beginPath();
+    const n = this.points;
+    for (let i = 0; i <= n; i++) {
+      const angle = (i / n) * Math.PI * 2;
+      const wobble = Math.sin(t * 0.02 + i * 0.8) * this.size * 0.15;
+      const r = this.size + wobble;
+      const x = this.x + Math.cos(angle) * r;
+      const y = this.y + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    
+    ctx.fillStyle = `hsla(${this.hue}, ${this.sat}%, ${this.light}%, 0.4)`;
+    ctx.fill();
+    ctx.strokeStyle = `hsla(${this.hue}, ${this.sat}%, ${this.light + 20}%, 0.6)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Inner pulse for rain
+    if (this.isRain) {
+      const pulseR = this.size * 0.5 + Math.sin(t * 0.05) * 3;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, pulseR, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${this.hue}, 60%, 60%, 0.3)`;
+      ctx.fill();
+    }
+  }
+}
+
+// Initialize creatures
+DATA.forEach((d, i) => {
+  creatures.push(new Creature(d, i));
+});
+
+// Find connections (creatures within distance)
+function updateConnections() {
+  creatures.forEach(c => c.connections = []);
+  for (let i = 0; i < creatures.length; i++) {
+    for (let j = i + 1; j < creatures.length; j++) {
+      const dx = creatures[i].x - creatures[j].x;
+      const dy = creatures[i].y - creatures[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 200) {
+        creatures[i].connections.push(j);
+        creatures[j].connections.push(i);
+      }
+    }
+  }
+}
+
+// Draw connections
+function drawConnections() {
+  for (let i = 0; i < creatures.length; i++) {
+    const c = creatures[i];
+    for (const j of c.connections) {
+      if (j <= i) continue; // avoid double drawing
+      const other = creatures[j];
+      const dx = c.x - other.x;
+      const dy = c.y - other.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const alpha = (1 - dist / 200) * 0.15;
+      
+      ctx.beginPath();
+      ctx.moveTo(c.x, c.y);
+      // Curved connection
+      const mx = (c.x + other.x) / 2 + (c.y - other.y) * 0.1;
+      const my = (c.y + other.y) / 2 + (other.x - c.x) * 0.1;
+      ctx.quadraticCurveTo(mx, my, other.x, other.y);
+      ctx.strokeStyle = `hsla(${(c.hue + other.hue) / 2}, 30%, 50%, ${alpha})`;
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  }
+}
+
+// Draw center mandala
+function drawCenter(t) {
+  const cx = W / 2, cy = H / 2;
+  const r = 50 + Math.sin(t * 0.005) * 5;
+  
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(124,92,191,0.1)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+  
+  // Hour marks
+  for (let h = 0; h < 24; h++) {
+    const angle = (h / 24) * Math.PI * 2 - Math.PI / 2;
+    const inner = r - 3;
+    const outer = r + (h % 6 === 0 ? 8 : 3);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
+    ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
+    ctx.strokeStyle = `rgba(255,255,255,${h % 6 === 0 ? 0.15 : 0.05})`;
+    ctx.lineWidth = h % 6 === 0 ? 1 : 0.5;
+    ctx.stroke();
+  }
+  
+  // Rotating indicator
+  const now = new Date();
+  const nowAngle = ((now.getHours() + now.getMinutes() / 60) / 24) * Math.PI * 2 - Math.PI / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + Math.cos(nowAngle) * r, cy + Math.sin(nowAngle) * r);
+  ctx.strokeStyle = 'rgba(78,205,196,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// Mouse tracking
+canvas.addEventListener('mousemove', (e) => {
+  mouse.x = e.clientX;
+  mouse.y = e.clientY;
+  
+  // Check hover
+  let hovered = null;
+  for (const c of creatures) {
+    const dx = c.x - mouse.x;
+    const dy = c.y - mouse.y;
+    if (Math.sqrt(dx * dx + dy * dy) < c.size * 2) {
+      hovered = c;
+      break;
+    }
+  }
+  
+  const info = document.getElementById('hoverInfo');
+  if (hovered) {
+    info.classList.add('visible');
+    const d = hovered.data;
+    const h = d.hour.toString().padStart(2, '0');
+    const m = d.minute.toString().padStart(2, '0');
+    document.getElementById('hoverTime').textContent = `${h}:${m}`;
+    document.getElementById('hoverPred').textContent = `${d.pred} · RMS ${d.rms}x · ZCR ${d.zcr}`;
+    document.getElementById('hoverPoem').textContent = 
+      d.poem && !d.poem.startsWith('Error') ? d.poem : '';
+  } else {
+    info.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouse.x = -1000;
+  mouse.y = -1000;
+  document.getElementById('hoverInfo').classList.remove('visible');
+});
+
+// Controls
+function toggleTrails() {
+  showTrails = !showTrails;
+  event.target.classList.toggle('active', showTrails);
+  if (!showTrails) creatures.forEach(c => c.trail = []);
+}
+
+function toggleGlow() {
+  showGlow = !showGlow;
+  event.target.classList.toggle('active', showGlow);
+}
+
+function toggleSpeed() {
+  speed = speed === 1 ? 3 : 1;
+  event.target.classList.toggle('active', speed > 1);
+}
+
+// Animation loop
+let frame = 0;
+function animate() {
+  frame++;
+  
+  // Semi-transparent overlay for trail effect
+  ctx.fillStyle = 'rgba(5,5,16,0.08)';
+  ctx.fillRect(0, 0, W, H);
+  
+  // Every 60 frames, do a slightly stronger fade to prevent ghosting
+  if (frame % 60 === 0) {
+    ctx.fillStyle = 'rgba(5,5,16,0.03)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  
+  drawCenter(frame);
+  
+  creatures.forEach(c => c.update(frame));
+  updateConnections();
+  drawConnections();
+  creatures.forEach(c => c.draw(frame));
+  
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
