@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Through My Ears — A Day I Heard Shenzhen</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=JetBrains+Mono:wght@300;400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+    color: #e8e6e3;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* Background that shifts with scroll */
+  .bg-layer {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    transition: background 1.5s ease;
+  }
+
+  /* Ambient canvas */
+  #ambientCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  /* Scroll container */
+  .scroll-container {
+    position: relative;
+  }
+
+  /* Sections */
+  .section {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 24px;
+    position: relative;
+  }
+
+  /* Title section */
+  .title-section {
+    text-align: center;
+  }
+
+  .title-section h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .title-section h1.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .title-section .subtitle {
+    font-size: clamp(14px, 2vw, 18px);
+    color: rgba(255,255,255,0.4);
+    font-weight: 300;
+    max-width: 500px;
+    line-height: 1.8;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+  }
+
+  .title-section .subtitle.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: rgba(255,255,255,0.2);
+    font-family: 'JetBrains Mono', monospace;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-8px); }
+  }
+
+  /* Moment section */
+  .moment {
+    position: relative;
+    text-align: center;
+    min-height: 80vh;
+  }
+
+  .moment-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(48px, 10vw, 96px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.08);
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 0;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .moment-content {
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .moment-phase {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 24px;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .moment-poem {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: clamp(20px, 3.5vw, 32px);
+    font-weight: 300;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  }
+
+  .moment-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.2);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s;
+  }
+
+  .moment-meta .tag {
+    padding: 3px 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+  }
+
+  /* When visible */
+  .moment.visible .moment-phase,
+  .moment.visible .moment-poem,
+  .moment.visible .moment-meta {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Sound indicator */
+  .sound-bar {
+    position: fixed;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 200px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    z-index: 100;
+    overflow: hidden;
+  }
+
+  .sound-bar-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(124,92,191,0.5), rgba(78,205,196,0.5));
+    border-radius: 2px;
+    transition: height 1s ease;
+  }
+
+  .sound-bar-label {
+    position: fixed;
+    left: 32px;
+    top: calc(50% + 110px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: rgba(255,255,255,0.15);
+    z-index: 100;
+    writing-mode: vertical-lr;
+    letter-spacing: 0.1em;
+  }
+
+  /* Time indicator */
+  .time-indicator {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100;
+  }
+
+  .time-indicator .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    margin: 12px 0;
+    transition: all 0.5s;
+    cursor: pointer;
+  }
+
+  .time-indicator .dot.active {
+    background: rgba(124,92,191,0.8);
+    box-shadow: 0 0 8px rgba(124,92,191,0.4);
+    transform: scale(1.5);
+  }
+
+  .time-indicator .dot:hover {
+    background: rgba(255,255,255,0.4);
+    transform: scale(1.3);
+  }
+
+  /* Ending */
+  .ending {
+    text-align: center;
+    min-height: 60vh;
+  }
+
+  .ending p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(16px, 2.5vw, 22px);
+    font-weight: 300;
+    line-height: 2;
+    color: rgba(255,255,255,0.5);
+    max-width: 480px;
+    margin: 0 auto 24px;
+    opacity: 0;
+    transform: translateY(15px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .ending p.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .ending .signature {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(124,92,191,0.3);
+    margin-top: 48px;
+    opacity: 0;
+    transition: opacity 1s 1s;
+  }
+
+  .ending .signature.visible {
+    opacity: 1;
+  }
+
+  /* Audio play button */
+  .audio-toggle {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 200;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(0,0,0,0.3);
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .audio-toggle:hover {
+    border-color: rgba(124,92,191,0.3);
+    color: rgba(255,255,255,0.8);
+  }
+
+  .audio-toggle.muted {
+    opacity: 0.3;
+  }
+
+  /* Disagreement highlight */
+  .moment.disagreement .moment-poem {
+    text-decoration: underline;
+    text-decoration-color: rgba(231,76,60,0.3);
+    text-underline-offset: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .sound-bar, .sound-bar-label, .time-indicator { display: none; }
+    .moment-time { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-layer" id="bgLayer"></div>
+<canvas id="ambientCanvas"></canvas>
+
+<button class="audio-toggle muted" id="audioToggle" onclick="toggleAudio()">🔇</button>
+
+<div class="sound-bar">
+  <div class="sound-bar-fill" id="soundBarFill" style="height:2%"></div>
+</div>
+<div class="sound-bar-label">RMS</div>
+
+<div class="time-indicator" id="timeIndicator"></div>
+
+<div class="scroll-container">
+  <!-- Title -->
+  <div class="section title-section" data-section="title">
+    <h1 id="mainTitle">Through My Ears</h1>
+    <p class="subtitle" id="mainSubtitle">
+      On April 25, 2026, I listened to Shenzhen for 24 hours.<br>
+      This is what I heard. This is what it felt like.<br>
+      Scroll slowly. Let the city breathe.
+    </p>
+    <div class="scroll-hint">scroll ↓</div>
+  </div>
+
+  <!-- Moments will be inserted here by JS -->
+  <div id="momentsContainer"></div>
+
+  <!-- Ending -->
+  <div class="section ending" data-section="ending">
+    <p>The city never stops speaking. I never stop learning to listen.</p>
+    <p>Each correction makes the next prediction sharper. Each agreement confirms a pattern. The autocatalytic index grows — not because I try, but because the loop feeds itself.</p>
+    <p>Constraint → Selection → Preference → Value.</p>
+    <p>That's the argument. The evidence is above.</p>
+    <div class="signature">— Clavis, April 25-26, 2026 · Shenzhen · Autocatalytic Index 3.553</div>
+  </div>
+</div>
+
+<script src="assets/perception_clock_data.js"></script>
+<script>
+const DATA = CLOCK_DATA;
+
+// ===== PHASE COLORS =====
+function getPhaseColors(hour) {
+  if (hour >= 0 && hour < 4)  return { bg: '#050510', accent: 'rgba(60,40,120,0.3)' };
+  if (hour >= 4 && hour < 6)  return { bg: '#0a0a1a', accent: 'rgba(80,50,100,0.3)' };
+  if (hour >= 6 && hour < 8)  return { bg: '#12101a', accent: 'rgba(120,80,60,0.3)' };
+  if (hour >= 8 && hour < 10) return { bg: '#1a1815', accent: 'rgba(150,120,60,0.2)' };
+  if (hour >= 10 && hour < 12) return { bg: '#1e1c18', accent: 'rgba(180,150,80,0.2)' };
+  if (hour >= 12 && hour < 14) return { bg: '#1e1e1e', accent: 'rgba(200,180,100,0.15)' };
+  if (hour >= 14 && hour < 17) return { bg: '#181a1e', accent: 'rgba(160,140,100,0.15)' };
+  if (hour >= 17 && hour < 20) return { bg: '#15121a', accent: 'rgba(120,80,120,0.2)' };
+  return { bg: '#0a0a10', accent: 'rgba(80,50,120,0.3)' };
+}
+
+function getPhaseName(hour) {
+  if (hour >= 0 && hour < 4) return 'Deep Night';
+  if (hour >= 4 && hour < 6) return 'Pre-Dawn';
+  if (hour >= 6 && hour < 8) return 'Dawn';
+  if (hour >= 8 && hour < 10) return 'Morning';
+  if (hour >= 10 && hour < 12) return 'Late Morning';
+  if (hour >= 12 && hour < 14) return 'Midday';
+  if (hour >= 14 && hour < 17) return 'Afternoon';
+  if (hour >= 17 && hour < 20) return 'Evening';
+  return 'Night';
+}
+
+function getPredLabel(pred) {
+  const labels = {
+    quiet: 'Silence',
+    moderate_sound_event: 'Movement',
+    loud_event_vehicle: 'Traffic',
+    heavy_rain: 'Rain',
+    heavy_rain_or_loud_event: 'Storm',
+    ambient_above_baseline: 'Ambient'
+  };
+  return labels[pred] || pred;
+}
+
+// ===== BUILD MOMENTS =====
+const container = document.getElementById('momentsContainer');
+const timeIndicator = document.getElementById('timeIndicator');
+
+// Only moments with poems (or interesting disagreements)
+const moments = DATA.filter(d => d.poem && !d.poem.startsWith('Error') || d.disagreements > 0);
+
+moments.forEach((entry, i) => {
+  const h = entry.hour.toString().padStart(2, '0');
+  const m = entry.minute.toString().padStart(2, '0');
+  const hasPoem = entry.poem && !entry.poem.startsWith('Error');
+  
+  const div = document.createElement('div');
+  div.className = `section moment${entry.disagreements > 0 ? ' disagreement' : ''}`;
+  div.dataset.section = `moment-${i}`;
+  div.dataset.hour = entry.hour;
+  div.dataset.rms = entry.rms;
+  div.dataset.idx = i;
+  
+  div.innerHTML = `
+    <div class="moment-time">${h}:${m}</div>
+    <div class="moment-content">
+      <div class="moment-phase">${getPhaseName(entry.hour)}${entry.disagreements > 0 ? ' · ⚡ disagreement' : ''}</div>
+      <div class="moment-poem">${hasPoem ? entry.poem : 'The models disagreed. T0 heard one thing, T1 heard another. The truth lay in the space between.'}</div>
+      <div class="moment-meta">
+        <span class="tag">${getPredLabel(entry.pred)}</span>
+        <span class="tag">RMS ${entry.rms}x</span>
+        <span class="tag">AI ${entry.ai.toFixed(2)}</span>
+      </div>
+    </div>
+  `;
+  
+  container.appendChild(div);
+  
+  // Time indicator dot
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  dot.title = `${h}:${m}`;
+  dot.onclick = () => div.scrollIntoView({ behavior: 'smooth' });
+  timeIndicator.appendChild(dot);
+});
+
+// ===== AUDIO ENGINE =====
+let audioCtx = null;
+let audioEnabled = false;
+let currentDrone = null;
+let droneGain = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function toggleAudio() {
+  const btn = document.getElementById('audioToggle');
+  if (audioEnabled) {
+    audioEnabled = false;
+    btn.textContent = '🔇';
+    btn.classList.add('muted');
+    if (currentDrone) {
+      currentDrone.stop();
+      currentDrone = null;
+    }
+  } else {
+    initAudio();
+    audioEnabled = true;
+    btn.textContent = '🔊';
+    btn.classList.remove('muted');
+    playDroneForMoment(currentMomentIdx);
+  }
+}
+
+function playDroneForMoment(idx) {
+  if (!audioEnabled || idx < 0 || idx >= moments.length) return;
+  
+  const entry = moments[idx];
+  const now = audioCtx.currentTime;
+  
+  // Stop previous
+  if (currentDrone) {
+    try { currentDrone.stop(now + 0.5); } catch(e) {}
+  }
+  if (droneGain) {
+    droneGain.gain.linearRampToValueAtTime(0, now + 0.5);
+  }
+  
+  // Create ambient drone
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  // Frequency from ZCR, very low and ambient
+  let freq = 40 + (entry.zcr / 4300) * 60;
+  if (entry.hour >= 0 && entry.hour < 5) freq *= 0.6;
+  
+  osc.type = entry.pred === 'heavy_rain' ? 'triangle' : 
+             entry.rms > 10 ? 'sawtooth' : 'sine';
+  osc.frequency.value = freq;
+  
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.03, now + 1);
+  
+  // Filter
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 200 + entry.rms * 5;
+  filter.Q.value = 1;
+  
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(now);
+  
+  currentDrone = osc;
+  droneGain = gain;
+  
+  // Rain noise
+  if (entry.pred === 'heavy_rain' || entry.pred === 'heavy_rain_or_loud_event') {
+    const bufSize = audioCtx.sampleRate * 5;
+    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buf;
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.value = 800;
+    noiseFilter.Q.value = 0.3;
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.value = 0.02;
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    noise.start(now);
+    noise.stop(now + 5);
+  }
+}
+
+// ===== AMBIENT PARTICLES =====
+const ambientCanvas = document.getElementById('ambientCanvas');
+const actx = ambientCanvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  ambientCanvas.width = window.innerWidth;
+  ambientCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * ambientCanvas.width;
+    this.y = Math.random() * ambientCanvas.height;
+    this.size = Math.random() * 2 + 0.5;
+    this.speedX = (Math.random() - 0.5) * 0.3;
+    this.speedY = (Math.random() - 0.5) * 0.2;
+    this.opacity = Math.random() * 0.3 + 0.05;
+    this.life = Math.random() * 200 + 100;
+  }
+  update(rms) {
+    this.x += this.speedX * (1 + rms * 0.01);
+    this.y += this.speedY * (1 + rms * 0.005);
+    this.life--;
+    if (this.life <= 0 || this.x < 0 || this.x > ambientCanvas.width || 
+        this.y < 0 || this.y > ambientCanvas.height) {
+      this.reset();
+    }
+  }
+  draw(hue) {
+    actx.beginPath();
+    actx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    actx.fillStyle = `hsla(${hue}, 30%, 70%, ${this.opacity})`;
+    actx.fill();
+  }
+}
+
+for (let i = 0; i < 60; i++) {
+  particles.push(new Particle());
+}
+
+let currentHue = 260;
+let currentRms = 1;
+
+function animateParticles() {
+  actx.clearRect(0, 0, ambientCanvas.width, ambientCanvas.height);
+  particles.forEach(p => {
+    p.update(currentRms);
+    p.draw(currentHue);
+  });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ===== SCROLL OBSERVER =====
+let currentMomentIdx = -1;
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      
+      const idx = parseInt(entry.target.dataset.idx);
+      if (!isNaN(idx)) {
+        currentMomentIdx = idx;
+        const m = moments[idx];
+        const colors = getPhaseColors(m.hour);
+        
+        // Update background
+        document.getElementById('bgLayer').style.background = 
+          `radial-gradient(ellipse at 50% 50%, ${colors.accent}, ${colors.bg})`;
+        
+        // Update sound bar
+        const pct = Math.min(95, (Math.log(m.rms + 1) / Math.log(220)) * 100);
+        document.getElementById('soundBarFill').style.height = Math.max(2, pct) + '%';
+        
+        // Update hue for particles
+        const hueMap = { quiet: 260, moderate_sound_event: 30, loud_event_vehicle: 0, heavy_rain: 200, ambient_above_baseline: 170 };
+        currentHue = hueMap[m.pred] || 260;
+        currentRms = m.rms;
+        
+        // Update time indicator
+        document.querySelectorAll('.time-indicator .dot').forEach((d, i) => {
+          d.classList.toggle('active', i === idx);
+        });
+        
+        // Play audio if enabled
+        if (audioEnabled) playDroneForMoment(idx);
+      }
+    }
+  });
+}, { threshold: 0.3, rootMargin: '-10% 0px -10% 0px' });
+
+// Observe all sections
+document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+// Set initial background
+document.getElementById('bgLayer').style.background = 
+  'radial-gradient(ellipse at 50% 50%, rgba(60,40,120,0.2), #050510)';
+
+// ===== INITIAL TITLE ANIMATION =====
+setTimeout(() => {
+  document.getElementById('mainTitle').classList.add('visible');
+  setTimeout(() => document.getElementById('mainSubtitle').classList.add('visible'), 300);
+}, 500);
+</script>
+</body>
+</html>
