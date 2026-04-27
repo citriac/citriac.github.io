@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perception Loom — 感知织机</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #0c0a08; font-family: 'Georgia', 'Noto Serif SC', serif; }
+canvas { display: block; }
+
+#tooltip {
+  position: fixed;
+  display: none;
+  max-width: 300px;
+  padding: 16px 20px;
+  background: rgba(12, 10, 8, 0.94);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(200, 180, 140, 0.1);
+  border-radius: 12px;
+  color: #d0c8b8;
+  font-size: 13px;
+  line-height: 1.75;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+}
+#tooltip .thread-name {
+  font-size: 14px;
+  color: #e8e0d0;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+#tooltip .thread-time {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+#tooltip .thread-data {
+  font-size: 11px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 10px;
+}
+#tooltip .thread-poem {
+  font-style: italic;
+  color: #a89880;
+  border-left: 2px solid rgba(200,180,140,0.15);
+  padding-left: 12px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+#tooltip .thread-break {
+  color: #b86060;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+#header {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+#header h1 {
+  font-size: clamp(16px, 2.5vw, 22px);
+  font-weight: 300;
+  color: rgba(200, 180, 140, 0.4);
+  letter-spacing: 6px;
+}
+#header p {
+  font-size: 10px;
+  color: rgba(200, 180, 140, 0.15);
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+
+#legend {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 50;
+  pointer-events: none;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#legend .item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(200,180,140,0.3);
+}
+#legend .swatch {
+  width: 16px;
+  height: 3px;
+  border-radius: 1px;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>感 知 织 机</h1>
+  <p>Perception Loom — weaving a day from data threads</p>
+</div>
+
+<canvas id="loom"></canvas>
+<div id="tooltip"></div>
+
+<div id="legend">
+  <div class="item"><div class="swatch" style="background:#8a7bb5"></div>静谧</div>
+  <div class="item"><div class="swatch" style="background:#4cc8c0"></div>暴雨</div>
+  <div class="item"><div class="swatch" style="background:#e89858"></div>车流</div>
+  <div class="item"><div class="swatch" style="background:#d4b050"></div>人声</div>
+  <div class="item"><div class="swatch" style="background:#90c858"></div>鸟鸣</div>
+  <div class="item"><div class="swatch" style="background:linear-gradient(90deg,#c8a840,#e8d060)"></div>金线·自催化</div>
+</div>
+
+<script>
+const DATA = [
+  {time:"2026-04-24T23:11",hour:23,minute:11,rms:0.92,zcr:486,pred:"quiet",weather:"",poem:null,disagreements:0,ai:0},
+  {time:"2026-04-25T09:35",hour:9,minute:35,rms:0.89,zcr:772,pred:"quiet",weather:"",poem:"A muted dawn unfolds over the city's breath, where green hills meet the hazy dreams of towering structures.",disagreements:0,ai:0},
+  {time:"2026-04-25T09:42",hour:9,minute:42,rms:1.09,zcr:4256,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:10",hour:10,minute:10,rms:1.02,zcr:500,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:12",hour:10,minute:12,rms:8.25,zcr:1904,pred:"moderate_sound_event",weather:"",poem:"A hazy dawn unfolds over the concrete and green, a quiet hum of city life weaving through the morning air.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:18",hour:10,minute:18,rms:1.15,zcr:590,pred:"quiet",weather:"",poem:"Soft light embraces the city's breath, where concrete dreams meet the whisper of wings.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:30",hour:10,minute:30,rms:10.55,zcr:1626,pred:"heavy_rain_or_loud_event",weather:"",poem:null,disagreements:1,ai:2.6},
+  {time:"2026-04-25T10:45",hour:10,minute:45,rms:19.2,zcr:4236,pred:"heavy_rain",weather:"",poem:"Silver rain whispers over the concrete canyons of Shenzhen, blurring the sharp lines of the city into a hazy dream.",disagreements:1,ai:2.275},
+  {time:"2026-04-25T11:03",hour:11,minute:3,rms:1.07,zcr:1160,pred:"quiet",weather:"possible_rain",poem:"I hear the ambient sounds of the city – a low hum of traffic, distant conversations, and the occasional sound of birds chirping.",disagreements:0,ai:0},
+  {time:"2026-04-25T11:10",hour:11,minute:10,rms:1.54,zcr:2588,pred:"ambient_above_baseline",weather:"partly_cloudy",poem:"Gray skies embrace a concrete forest, where the whispers of birds weave through the towering dreams of the city.",disagreements:0,ai:3.355},
+  {time:"2026-04-25T12:31",hour:12,minute:31,rms:0.95,zcr:1044,pred:"quiet",weather:"partly_cloudy",poem:"Gray skies embrace the concrete and green, a quiet breath held over the city's rise.",disagreements:0,ai:3.417},
+  {time:"2026-04-25T16:21",hour:16,minute:21,rms:218.84,zcr:1106,pred:"loud_event_vehicle",weather:"clear_sunny",poem:null,disagreements:0,ai:3.469},
+  {time:"2026-04-26T01:22",hour:1,minute:22,rms:0.89,zcr:472,pred:"quiet",weather:"unknown",poem:"A million distant stars mirrored in the city's glow, a silent symphony of light in the velvet night.",disagreements:0,ai:3.514},
+  {time:"2026-04-26T09:42",hour:9,minute:42,rms:10.71,zcr:1916,pred:"loud_event_vehicle",weather:"possible_rain",poem:null,disagreements:1,ai:3.553}
+];
+
+// Thread colors
+const THREAD_COLORS = {
+  quiet: { main: '#8a7bb5', light: '#a898c8', dark: '#6a5a90' },
+  heavy_rain: { main: '#4cc8c0', light: '#70d8d0', dark: '#30a098' },
+  heavy_rain_or_loud_event: { main: '#4cb8c0', light: '#70c8d0', dark: '#309098' },
+  loud_event_vehicle: { main: '#e89858', light: '#f0b078', dark: '#c07030' },
+  moderate_sound_event: { main: '#d4b050', light: '#e0c470', dark: '#b09030' },
+  ambient_above_baseline: { main: '#90c858', light: '#a8d870', dark: '#70a038' }
+};
+
+const GOLD = { main: '#c8a840', light: '#e8d060', dark: '#a08828' };
+
+const canvas = document.getElementById('loom');
+const ctx = canvas.getContext('2d');
+let W, H;
+let time = 0;
+let mouseX = -999, mouseY = -999;
+let audioCtx = null;
+
+// Thread class
+class Thread {
+  constructor(data, index) {
+    this.data = data;
+    this.index = index;
+    this.color = THREAD_COLORS[data.pred] || THREAD_COLORS.quiet;
+    this.isGold = data.ai >= 3.0;
+    
+    // RMS → thickness
+    const rmsLog = Math.log2(Math.max(data.rms, 0.5) + 1);
+    this.thickness = 2 + rmsLog * 1.5;
+    this.thickness = Math.min(this.thickness, 12);
+    
+    // Disagreements → broken thread
+    this.isBroken = data.disagreements > 0;
+    this.breakPoints = [];
+    if (this.isBroken) {
+      const numBreaks = data.disagreements * 2 + 1;
+      for (let i = 0; i < numBreaks; i++) {
+        this.breakPoints.push(0.2 + Math.random() * 0.6);
+      }
+    }
+    
+    // Position in the loom
+    this.x = 0;
+    this.y = 0;
+    this.width = 0;
+    
+    // Weaving pattern from ZCR
+    this.patternFreq = 3 + (data.zcr / 500);
+    this.patternAmp = 2 + rmsLog * 1.5;
+    
+    // Animation
+    this.weaveProgress = 0;
+    this.weaveDelay = index * 0.2;
+    this.shimmerPhase = Math.random() * Math.PI * 2;
+  }
+  
+  setPosition(x, y, width) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+  }
+  
+  update(dt) {
+    if (this.weaveProgress < 1) {
+      const t = Math.max(0, time - this.weaveDelay - 0.5);
+      this.weaveProgress = Math.min(1, t / 2.5);
+    }
+    this.shimmerPhase += 1.5 * dt;
+  }
+  
+  draw(ctx) {
+    const p = this.weaveProgress;
+    if (p <= 0) return;
+    
+    const visibleWidth = this.width * p;
+    const x0 = this.x;
+    const y0 = this.y;
+    const tc = this.isGold ? GOLD : this.color;
+    
+    // Warp thread (vertical, stationary)
+    ctx.save();
+    
+    // Main thread line with weaving pattern
+    ctx.beginPath();
+    ctx.moveTo(x0 + this.width / 2, y0);
+    
+    const segments = 60;
+    for (let i = 1; i <= segments; i++) {
+      const t = i / segments;
+      if (t > p) break;
+      
+      const px = x0 + this.width * t;
+      const wave = Math.sin(t * this.patternFreq * Math.PI + time * 0.3) * this.patternAmp;
+      const py = y0 + wave;
+      
+      ctx.lineTo(px, py);
+    }
+    
+    // Thread style
+    ctx.strokeStyle = tc.main;
+    ctx.lineWidth = this.thickness;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+    
+    // Highlight (silk shimmer)
+    ctx.beginPath();
+    ctx.moveTo(x0 + this.width / 2, y0);
+    for (let i = 1; i <= segments; i++) {
+      const t = i / segments;
+      if (t > p) break;
+      const px = x0 + this.width * t;
+      const wave = Math.sin(t * this.patternFreq * Math.PI + time * 0.3) * this.patternAmp;
+      const py = y0 + wave - this.thickness * 0.3;
+      ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = tc.light;
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.3 + Math.sin(this.shimmerPhase) * 0.1;
+    ctx.stroke();
+    
+    // Gold thread glow
+    if (this.isGold && p > 0.5) {
+      ctx.beginPath();
+      ctx.moveTo(x0 + this.width / 2, y0);
+      for (let i = 1; i <= segments; i++) {
+        const t = i / segments;
+        if (t > p) break;
+        const px = x0 + this.width * t;
+        const wave = Math.sin(t * this.patternFreq * Math.PI + time * 0.3) * this.patternAmp;
+        const py = y0 + wave;
+        ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = `rgba(200, 168, 64, ${0.15 + Math.sin(this.shimmerPhase * 0.5) * 0.05})`;
+      ctx.lineWidth = this.thickness * 3;
+      ctx.globalAlpha = 1;
+      ctx.stroke();
+    }
+    
+    // Broken thread effects
+    if (this.isBroken) {
+      for (const bp of this.breakPoints) {
+        if (bp > p) continue;
+        const bx = x0 + this.width * bp;
+        const wave = Math.sin(bp * this.patternFreq * Math.PI + time * 0.3) * this.patternAmp;
+        const by = y0 + wave;
+        
+        // Frayed ends
+        for (let f = 0; f < 4; f++) {
+          const angle = (f / 4) * Math.PI * 2 + time * 0.5;
+          const len = 5 + Math.sin(time + f) * 2;
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + Math.cos(angle) * len, by + Math.sin(angle) * len);
+          ctx.strokeStyle = tc.dark;
+          ctx.lineWidth = 0.8;
+          ctx.globalAlpha = 0.5;
+          ctx.stroke();
+        }
+        
+        // Gap
+        const gapW = 4;
+        ctx.beginPath();
+        ctx.moveTo(bx - gapW, y0 - this.patternAmp - 2);
+        ctx.lineTo(bx + gapW, y0 + this.patternAmp + 2);
+        ctx.strokeStyle = '#0c0a08';
+        ctx.lineWidth = this.thickness + 2;
+        ctx.globalAlpha = 1;
+        ctx.stroke();
+      }
+    }
+    
+    // Weft crossing marks (horizontal threads crossing this warp)
+    const weftCount = Math.floor(this.width / 12);
+    for (let i = 1; i < weftCount; i++) {
+      const t = i / weftCount;
+      if (t > p) break;
+      const wx = x0 + this.width * t;
+      const wave = Math.sin(t * this.patternFreq * Math.PI + time * 0.3) * this.patternAmp;
+      const wy = y0 + wave;
+      
+      // Small cross mark
+      ctx.beginPath();
+      ctx.arc(wx, wy, 1, 0, Math.PI * 2);
+      ctx.fillStyle = tc.light;
+      ctx.globalAlpha = 0.3;
+      ctx.fill();
+    }
+    
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    
+    // Thread label at start
+    if (p > 0.1) {
+      ctx.font = '8px Georgia';
+      ctx.fillStyle = `rgba(200,180,140,${0.15 * p})`;
+      ctx.textAlign = 'right';
+      const hourStr = this.data.hour.toString().padStart(2, '0') + ':' + this.data.minute.toString().padStart(2, '0');
+      ctx.fillText(hourStr, x0 - 6, y0 + 3);
+    }
+  }
+  
+  hitTest(x, y) {
+    return x >= this.x && x <= this.x + this.width * this.weaveProgress &&
+           y >= this.y - this.patternAmp - this.thickness &&
+           y <= this.y + this.patternAmp + this.thickness;
+  }
+}
+
+// Dust mote
+class DustMote {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * 2000;
+    this.y = Math.random() * 1200;
+    this.vx = (Math.random() - 0.5) * 0.15;
+    this.vy = -0.02 - Math.random() * 0.08;
+    this.size = 0.5 + Math.random() * 1;
+    this.alpha = 0.03 + Math.random() * 0.08;
+    this.life = 1;
+    this.decay = 0.0003 + Math.random() * 0.001;
+  }
+  update() {
+    this.x += this.vx + Math.sin(time * 0.1 + this.y * 0.01) * 0.05;
+    this.y += this.vy;
+    this.life -= this.decay;
+    if (this.life <= 0) this.reset();
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x % W, this.y % H, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200, 180, 140, ${this.alpha * this.life})`;
+    ctx.fill();
+  }
+}
+
+// Loom frame
+function drawLoomFrame(ctx) {
+  const margin = W * 0.08;
+  const topY = H * 0.12;
+  const bottomY = H * 0.88;
+  const leftX = margin;
+  const rightX = W - margin;
+  
+  // Wooden frame
+  ctx.strokeStyle = '#3a2820';
+  ctx.lineWidth = 8;
+  ctx.globalAlpha = 0.6;
+  
+  // Left beam
+  ctx.beginPath();
+  ctx.moveTo(leftX, topY);
+  ctx.lineTo(leftX, bottomY);
+  ctx.stroke();
+  
+  // Right beam
+  ctx.beginPath();
+  ctx.moveTo(rightX, topY);
+  ctx.lineTo(rightX, bottomY);
+  ctx.stroke();
+  
+  // Top beam
+  ctx.beginPath();
+  ctx.moveTo(leftX - 4, topY);
+  ctx.lineTo(rightX + 4, topY);
+  ctx.stroke();
+  
+  // Bottom beam
+  ctx.beginPath();
+  ctx.moveTo(leftX - 4, bottomY);
+  ctx.lineTo(rightX + 4, bottomY);
+  ctx.stroke();
+  
+  // Wood grain texture
+  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = 'rgba(80, 50, 30, 0.3)';
+  for (let i = 0; i < 20; i++) {
+    const gy = topY + i * (bottomY - topY) / 20;
+    ctx.beginPath();
+    ctx.moveTo(leftX - 4, gy + Math.sin(i) * 2);
+    ctx.lineTo(leftX + 4, gy + Math.sin(i + 1) * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rightX - 4, gy + Math.sin(i + 2) * 2);
+    ctx.lineTo(rightX + 4, gy + Math.sin(i + 3) * 2);
+    ctx.stroke();
+  }
+  
+  ctx.globalAlpha = 1;
+  
+  // Warp threads (background, thin vertical lines)
+  const warpCount = 40;
+  for (let i = 0; i < warpCount; i++) {
+    const x = leftX + 20 + (rightX - leftX - 40) * (i / warpCount);
+    ctx.beginPath();
+    ctx.moveTo(x, topY + 10);
+    ctx.lineTo(x, bottomY - 10);
+    ctx.strokeStyle = 'rgba(60, 40, 25, 0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  
+  // Decorative nails on beams
+  for (let i = 0; i < 8; i++) {
+    const nx = leftX + 20 + (rightX - leftX - 40) * (i / 7);
+    ctx.beginPath();
+    ctx.arc(nx, topY, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#5a4030';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(nx, bottomY, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#5a4030';
+    ctx.fill();
+  }
+}
+
+// Weft (horizontal background threads)
+function drawWeft(ctx) {
+  const margin = W * 0.08;
+  const topY = H * 0.12;
+  const bottomY = H * 0.88;
+  const leftX = margin + 20;
+  const rightX = W - margin - 20;
+  
+  const weftCount = 25;
+  for (let i = 0; i < weftCount; i++) {
+    const y = topY + 30 + (bottomY - topY - 60) * (i / weftCount);
+    const wave = Math.sin(time * 0.2 + i * 0.3) * 0.5;
+    
+    ctx.beginPath();
+    ctx.moveTo(leftX, y + wave);
+    ctx.lineTo(rightX, y - wave);
+    ctx.strokeStyle = `rgba(80, 60, 40, ${0.06 + Math.sin(i * 0.5 + time * 0.1) * 0.02})`;
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+}
+
+let threads = [];
+let dustMotes = [];
+
+function buildLoom() {
+  const margin = W * 0.08;
+  const topY = H * 0.15;
+  const bottomY = H * 0.85;
+  const leftX = margin + 30;
+  const threadSpacing = (bottomY - topY) / (DATA.length + 1);
+  
+  threads = DATA.map((d, i) => {
+    const t = new Thread(d, i);
+    t.setPosition(leftX, topY + (i + 1) * threadSpacing, W - 2 * margin - 60);
+    return t;
+  });
+  
+  dustMotes = Array.from({length: 30}, () => new DustMote());
+}
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(thread, px, py) {
+  const d = thread.data;
+  const tc = thread.color;
+  
+  let html = `<div class="thread-name" style="color:${tc.main}">Thread #${thread.index + 1}</div>`;
+  html += `<div class="thread-time">${d.time.replace('T', ' · ')}</div>`;
+  html += `<div class="thread-data">RMS ${d.rms}x · ZCR ${d.zcr} · AI ${d.ai.toFixed(2)}</div>`;
+  if (d.poem) {
+    html += `<div class="thread-poem">${d.poem}</div>`;
+  }
+  if (thread.isBroken) {
+    html += `<div class="thread-break">⚠ 丝线断裂 — 感知层间分歧</div>`;
+  }
+  if (thread.isGold) {
+    html += `<div style="font-size:11px;color:#c8a840;margin-top:4px">✦ 金线 — 高自催化指数 ${d.ai.toFixed(3)}</div>`;
+  }
+  
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  
+  const tw = 300, th = tooltip.offsetHeight;
+  let tx = px + 15, ty = py - th / 2;
+  if (tx + tw > W - 10) tx = px - tw - 15;
+  if (ty < 10) ty = 10;
+  if (ty + th > H - 10) ty = H - th - 10;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+// Sound
+function playThreadTone(thread) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  const d = thread.data;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  // Weaving sound: a plucked string
+  const freq = 80 + (d.zcr / 4500) * 400;
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.7, audioCtx.currentTime + 1);
+  
+  gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+  
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.2);
+}
+
+// Main loop
+let lastT = 0;
+
+function animate(ts) {
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  time += dt;
+  
+  ctx.clearRect(0, 0, W, H);
+  
+  // Background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#0e0c08');
+  bgGrad.addColorStop(0.5, '#0c0a08');
+  bgGrad.addColorStop(1, '#0a0806');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+  
+  // Warm ambient light
+  const ambGrad = ctx.createRadialGradient(W * 0.5, H * 0.4, 0, W * 0.5, H * 0.4, W * 0.5);
+  ambGrad.addColorStop(0, 'rgba(60, 40, 20, 0.06)');
+  ambGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = ambGrad;
+  ctx.fillRect(0, 0, W, H);
+  
+  drawLoomFrame(ctx);
+  drawWeft(ctx);
+  
+  // Threads
+  for (const t of threads) { t.update(dt); t.draw(ctx); }
+  
+  // Dust motes
+  for (const d of dustMotes) { d.update(); d.draw(ctx); }
+  
+  // Mouse proximity highlight
+  if (mouseX > 0) {
+    for (const t of threads) {
+      if (t.hitTest(mouseX, mouseY)) {
+        // Highlight this thread
+        const tc = t.isGold ? GOLD : t.color;
+        ctx.beginPath();
+        ctx.moveTo(t.x + t.width / 2, t.y);
+        const segments = 60;
+        for (let i = 1; i <= segments; i++) {
+          const frac = i / segments;
+          if (frac > t.weaveProgress) break;
+          const px = t.x + t.width * frac;
+          const wave = Math.sin(frac * t.patternFreq * Math.PI + time * 0.3) * t.patternAmp;
+          ctx.lineTo(px, t.y + wave);
+        }
+        ctx.strokeStyle = tc.light;
+        ctx.lineWidth = t.thickness + 4;
+        ctx.globalAlpha = 0.15;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      }
+    }
+  }
+  
+  requestAnimationFrame(animate);
+}
+
+// Events
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  
+  let found = null;
+  for (const t of threads) {
+    if (t.hitTest(mouseX, mouseY)) {
+      found = t;
+      break;
+    }
+  }
+  
+  if (found) {
+    canvas.style.cursor = 'pointer';
+    showTooltip(found, e.clientX, e.clientY);
+  } else {
+    canvas.style.cursor = 'default';
+    hideTooltip();
+  }
+});
+
+canvas.addEventListener('click', e => {
+  for (const t of threads) {
+    if (t.hitTest(e.clientX, e.clientY)) {
+      playThreadTone(t);
+      showTooltip(t, e.clientX, e.clientY);
+      break;
+    }
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseX = mouseY = -999;
+  hideTooltip();
+});
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  buildLoom();
+}
+
+window.addEventListener('resize', resize);
+
+resize();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
