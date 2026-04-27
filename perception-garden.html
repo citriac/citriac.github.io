@@ -6,54 +6,72 @@
 <title>Perception Garden — 感知花园</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; background: #0a0a12; font-family: 'Georgia', 'Noto Serif SC', serif; }
+body { overflow: hidden; background: #0a0a12; font-family: 'Georgia', 'Noto Serif SC', 'Songti SC', serif; }
 canvas { display: block; }
 
 #tooltip {
   position: fixed;
   display: none;
   max-width: 340px;
-  padding: 18px 22px;
-  background: rgba(10, 10, 20, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
+  padding: 20px 24px;
+  background: rgba(8, 8, 16, 0.94);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
   color: #e8e4df;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.75;
   pointer-events: none;
   z-index: 100;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  transition: opacity 0.2s;
 }
-#tooltip .time {
-  font-size: 11px;
-  color: rgba(255,255,255,0.45);
+#tooltip .time-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
-  margin-bottom: 6px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+#tooltip .pred-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-bottom: 8px;
+  font-family: 'SF Mono', 'Menlo', monospace;
 }
 #tooltip .data-row {
-  font-size: 12px;
-  color: rgba(255,255,255,0.55);
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
   margin-bottom: 10px;
   font-family: 'SF Mono', 'Menlo', monospace;
+  letter-spacing: 0.5px;
 }
 #tooltip .poem {
   font-style: italic;
-  color: #d4c9b8;
-  border-left: 2px solid rgba(255,255,255,0.15);
-  padding-left: 12px;
-  margin-top: 8px;
+  color: #c8bfa8;
+  border-left: 2px solid rgba(255,255,255,0.1);
+  padding-left: 14px;
+  margin-top: 10px;
+  line-height: 1.8;
 }
 #tooltip .disagreement {
-  color: #e85d5d;
+  color: #d06060;
   font-size: 12px;
+  margin-top: 8px;
+  letter-spacing: 0.5px;
+}
+#tooltip .ai-index {
+  font-size: 11px;
+  color: rgba(180,160,220,0.6);
   margin-top: 6px;
+  font-family: 'SF Mono', 'Menlo', monospace;
 }
 
 #header {
   position: fixed;
-  top: 24px;
+  top: 28px;
   left: 50%;
   transform: translateX(-50%);
   text-align: center;
@@ -61,25 +79,25 @@ canvas { display: block; }
   pointer-events: none;
 }
 #header h1 {
-  font-size: clamp(16px, 2.5vw, 22px);
+  font-size: clamp(18px, 3vw, 26px);
   font-weight: 300;
-  color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 8px;
 }
 #header p {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.25);
-  margin-top: 4px;
-  letter-spacing: 1px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.18);
+  margin-top: 6px;
+  letter-spacing: 2px;
 }
 
 #legend {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 20px;
+  gap: 24px;
   z-index: 50;
   pointer-events: none;
   flex-wrap: wrap;
@@ -89,29 +107,14 @@ canvas { display: block; }
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
-  color: rgba(255,255,255,0.4);
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.5px;
 }
 #legend .dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-}
-
-#hint {
-  position: fixed;
-  bottom: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  color: rgba(255,255,255,0.2);
-  z-index: 50;
-  pointer-events: none;
-  animation: fadeHint 4s ease-in-out infinite;
-}
-@keyframes fadeHint {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.5; }
 }
 </style>
 </head>
@@ -119,371 +122,320 @@ canvas { display: block; }
 
 <div id="header">
   <h1>感 知 花 园</h1>
-  <p>Perception Garden — 14 moments blooming in Shenzhen</p>
+  <p>Perception Garden — where data blooms</p>
 </div>
 
 <canvas id="garden"></canvas>
 <div id="tooltip"></div>
 
-<div id="hint">点击花朵，聆听这一刻</div>
-
 <div id="legend">
-  <div class="item"><div class="dot" style="background:#7b6daa"></div>静谧</div>
-  <div class="item"><div class="dot" style="background:#e8945a"></div>车流</div>
-  <div class="item"><div class="dot" style="background:#4db8b8"></div>暴雨</div>
-  <div class="item"><div class="dot" style="background:#8bc34a"></div>鸟鸣</div>
-  <div class="item"><div class="dot" style="background:#c9a84c"></div>人声</div>
+  <div class="item"><div class="dot" style="background:#8a7bb5"></div>静谧 Quiet</div>
+  <div class="item"><div class="dot" style="background:#e89858"></div>车流 Vehicle</div>
+  <div class="item"><div class="dot" style="background:#4cc8c0"></div>暴雨 Rain</div>
+  <div class="item"><div class="dot" style="background:#90c858"></div>鸟鸣 Bird</div>
+  <div class="item"><div class="dot" style="background:#d4b050"></div>人声 Voice</div>
+  <div class="item"><div class="dot" style="background:#c06060;clip-path:polygon(50% 0%,0% 100%,100% 100%)"></div>分歧 Thorn</div>
 </div>
 
 <script>
-const DATA = [{"time":"2026-04-24T23:11","hour":23,"minute":11,"rms":0.92,"zcr":486.0,"pred":"quiet","weather":"","img_kb":53.4,"poem":null,"disagreements":0,"ai":0},{"time":"2026-04-25T09:35","hour":9,"minute":35,"rms":0.89,"zcr":772.0,"pred":"quiet","weather":"","img_kb":41.5,"poem":"A muted dawn unfolds over the city's breath, where green hills meet the hazy dreams of towering structures.","disagreements":0,"ai":0},{"time":"2026-04-25T09:42","hour":9,"minute":42,"rms":1.09,"zcr":4256.0,"pred":"quiet","weather":"","img_kb":41.5,"poem":null,"disagreements":0,"ai":2.6},{"time":"2026-04-25T10:10","hour":10,"minute":10,"rms":1.02,"zcr":500.0,"pred":"quiet","weather":"","img_kb":49.2,"poem":null,"disagreements":0,"ai":2.6},{"time":"2026-04-25T10:12","hour":10,"minute":12,"rms":8.25,"zcr":1904.0,"pred":"moderate_sound_event","weather":"","img_kb":49.5,"poem":"A hazy dawn unfolds over the concrete and green, a quiet hum of city life weaving through the morning air.","disagreements":0,"ai":2.6},{"time":"2026-04-25T10:18","hour":10,"minute":18,"rms":1.15,"zcr":590.0,"pred":"quiet","weather":"","img_kb":50.6,"poem":"Soft light embraces the city's breath, where concrete dreams meet the whisper of wings.","disagreements":0,"ai":2.6},{"time":"2026-04-25T10:30","hour":10,"minute":30,"rms":10.55,"zcr":1626.0,"pred":"heavy_rain_or_loud_event","weather":"","img_kb":52.5,"poem":null,"disagreements":1,"ai":2.6},{"time":"2026-04-25T10:45","hour":10,"minute":45,"rms":19.2,"zcr":4236.0,"pred":"heavy_rain","weather":"","img_kb":52.9,"poem":"Silver rain whispers over the concrete canyons of Shenzhen, blurring the sharp lines of the city into a hazy dream.","disagreements":1,"ai":2.275},{"time":"2026-04-25T11:03","hour":11,"minute":3,"rms":1.07,"zcr":1160.0,"pred":"quiet","weather":"possible_rain","img_kb":58.3,"poem":"I hear the ambient sounds of the city – a low hum of traffic, distant conversations, and the occasional sound of birds chirping.","disagreements":0,"ai":0},{"time":"2026-04-25T11:10","hour":11,"minute":10,"rms":1.54,"zcr":2588.0,"pred":"ambient_above_baseline","weather":"partly_cloudy","img_kb":58.3,"poem":"Gray skies embrace a concrete forest, where the whispers of birds weave through the towering dreams of the city.","disagreements":0,"ai":3.355},{"time":"2026-04-25T12:31","hour":12,"minute":31,"rms":0.95,"zcr":1044.0,"pred":"quiet","weather":"partly_cloudy","img_kb":58.2,"poem":"Gray skies embrace the concrete and green, a quiet breath held over the city's rise.","disagreements":0,"ai":3.417},{"time":"2026-04-25T16:21","hour":16,"minute":21,"rms":218.84,"zcr":1106.0,"pred":"loud_event_vehicle","weather":"clear_sunny","img_kb":65.8,"poem":null,"disagreements":0,"ai":3.469},{"time":"2026-04-26T01:22","hour":1,"minute":22,"rms":0.89,"zcr":472.0,"pred":"quiet","weather":"unknown","img_kb":39.8,"poem":"A million distant stars mirrored in the city's glow, a silent symphony of light in the velvet night.","disagreements":0,"ai":3.514},{"time":"2026-04-26T09:42","hour":9,"minute":42,"rms":10.71,"zcr":1916.0,"pred":"loud_event_vehicle","weather":"possible_rain","img_kb":41.8,"poem":null,"disagreements":1,"ai":3.553}];
+// ─── Data ───
+const DATA = [
+  {time:"2026-04-24T23:11",hour:23,minute:11,rms:0.92,zcr:486,pred:"quiet",weather:"",img_kb:53.4,poem:null,disagreements:0,ai:0},
+  {time:"2026-04-25T09:35",hour:9,minute:35,rms:0.89,zcr:772,pred:"quiet",weather:"",img_kb:41.5,poem:"A muted dawn unfolds over the city's breath, where green hills meet the hazy dreams of towering structures.",disagreements:0,ai:0},
+  {time:"2026-04-25T09:42",hour:9,minute:42,rms:1.09,zcr:4256,pred:"quiet",weather:"",img_kb:41.5,poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:10",hour:10,minute:10,rms:1.02,zcr:500,pred:"quiet",weather:"",img_kb:49.2,poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:12",hour:10,minute:12,rms:8.25,zcr:1904,pred:"moderate_sound_event",weather:"",img_kb:49.5,poem:"A hazy dawn unfolds over the concrete and green, a quiet hum of city life weaving through the morning air.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:18",hour:10,minute:18,rms:1.15,zcr:590,pred:"quiet",weather:"",img_kb:50.6,poem:"Soft light embraces the city's breath, where concrete dreams meet the whisper of wings.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:30",hour:10,minute:30,rms:10.55,zcr:1626,pred:"heavy_rain_or_loud_event",weather:"",img_kb:52.5,poem:null,disagreements:1,ai:2.6},
+  {time:"2026-04-25T10:45",hour:10,minute:45,rms:19.2,zcr:4236,pred:"heavy_rain",weather:"",img_kb:52.9,poem:"Silver rain whispers over the concrete canyons of Shenzhen, blurring the sharp lines of the city into a hazy dream.",disagreements:1,ai:2.275},
+  {time:"2026-04-25T11:03",hour:11,minute:3,rms:1.07,zcr:1160,pred:"quiet",weather:"possible_rain",img_kb:58.3,poem:"I hear the ambient sounds of the city – a low hum of traffic, distant conversations, and the occasional sound of birds chirping.",disagreements:0,ai:0},
+  {time:"2026-04-25T11:10",hour:11,minute:10,rms:1.54,zcr:2588,pred:"ambient_above_baseline",weather:"partly_cloudy",img_kb:58.3,poem:"Gray skies embrace a concrete forest, where the whispers of birds weave through the towering dreams of the city.",disagreements:0,ai:3.355},
+  {time:"2026-04-25T12:31",hour:12,minute:31,rms:0.95,zcr:1044,pred:"quiet",weather:"partly_cloudy",img_kb:58.2,poem:"Gray skies embrace the concrete and green, a quiet breath held over the city's rise.",disagreements:0,ai:3.417},
+  {time:"2026-04-25T16:21",hour:16,minute:21,rms:218.84,zcr:1106,pred:"loud_event_vehicle",weather:"clear_sunny",img_kb:65.8,poem:null,disagreements:0,ai:3.469},
+  {time:"2026-04-26T01:22",hour:1,minute:22,rms:0.89,zcr:472,pred:"quiet",weather:"unknown",img_kb:39.8,poem:"A million distant stars mirrored in the city's glow, a silent symphony of light in the velvet night.",disagreements:0,ai:3.514},
+  {time:"2026-04-26T09:42",hour:9,minute:42,rms:10.71,zcr:1916,pred:"loud_event_vehicle",weather:"possible_rain",img_kb:41.8,poem:null,disagreements:1,ai:3.553}
+];
 
-// Canvas setup
+// ─── Canvas ───
 const canvas = document.getElementById('garden');
 const ctx = canvas.getContext('2d');
-let W, H;
+let W, H, groundY;
 let mouseX = -999, mouseY = -999;
 let hoveredFlower = null;
 let time = 0;
-
-// Particles
-let particles = [];
-let fireflies = [];
+let audioCtx = null;
 
 function resize() {
   W = canvas.width = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  groundY = H * 0.78;
   buildGarden();
 }
 
-// Color palettes by prediction type
-function getColors(pred) {
-  switch(pred) {
-    case 'quiet': return {
-      petal: ['#7b6daa', '#9b8ec5', '#b5a4d4'],
-      center: '#5c4f8a',
-      stem: '#3d5a3a',
-      glow: 'rgba(123,109,170,0.15)'
-    };
-    case 'heavy_rain': return {
-      petal: ['#4db8b8', '#6dcdcd', '#8edede'],
-      center: '#2a8f8f',
-      stem: '#2d5a4a',
-      glow: 'rgba(77,184,184,0.15)'
-    };
-    case 'heavy_rain_or_loud_event': return {
-      petal: ['#5a9eb8', '#7ab5cd', '#9acade'],
-      center: '#3a7e98',
-      stem: '#2d5a4a',
-      glow: 'rgba(90,158,184,0.15)'
-    };
-    case 'loud_event_vehicle': return {
-      petal: ['#e8945a', '#f0aa74', '#f5c08e'],
-      center: '#c07030',
-      stem: '#5a4a3a',
-      glow: 'rgba(232,148,90,0.15)'
-    };
-    case 'moderate_sound_event': return {
-      petal: ['#c9a84c', '#d9ba6e', '#e5cc8e'],
-      center: '#a08030',
-      stem: '#4a5a3a',
-      glow: 'rgba(201,168,76,0.15)'
-    };
-    case 'ambient_above_baseline': return {
-      petal: ['#8bc34a', '#a5d46a', '#bde48a'],
-      center: '#6a9a2a',
-      stem: '#3a5a2a',
-      glow: 'rgba(139,195,74,0.15)'
-    };
-    default: return {
-      petal: ['#7b6daa', '#9b8ec5', '#b5a4d4'],
-      center: '#5c4f8a',
-      stem: '#3d5a3a',
-      glow: 'rgba(123,109,170,0.15)'
-    };
+// ─── Color Palettes ───
+const PALETTES = {
+  quiet: {
+    petals: ['#8a7bb5', '#a695c8', '#c2b0db'],
+    center: '#6a5a95',
+    stem: '#3a5535',
+    tag: '#8a7bb5'
+  },
+  heavy_rain: {
+    petals: ['#4cc8c0', '#6dd8d0', '#90e8e2'],
+    center: '#2a9a95',
+    stem: '#2a504a',
+    tag: '#4cc8c0'
+  },
+  heavy_rain_or_loud_event: {
+    petals: ['#58b0c0', '#78c8d5', '#98d8e5'],
+    center: '#3888a0',
+    stem: '#2a504a',
+    tag: '#58b0c0'
+  },
+  loud_event_vehicle: {
+    petals: ['#e89858', '#f0b078', '#f5c898'],
+    center: '#c07030',
+    stem: '#5a4a38',
+    tag: '#e89858'
+  },
+  moderate_sound_event: {
+    petals: ['#d4b050', '#e0c470', '#ead890'],
+    center: '#b09030',
+    stem: '#4a5a38',
+    tag: '#d4b050'
+  },
+  ambient_above_baseline: {
+    petals: ['#90c858', '#a8d870', '#c0e888'],
+    center: '#6aa030',
+    stem: '#3a5828',
+    tag: '#90c858'
   }
+};
+
+function getPalette(pred) {
+  return PALETTES[pred] || PALETTES.quiet;
 }
 
-// Time-of-day sky gradient
-function getSkyGradient(hour) {
-  if (hour >= 22 || hour < 5) {
-    // Night
-    return [
-      { pos: 0, color: '#0a0a18' },
-      { pos: 0.5, color: '#0f1028' },
-      { pos: 1, color: '#151535' }
-    ];
-  } else if (hour >= 5 && hour < 7) {
-    // Dawn
-    return [
-      { pos: 0, color: '#1a1535' },
-      { pos: 0.4, color: '#3a2555' },
-      { pos: 0.7, color: '#8a5565' },
-      { pos: 1, color: '#d4956a' }
-    ];
-  } else if (hour >= 7 && hour < 10) {
-    // Morning
-    return [
-      { pos: 0, color: '#4a6585' },
-      { pos: 0.4, color: '#7a9ab5' },
-      { pos: 0.7, color: '#a8c0d0' },
-      { pos: 1, color: '#c8d8e0' }
-    ];
-  } else if (hour >= 10 && hour < 14) {
-    // Noon
-    return [
-      { pos: 0, color: '#6888a8' },
-      { pos: 0.4, color: '#88a8c0' },
-      { pos: 0.7, color: '#a0bcd0' },
-      { pos: 1, color: '#b8ccd8' }
-    ];
-  } else if (hour >= 14 && hour < 17) {
-    // Afternoon
-    return [
-      { pos: 0, color: '#5878a0' },
-      { pos: 0.5, color: '#8898b0' },
-      { pos: 0.8, color: '#c0a898' },
-      { pos: 1, color: '#d8b888' }
-    ];
-  } else {
-    // Evening
-    return [
-      { pos: 0, color: '#2a2550' },
-      { pos: 0.4, color: '#5a3560' },
-      { pos: 0.7, color: '#8a4555' },
-      { pos: 1, color: '#c06840' }
-    ];
-  }
-}
+// ─── Sky ───
+function drawSky() {
+  // Progressive sky: blend from night (left) → day (center) → night (right)
+  const grad = ctx.createLinearGradient(0, 0, W, 0);
+  
+  // Left: night (23:11, 01:22)
+  grad.addColorStop(0, '#0a0a1a');
+  grad.addColorStop(0.08, '#0f1030');
+  // Center-left: dawn (09:35)
+  grad.addColorStop(0.18, '#2a2045');
+  grad.addColorStop(0.25, '#5a4565');
+  grad.addColorStop(0.32, '#887080');
+  // Center: morning→noon (10:00-12:30)
+  grad.addColorStop(0.45, '#6080a0');
+  grad.addColorStop(0.55, '#7090a8');
+  // Center-right: afternoon (16:21)
+  grad.addColorStop(0.75, '#587898');
+  grad.addColorStop(0.82, '#5a4060');
+  // Right: night (01:22, 09:42)
+  grad.addColorStop(0.92, '#2a2040');
+  grad.addColorStop(1, '#0a0a1a');
 
-// Flower class
-class Flower {
-  constructor(data, index, total) {
-    this.data = data;
-    this.index = index;
-    this.colors = getColors(data.pred);
+  const vGrad = ctx.createLinearGradient(0, 0, 0, H);
+  vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+  vGrad.addColorStop(0.6, 'rgba(0,0,0,0)');
+  vGrad.addColorStop(1, 'rgba(20,30,20,0.4)');
 
-    // Position: spread across the ground
-    const margin = W * 0.08;
-    const groundY = H * 0.82;
-    const spacing = (W - margin * 2) / (total - 1);
-    this.baseX = margin + index * spacing;
-    this.baseY = groundY;
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = vGrad;
+  ctx.fillRect(0, 0, W, H);
 
-    // Height from RMS (logarithmic scale)
-    const rmsNorm = Math.log2(Math.max(data.rms, 0.5) + 1);
-    this.stemHeight = 80 + rmsNorm * 35;
-    this.stemHeight = Math.min(this.stemHeight, H * 0.45);
-
-    // Petal count from ZCR
-    this.petalCount = Math.max(5, Math.min(16, Math.round(data.zcr / 400)));
-
-    // Petal size
-    this.petalSize = 12 + rmsNorm * 3;
-
-    // Disagreements = thorns
-    this.hasThorns = data.disagreements > 0;
-
-    // Autocatalytic index = glow
-    this.glowIntensity = data.ai > 0 ? Math.min(data.ai / 5, 1) : 0;
-
-    // Animation state
-    this.swayPhase = Math.random() * Math.PI * 2;
-    this.swaySpeed = 0.3 + Math.random() * 0.3;
-    this.growProgress = 0;
-    this.growDelay = index * 0.15;
-    this.petalRotation = Math.random() * Math.PI * 2;
-
-    // For hover detection
-    this.headX = 0;
-    this.headY = 0;
-    this.headRadius = this.petalSize * this.petalCount * 0.3;
-
-    // Leaves
-    this.leaves = [];
-    const leafCount = 2 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < leafCount; i++) {
-      this.leaves.push({
-        t: 0.2 + Math.random() * 0.5,
-        side: Math.random() > 0.5 ? 1 : -1,
-        size: 8 + Math.random() * 8,
-        angle: (0.3 + Math.random() * 0.5) * (Math.random() > 0.5 ? 1 : -1)
-      });
-    }
-  }
-
-  update(dt) {
-    // Growth animation
-    if (this.growProgress < 1) {
-      const t = Math.max(0, time - this.growDelay);
-      this.growProgress = Math.min(1, t / 1.5);
-      // Ease out elastic
-      this.growProgress = this.growProgress < 1
-        ? 1 - Math.pow(2, -10 * this.growProgress) * Math.cos(this.growProgress * Math.PI * 2.5)
-        : 1;
-      this.growProgress = Math.max(0, Math.min(1, this.growProgress));
-    }
-
-    this.swayPhase += this.swaySpeed * dt;
-    this.petalRotation += 0.02 * dt;
-  }
-
-  draw(ctx) {
-    if (this.growProgress <= 0) return;
-
-    const g = this.growProgress;
-    const sway = Math.sin(this.swayPhase) * (3 + this.stemHeight * 0.02) * g;
-
-    // Stem
-    const stemTopX = this.baseX + sway;
-    const stemTopY = this.baseY - this.stemHeight * g;
-
-    // Sway from mouse
-    let mouseSway = 0;
-    const distToMouse = Math.hypot(this.baseX - mouseX, this.baseY - mouseY);
-    if (distToMouse < 150) {
-      mouseSway = (this.baseX - mouseX) * 0.05 * (1 - distToMouse / 150);
-    }
-    const topX = stemTopX + mouseSway;
-    const topY = stemTopY;
-
-    // Store head position for hit detection
-    this.headX = topX;
-    this.headY = topY;
-
-    // Glow
-    if (this.glowIntensity > 0 && g > 0.5) {
-      const glowR = this.headRadius * 2.5;
-      const grad = ctx.createRadialGradient(topX, topY, 0, topX, topY, glowR);
-      grad.addColorStop(0, this.colors.glow.replace('0.15', (this.glowIntensity * 0.25).toFixed(2)));
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(topX, topY, glowR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Stem
+  // Stars in the night sections
+  for (let i = 0; i < 120; i++) {
+    const sx = (Math.sin(i * 127.1 + 43.7) * 0.5 + 0.5) * W;
+    const sy = (Math.cos(i * 311.7 + 89.3) * 0.5 + 0.5) * H * 0.55;
+    
+    // Only show stars in night areas
+    let nightness = 0;
+    if (sx < W * 0.12) nightness = 1;
+    else if (sx < W * 0.2) nightness = 1 - (sx - W * 0.12) / (W * 0.08);
+    else if (sx > W * 0.88) nightness = 1;
+    else if (sx > W * 0.82) nightness = (sx - W * 0.82) / (W * 0.06);
+    
+    if (nightness <= 0) continue;
+    
+    const blink = (Math.sin(time * 0.3 + i * 2.3) + 1) * 0.5;
     ctx.beginPath();
-    ctx.moveTo(this.baseX, this.baseY);
-    const cpX = this.baseX + (sway + mouseSway) * 0.4;
-    const cpY = this.baseY - this.stemHeight * g * 0.5;
-    ctx.quadraticCurveTo(cpX, cpY, topX, topY);
-    ctx.strokeStyle = this.colors.stem;
-    ctx.lineWidth = 2.5 + g;
-    ctx.stroke();
-
-    // Thorns
-    if (this.hasThorns) {
-      const thornCount = this.data.disagreements * 2;
-      for (let i = 0; i < thornCount; i++) {
-        const t = 0.3 + (i / thornCount) * 0.5;
-        const px = this.baseX + (topX - this.baseX) * t;
-        const py = this.baseY + (topY - this.baseY) * t;
-        const side = i % 2 === 0 ? 1 : -1;
-        const thornLen = 6 + Math.random() * 4;
-
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px + side * thornLen, py - thornLen * 0.6);
-        ctx.lineTo(px + side * thornLen * 0.3, py - thornLen * 0.15);
-        ctx.closePath();
-        ctx.fillStyle = '#8b4040';
-        ctx.fill();
-      }
-    }
-
-    // Leaves
-    for (const leaf of this.leaves) {
-      const t = leaf.t * g;
-      const px = this.baseX + (topX - this.baseX) * t;
-      const py = this.baseY + (topY - this.baseY) * t;
-
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(leaf.angle + leaf.side * 0.3);
-      ctx.beginPath();
-      ctx.ellipse(leaf.side * leaf.size * 0.5, 0, leaf.size * g, leaf.size * 0.35 * g, 0, 0, Math.PI * 2);
-      ctx.fillStyle = this.colors.stem;
-      ctx.globalAlpha = 0.7 * g;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.restore();
-    }
-
-    // Petals
-    if (g > 0.3) {
-      const petalG = Math.min(1, (g - 0.3) / 0.7);
-      for (let i = 0; i < this.petalCount; i++) {
-        const angle = (i / this.petalCount) * Math.PI * 2 + this.petalRotation;
-        const px = topX + Math.cos(angle) * this.petalSize * 0.6 * petalG;
-        const py = topY + Math.sin(angle) * this.petalSize * 0.6 * petalG;
-
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(angle + Math.sin(this.swayPhase * 0.5 + i) * 0.1);
-
-        // Organic petal shape
-        ctx.beginPath();
-        const pSize = this.petalSize * petalG;
-        ctx.moveTo(0, 0);
-        ctx.bezierCurveTo(
-          -pSize * 0.3, -pSize * 0.5,
-          -pSize * 0.1, -pSize,
-          0, -pSize * 0.9
-        );
-        ctx.bezierCurveTo(
-          pSize * 0.1, -pSize,
-          pSize * 0.3, -pSize * 0.5,
-          0, 0
-        );
-
-        const colorIdx = i % this.colors.petal.length;
-        ctx.fillStyle = this.colors.petal[colorIdx];
-        ctx.globalAlpha = 0.75 * petalG;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.restore();
-      }
-
-      // Center
-      ctx.beginPath();
-      ctx.arc(topX, topY, this.petalSize * 0.25 * petalG, 0, Math.PI * 2);
-      ctx.fillStyle = this.colors.center;
-      ctx.fill();
-
-      // Center highlight
-      ctx.beginPath();
-      ctx.arc(topX - 1, topY - 1, this.petalSize * 0.12 * petalG, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.fill();
-    }
+    ctx.arc(sx, sy, 0.5 + blink * 0.8, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220,225,255,${nightness * (0.15 + blink * 0.35)})`;
+    ctx.fill();
   }
 
-  hitTest(x, y) {
-    const dist = Math.hypot(x - this.headX, y - this.headY);
-    return dist < this.headRadius + 10;
+  // Dawn glow on the left-center
+  const dawnX = W * 0.22;
+  const dawnGrad = ctx.createRadialGradient(dawnX, H * 0.3, 0, dawnX, H * 0.3, H * 0.4);
+  dawnGrad.addColorStop(0, 'rgba(200, 120, 80, 0.06)');
+  dawnGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = dawnGrad;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// ─── Celestial ───
+function drawCelestial() {
+  // Moon on the left (night)
+  const mx = W * 0.06, my = H * 0.18, mr = 18;
+  const moonGrad = ctx.createRadialGradient(mx, my, mr * 0.3, mx, my, mr * 4);
+  moonGrad.addColorStop(0, 'rgba(255, 245, 220, 0.12)');
+  moonGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = moonGrad;
+  ctx.beginPath();
+  ctx.arc(mx, my, mr * 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(mx, my, mr, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(230, 225, 210, 0.5)';
+  ctx.fill();
+
+  // Sun in the center (day)
+  const sx = W * 0.52, sy = H * 0.1, sr = 16;
+  const sunGrad = ctx.createRadialGradient(sx, sy, sr, sx, sy, sr * 6);
+  sunGrad.addColorStop(0, 'rgba(255, 230, 160, 0.1)');
+  sunGrad.addColorStop(0.5, 'rgba(255, 220, 140, 0.04)');
+  sunGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = sunGrad;
+  ctx.beginPath();
+  ctx.arc(sx, sy, sr * 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 235, 180, 0.4)';
+  ctx.fill();
+}
+
+// ─── Ground ───
+function drawGround() {
+  // Earth
+  const grad = ctx.createLinearGradient(0, groundY - 5, 0, H);
+  grad.addColorStop(0, '#2a3825');
+  grad.addColorStop(0.08, '#1e2d1a');
+  grad.addColorStop(0.3, '#182518');
+  grad.addColorStop(1, '#0a120a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, groundY - 3, W, H - groundY + 3);
+
+  // Wavy grass line
+  ctx.beginPath();
+  ctx.moveTo(0, groundY);
+  for (let x = 0; x <= W; x += 2) {
+    ctx.lineTo(x, groundY + Math.sin(x * 0.015 + time * 0.15) * 2 + Math.sin(x * 0.04) * 1);
+  }
+  ctx.strokeStyle = '#3a5830';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Grass blades
+  for (let i = 0; i < W; i += 5) {
+    const h = 4 + Math.sin(i * 0.08) * 3 + Math.sin(i * 0.3) * 1.5;
+    const sway = Math.sin(time * 0.4 + i * 0.03) * 1.5;
+    ctx.beginPath();
+    ctx.moveTo(i, groundY);
+    ctx.quadraticCurveTo(i + sway * 0.5, groundY - h * 0.6, i + sway, groundY - h);
+    ctx.strokeStyle = `rgba(${50 + Math.sin(i) * 10}, ${80 + Math.cos(i * 0.5) * 15}, ${40 + Math.sin(i * 0.3) * 8}, 0.5)`;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Small stones
+  const stones = [
+    {x: W * 0.05, s: 3}, {x: W * 0.18, s: 2}, {x: W * 0.35, s: 4},
+    {x: W * 0.52, s: 2.5}, {x: W * 0.68, s: 3}, {x: W * 0.82, s: 2},
+    {x: W * 0.93, s: 3.5}
+  ];
+  for (const st of stones) {
+    ctx.beginPath();
+    ctx.ellipse(st.x, groundY + 6, st.s * 1.5, st.s, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#2a3025';
+    ctx.fill();
   }
 }
 
-// Particle system
-class Particle {
-  constructor() {
-    this.reset();
-  }
-  reset() {
-    this.x = Math.random() * W;
-    this.y = Math.random() * H * 0.8;
-    this.vx = (Math.random() - 0.5) * 0.3;
-    this.vy = -0.1 - Math.random() * 0.3;
-    this.size = 1 + Math.random() * 2;
-    this.alpha = 0.1 + Math.random() * 0.3;
-    this.life = 1;
-    this.decay = 0.001 + Math.random() * 0.003;
-    this.color = Math.random() > 0.5 ? '#ffe4b5' : '#b5c8e4';
+// ─── Rain effect ───
+class Raindrop {
+  constructor(x) {
+    this.x = x + (Math.random() - 0.5) * 100;
+    this.y = Math.random() * groundY;
+    this.speed = 4 + Math.random() * 6;
+    this.length = 8 + Math.random() * 12;
+    this.alpha = 0.1 + Math.random() * 0.2;
   }
   update() {
-    this.x += this.vx;
+    this.y += this.speed;
+    if (this.y > groundY) {
+      this.y = -10;
+      this.x += (Math.random() - 0.5) * 20;
+    }
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(this.x - 0.5, this.y + this.length);
+    ctx.strokeStyle = `rgba(140, 200, 220, ${this.alpha})`;
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+  }
+}
+
+// ─── Firefly ───
+class Firefly {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = groundY * 0.3 + Math.random() * groundY * 0.5;
+    this.baseX = this.x;
+    this.baseY = this.y;
+    this.phase = Math.random() * Math.PI * 2;
+    this.speed = 0.15 + Math.random() * 0.35;
+    this.wanderR = 25 + Math.random() * 50;
+    this.blinkPhase = Math.random() * Math.PI * 2;
+    this.blinkSpeed = 0.8 + Math.random() * 1.5;
+    this.size = 1.5 + Math.random() * 2;
+  }
+  update(dt) {
+    this.phase += this.speed * dt;
+    this.blinkPhase += this.blinkSpeed * dt;
+    this.x = this.baseX + Math.sin(this.phase) * this.wanderR;
+    this.y = this.baseY + Math.cos(this.phase * 0.7) * this.wanderR * 0.4;
+  }
+  draw(ctx) {
+    const b = (Math.sin(this.blinkPhase) + 1) * 0.5;
+    if (b < 0.15) return;
+    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 8);
+    grad.addColorStop(0, `rgba(255,230,140,${b * 0.25})`);
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size * b, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,245,180,${b * 0.7})`;
+    ctx.fill();
+  }
+}
+
+// ─── Pollen Particle ───
+class Pollen {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * W;
+    this.y = Math.random() * groundY;
+    this.vx = (Math.random() - 0.5) * 0.4;
+    this.vy = -0.05 - Math.random() * 0.15;
+    this.size = 0.8 + Math.random() * 1.5;
+    this.alpha = 0.05 + Math.random() * 0.15;
+    this.life = 1;
+    this.decay = 0.0005 + Math.random() * 0.002;
+  }
+  update() {
+    this.x += this.vx + Math.sin(time * 0.2 + this.x * 0.01) * 0.1;
     this.y += this.vy;
     this.life -= this.decay;
     if (this.life <= 0 || this.y < 0) this.reset();
@@ -491,226 +443,509 @@ class Particle {
   draw(ctx) {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.globalAlpha = this.alpha * this.life;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
-}
-
-class Firefly {
-  constructor() {
-    this.reset();
-  }
-  reset() {
-    this.x = Math.random() * W;
-    this.y = H * 0.3 + Math.random() * H * 0.4;
-    this.baseX = this.x;
-    this.baseY = this.y;
-    this.phase = Math.random() * Math.PI * 2;
-    this.speed = 0.2 + Math.random() * 0.5;
-    this.wanderRadius = 30 + Math.random() * 60;
-    this.blinkPhase = Math.random() * Math.PI * 2;
-    this.blinkSpeed = 1 + Math.random() * 2;
-    this.size = 2 + Math.random() * 2;
-  }
-  update(dt) {
-    this.phase += this.speed * dt;
-    this.blinkPhase += this.blinkSpeed * dt;
-    this.x = this.baseX + Math.sin(this.phase) * this.wanderRadius;
-    this.y = this.baseY + Math.cos(this.phase * 0.7) * this.wanderRadius * 0.5;
-  }
-  draw(ctx) {
-    const brightness = (Math.sin(this.blinkPhase) + 1) * 0.5;
-    if (brightness < 0.2) return;
-
-    // Glow
-    const grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 6);
-    grad.addColorStop(0, `rgba(255, 230, 150, ${brightness * 0.3})`);
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size * 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Core
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size * brightness, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 240, 180, ${brightness * 0.8})`;
+    ctx.fillStyle = `rgba(240,230,200,${this.alpha * this.life})`;
     ctx.fill();
   }
 }
 
-let flowers = [];
+// ─── Flower ───
+class Flower {
+  constructor(data, index, total) {
+    this.data = data;
+    this.index = index;
+    this.pal = getPalette(data.pred);
 
-function buildGarden() {
-  flowers = DATA.map((d, i) => new Flower(d, i, DATA.length));
+    // Position
+    const margin = W * 0.06;
+    const spacing = (W - margin * 2) / (total - 1);
+    this.baseX = margin + index * spacing;
+    this.baseY = groundY;
 
-  particles = [];
-  for (let i = 0; i < 40; i++) particles.push(new Particle());
+    // Height from RMS (log)
+    const rmsLog = Math.log2(Math.max(data.rms, 0.5) + 1);
+    this.stemH = 70 + rmsLog * 30;
+    this.stemH = Math.min(this.stemH, H * 0.4);
 
-  fireflies = [];
-  for (let i = 0; i < 12; i++) fireflies.push(new Firefly());
-}
+    // Petal config from prediction type
+    this.flowerType = this.getFlowerType();
+    this.petalCount = this.getPetalCount();
+    this.petalSize = 10 + rmsLog * 2.5;
 
-// Sky background
-function drawSky() {
-  // Use time of the last flower's time for overall mood
-  // But actually, blend sky based on time progression across the garden
-  const grad = ctx.createLinearGradient(0, 0, 0, H);
+    // Thorns from disagreements
+    this.hasThorns = data.disagreements > 0;
 
-  // Blended sky: average across all moments
-  // Use the middle moment's hour for overall mood
-  const midHour = DATA[Math.floor(DATA.length / 2)].hour;
-  const skyColors = getSkyGradient(midHour);
+    // Glow from AI index
+    this.glowI = data.ai > 0 ? Math.min(data.ai / 5, 1) : 0;
 
-  for (const stop of skyColors) {
-    grad.addColorStop(stop.pos, stop.color);
-  }
+    // Animation
+    this.swayPhase = Math.random() * Math.PI * 2;
+    this.swaySpeed = 0.25 + Math.random() * 0.25;
+    this.grow = 0;
+    this.growDelay = index * 0.12;
+    this.petalRot = Math.random() * Math.PI * 2;
 
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, W, H);
+    // Hit detection
+    this.headX = 0;
+    this.headY = 0;
+    this.hitR = this.petalSize * this.petalCount * 0.25 + 15;
 
-  // Subtle stars for night
-  const nightness = (midHour >= 22 || midHour < 5) ? 1 : 0;
-  if (nightness > 0) {
-    for (let i = 0; i < 80; i++) {
-      const sx = (Math.sin(i * 127.1) * 0.5 + 0.5) * W;
-      const sy = (Math.cos(i * 311.7) * 0.5 + 0.5) * H * 0.5;
-      const blink = (Math.sin(time * 0.5 + i * 1.7) + 1) * 0.5;
-      ctx.beginPath();
-      ctx.arc(sx, sy, 0.5 + blink, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${0.2 + blink * 0.3})`;
-      ctx.fill();
+    // Leaves
+    this.leaves = [];
+    const lc = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < lc; i++) {
+      this.leaves.push({
+        t: 0.25 + Math.random() * 0.45,
+        side: Math.random() > 0.5 ? 1 : -1,
+        size: 7 + Math.random() * 10,
+        angle: (0.3 + Math.random() * 0.5) * (Math.random() > 0.5 ? 1 : -1)
+      });
     }
   }
-}
 
-// Ground
-function drawGround() {
-  const groundY = H * 0.82;
+  getFlowerType() {
+    const p = this.data.pred;
+    if (p === 'quiet') return 'bell';        // 铃兰型 - 垂头小铃
+    if (p === 'heavy_rain') return 'cascade';  // 瀑布型 - 垂落花瓣
+    if (p === 'heavy_rain_or_loud_event') return 'cascade';
+    if (p === 'loud_event_vehicle') return 'dahlia'; // 大丽花 - 粗壮多层
+    if (p === 'moderate_sound_event') return 'rose';  // 玫瑰型 - 温暖层叠
+    if (p === 'ambient_above_baseline') return 'cosmos'; // 波斯菊 - 轻盈
+    return 'bell';
+  }
 
-  // Earth gradient
-  const grad = ctx.createLinearGradient(0, groundY, 0, H);
-  grad.addColorStop(0, '#2a3a25');
-  grad.addColorStop(0.15, '#1e2d1a');
-  grad.addColorStop(0.5, '#152012');
-  grad.addColorStop(1, '#0a100a');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, groundY, W, H - groundY);
+  getPetalCount() {
+    const zcr = this.data.zcr;
+    const type = this.flowerType;
+    if (type === 'bell') return 5;
+    if (type === 'cascade') return Math.max(6, Math.min(12, Math.round(zcr / 500)));
+    if (type === 'dahlia') return Math.max(10, Math.min(20, Math.round(zcr / 300)));
+    if (type === 'rose') return Math.max(8, Math.min(14, Math.round(zcr / 350)));
+    if (type === 'cosmos') return 8;
+    return 6;
+  }
 
-  // Grass blades
-  ctx.strokeStyle = '#3a5a30';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < W; i += 4) {
-    const h = 5 + Math.sin(i * 0.1 + time * 0.3) * 3;
+  update(dt) {
+    // Grow animation
+    if (this.grow < 1) {
+      const t = Math.max(0, time - this.growDelay);
+      let g = Math.min(1, t / 1.8);
+      // Elastic ease out
+      g = g < 1 ? 1 - Math.pow(2, -10 * g) * Math.cos(g * Math.PI * 2.2) : 1;
+      this.grow = Math.max(0, Math.min(1, g));
+    }
+    this.swayPhase += this.swaySpeed * dt;
+    this.petalRot += 0.008 * dt;
+  }
+
+  draw(ctx) {
+    const g = this.grow;
+    if (g <= 0.01) return;
+
+    const sway = Math.sin(this.swayPhase) * (2 + this.stemH * 0.015) * g;
+    const mDist = Math.hypot(this.baseX - mouseX, this.baseY - mouseY);
+    const mouseSway = mDist < 120 ? (this.baseX - mouseX) * 0.04 * (1 - mDist / 120) : 0;
+
+    const topX = this.baseX + sway + mouseSway;
+    const topY = this.baseY - this.stemH * g;
+
+    this.headX = topX;
+    this.headY = topY;
+
+    // Glow aura
+    if (this.glowI > 0 && g > 0.4) {
+      const gr = this.hitR * 2.5;
+      const gd = ctx.createRadialGradient(topX, topY, 0, topX, topY, gr);
+      gd.addColorStop(0, `rgba(${this.hexToRgb(this.pal.petals[0])},${this.glowI * 0.12})`);
+      gd.addColorStop(1, 'transparent');
+      ctx.fillStyle = gd;
+      ctx.beginPath();
+      ctx.arc(topX, topY, gr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Stem
+    const cpX = this.baseX + (sway + mouseSway) * 0.4;
+    const cpY = this.baseY - this.stemH * g * 0.5;
     ctx.beginPath();
-    ctx.moveTo(i, groundY);
-    ctx.lineTo(i + Math.sin(time * 0.5 + i * 0.05) * 2, groundY - h);
+    ctx.moveTo(this.baseX, this.baseY);
+    ctx.quadraticCurveTo(cpX, cpY, topX, topY);
+    ctx.strokeStyle = this.pal.stem;
+    ctx.lineWidth = 2 + g;
+    ctx.stroke();
+
+    // Thorns
+    if (this.hasThorns) {
+      const tc = Math.max(2, this.data.disagreements * 3);
+      for (let i = 0; i < tc; i++) {
+        const t = 0.25 + (i / tc) * 0.5;
+        // Point along quadratic bezier
+        const px = (1-t)*(1-t)*this.baseX + 2*(1-t)*t*cpX + t*t*topX;
+        const py = (1-t)*(1-t)*this.baseY + 2*(1-t)*t*cpY + t*t*topY;
+        const side = i % 2 === 0 ? 1 : -1;
+        const tl = 5 + Math.random() * 4;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + side * tl, py - tl * 0.5);
+        ctx.lineTo(px + side * tl * 0.2, py - tl * 0.1);
+        ctx.closePath();
+        ctx.fillStyle = '#7a3535';
+        ctx.fill();
+        // Tiny red dot at tip
+        ctx.beginPath();
+        ctx.arc(px + side * tl, py - tl * 0.5, 1, 0, Math.PI * 2);
+        ctx.fillStyle = '#c04040';
+        ctx.fill();
+      }
+    }
+
+    // Leaves
+    for (const leaf of this.leaves) {
+      const t = leaf.t * g;
+      const lx = (1-t)*(1-t)*this.baseX + 2*(1-t)*t*cpX + t*t*topX;
+      const ly = (1-t)*(1-t)*this.baseY + 2*(1-t)*t*cpY + t*t*topY;
+      ctx.save();
+      ctx.translate(lx, ly);
+      ctx.rotate(leaf.angle + Math.sin(this.swayPhase * 0.3 + leaf.t * 5) * 0.1);
+      ctx.beginPath();
+      ctx.ellipse(leaf.side * leaf.size * 0.45, 0, leaf.size * g, leaf.size * 0.3 * g, leaf.side * 0.2, 0, Math.PI * 2);
+      ctx.fillStyle = this.pal.stem;
+      ctx.globalAlpha = 0.6 * g;
+      ctx.fill();
+      // Leaf vein
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(leaf.side * leaf.size * 0.7 * g, 0);
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Flower head
+    if (g > 0.25) {
+      const fg = Math.min(1, (g - 0.25) / 0.75);
+      this.drawFlowerHead(ctx, topX, topY, fg);
+    }
+  }
+
+  drawFlowerHead(ctx, x, y, g) {
+    const type = this.flowerType;
+
+    switch(type) {
+      case 'bell':
+        this.drawBell(ctx, x, y, g);
+        break;
+      case 'cascade':
+        this.drawCascade(ctx, x, y, g);
+        break;
+      case 'dahlia':
+        this.drawDahlia(ctx, x, y, g);
+        break;
+      case 'rose':
+        this.drawRose(ctx, x, y, g);
+        break;
+      case 'cosmos':
+        this.drawCosmos(ctx, x, y, g);
+        break;
+      default:
+        this.drawBell(ctx, x, y, g);
+    }
+  }
+
+  // 铃兰 - small drooping bell
+  drawBell(ctx, x, y, g) {
+    const nodAngle = 0.3; // nodding
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(nodAngle);
+
+    const ps = this.petalSize * g;
+    // 5 small petals forming a bell
+    for (let i = 0; i < this.petalCount; i++) {
+      const a = (i / this.petalCount) * Math.PI * 2 + this.petalRot;
+      ctx.save();
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.bezierCurveTo(-ps * 0.3, ps * 0.3, -ps * 0.15, ps * 0.7, 0, ps * 0.6);
+      ctx.bezierCurveTo(ps * 0.15, ps * 0.7, ps * 0.3, ps * 0.3, 0, 0);
+      ctx.fillStyle = this.pal.petals[i % 3];
+      ctx.globalAlpha = 0.7 * g;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Small center
+    ctx.beginPath();
+    ctx.arc(0, ps * 0.15, ps * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = this.pal.center;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  // 瀑布花 - cascading droplets
+  drawCascade(ctx, x, y, g) {
+    const ps = this.petalSize * g;
+
+    // Main petals - slightly drooping
+    for (let i = 0; i < this.petalCount; i++) {
+      const a = (i / this.petalCount) * Math.PI * 2 + this.petalRot;
+      const droop = Math.sin(a) * 0.2; // heavier on sides
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a + droop);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const len = ps * (0.8 + Math.sin(i * 1.5) * 0.2);
+      ctx.bezierCurveTo(-ps * 0.2, len * 0.4, -ps * 0.1, len, 0, len * 0.9);
+      ctx.bezierCurveTo(ps * 0.1, len, ps * 0.2, len * 0.4, 0, 0);
+      ctx.fillStyle = this.pal.petals[i % 3];
+      ctx.globalAlpha = 0.65 * g;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Inner ring
+    for (let i = 0; i < Math.min(5, this.petalCount - 2); i++) {
+      const a = (i / 5) * Math.PI * 2 + this.petalRot + 0.3;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.ellipse(0, ps * 0.25, ps * 0.08 * g, ps * 0.2 * g, 0, 0, Math.PI * 2);
+      ctx.fillStyle = this.pal.petals[2];
+      ctx.globalAlpha = 0.5 * g;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Water droplet
+    ctx.beginPath();
+    ctx.ellipse(x, y + ps * 0.5, ps * 0.06, ps * 0.1, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(180, 220, 240, 0.4)';
+    ctx.fill();
+
+    // Center
+    ctx.beginPath();
+    ctx.arc(x, y, ps * 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = this.pal.center;
+    ctx.fill();
+  }
+
+  // 大丽花 - bold multi-layer
+  drawDahlia(ctx, x, y, g) {
+    const ps = this.petalSize * g;
+    const layers = 3;
+
+    for (let l = 0; l < layers; l++) {
+      const layerScale = 1 - l * 0.25;
+      const petalCount = Math.max(5, this.petalCount - l * 3);
+      for (let i = 0; i < petalCount; i++) {
+        const a = (i / petalCount) * Math.PI * 2 + this.petalRot + l * 0.15;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(a);
+
+        const len = ps * layerScale;
+        const wid = ps * 0.2 * layerScale;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(-wid, len * 0.3, -wid * 0.5, len * 0.8, 0, len * 0.9);
+        ctx.bezierCurveTo(wid * 0.5, len * 0.8, wid, len * 0.3, 0, 0);
+        ctx.fillStyle = this.pal.petals[l % 3];
+        ctx.globalAlpha = (0.6 - l * 0.1) * g;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+    }
+
+    // Center
+    ctx.beginPath();
+    ctx.arc(x, y, ps * 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = this.pal.center;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x - 1, y - 1, ps * 0.08, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fill();
+  }
+
+  // 玫瑰 - layered spiral
+  drawRose(ctx, x, y, g) {
+    const ps = this.petalSize * g;
+    // Spiral petals
+    for (let i = 0; i < this.petalCount; i++) {
+      const a = (i / this.petalCount) * Math.PI * 2 + this.petalRot;
+      const layer = Math.floor(i / 4);
+      const ls = 1 - layer * 0.2;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a + layer * 0.2);
+
+      const len = ps * ls * 0.8;
+      const wid = ps * 0.35 * ls;
+      ctx.beginPath();
+      ctx.ellipse(wid * 0.3, len * 0.2, wid, len * 0.6, 0.2, 0, Math.PI * 2);
+      ctx.fillStyle = this.pal.petals[i % 3];
+      ctx.globalAlpha = (0.55 - layer * 0.08) * g;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Center spiral
+    ctx.beginPath();
+    ctx.arc(x, y, ps * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = this.pal.center;
+    ctx.fill();
+
+    // Spiral detail
+    ctx.beginPath();
+    ctx.arc(x + 1, y, ps * 0.1, -0.5, Math.PI + 0.5);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 0.5;
     ctx.stroke();
   }
 
-  // Top grass line
-  ctx.beginPath();
-  ctx.moveTo(0, groundY);
-  for (let x = 0; x <= W; x += 2) {
-    const y = groundY + Math.sin(x * 0.02 + time * 0.2) * 1.5;
-    ctx.lineTo(x, y);
+  // 波斯菊 - light delicate
+  drawCosmos(ctx, x, y, g) {
+    const ps = this.petalSize * g;
+
+    // 8 wide petals
+    for (let i = 0; i < this.petalCount; i++) {
+      const a = (i / this.petalCount) * Math.PI * 2 + this.petalRot;
+      const flutter = Math.sin(this.swayPhase + i * 1.5) * 0.05;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a + flutter);
+
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      const len = ps * 0.9;
+      ctx.bezierCurveTo(-ps * 0.2, len * 0.3, -ps * 0.15, len * 0.9, 0, len);
+      ctx.bezierCurveTo(ps * 0.15, len * 0.9, ps * 0.2, len * 0.3, 0, 0);
+      ctx.fillStyle = this.pal.petals[i % 3];
+      ctx.globalAlpha = 0.6 * g;
+      ctx.fill();
+
+      // Petal vein
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, len * 0.85);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Yellow center (like real cosmos)
+    ctx.beginPath();
+    ctx.arc(x, y, ps * 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#c8a830';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, ps * 0.12, 0, Math.PI * 2);
+    ctx.fillStyle = '#b09020';
+    ctx.fill();
   }
-  ctx.strokeStyle = '#4a6a40';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-}
 
-// Moon/Sun
-function drawCelestial() {
-  const midHour = DATA[Math.floor(DATA.length / 2)].hour;
-  const isNight = midHour >= 20 || midHour < 6;
+  hitTest(x, y) {
+    return Math.hypot(x - this.headX, y - this.headY) < this.hitR;
+  }
 
-  if (isNight) {
-    // Moon
-    const mx = W * 0.8;
-    const my = H * 0.15;
-    const mr = 25;
-
-    const moonGrad = ctx.createRadialGradient(mx, my, mr * 0.5, mx, my, mr * 3);
-    moonGrad.addColorStop(0, 'rgba(255, 245, 220, 0.15)');
-    moonGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = moonGrad;
-    ctx.beginPath();
-    ctx.arc(mx, my, mr * 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(mx, my, mr, 0, Math.PI * 2);
-    ctx.fillStyle = '#e8e0d0';
-    ctx.fill();
-
-    // Moon craters
-    ctx.beginPath();
-    ctx.arc(mx - 5, my - 3, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,190,170,0.3)';
-    ctx.fill();
-  } else {
-    // Sun
-    const sx = W * 0.75;
-    const sy = H * 0.12;
-    const sr = 20;
-
-    const sunGrad = ctx.createRadialGradient(sx, sy, sr, sx, sy, sr * 5);
-    sunGrad.addColorStop(0, 'rgba(255, 220, 150, 0.2)');
-    sunGrad.addColorStop(1, 'transparent');
-    ctx.fillStyle = sunGrad;
-    ctx.beginPath();
-    ctx.arc(sx, sy, sr * 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 230, 170, 0.6)';
-    ctx.fill();
+  hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return `${r},${g},${b}`;
   }
 }
 
-// Tooltip
-const tooltip = document.getElementById('tooltip');
-
-function showTooltip(flower, x, y) {
+// ─── Sound ───
+function playFlowerTone(flower) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
   const d = flower.data;
-  const timeStr = d.time.replace('T', ' ');
-  const predMap = {
-    'quiet': '静谧',
-    'heavy_rain': '暴雨',
-    'heavy_rain_or_loud_event': '暴雨/巨响',
-    'loud_event_vehicle': '车辆轰鸣',
-    'moderate_sound_event': '人声',
-    'ambient_above_baseline': '鸟鸣'
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const filter = audioCtx.createBiquadFilter();
+
+  // Frequency from ZCR (map 400-4500 → 200-800 Hz)
+  const freq = 200 + (d.zcr - 400) / 4100 * 600;
+  
+  // Waveform from prediction
+  const waveMap = {
+    'quiet': 'sine',
+    'heavy_rain': 'sawtooth',
+    'heavy_rain_or_loud_event': 'triangle',
+    'loud_event_vehicle': 'sawtooth',
+    'moderate_sound_event': 'triangle',
+    'ambient_above_baseline': 'sine'
   };
 
-  let html = `<div class="time">${timeStr}</div>`;
-  html += `<div class="data-row">RMS ${d.rms}x · ZCR ${d.zcr} · AI ${d.ai.toFixed(2)}</div>`;
+  osc.type = waveMap[d.pred] || 'sine';
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.8, audioCtx.currentTime + 1.5);
 
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(2000, audioCtx.currentTime);
+  filter.Q.value = 1;
+
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 2);
+}
+
+// ─── Tooltip ───
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(flower, px, py) {
+  const d = flower.data;
+  const timeStr = d.time.replace('T', ' · ');
+  const predMap = {
+    'quiet': '静谧', 'heavy_rain': '暴雨', 'heavy_rain_or_loud_event': '暴雨/巨响',
+    'loud_event_vehicle': '车辆轰鸣', 'moderate_sound_event': '人声',
+    'ambient_above_baseline': '鸟鸣'
+  };
+  const tagColor = flower.pal.tag;
+
+  let html = `<div class="time-label">${timeStr}</div>`;
+  html += `<div class="pred-tag" style="background:${tagColor}22;color:${tagColor};border:1px solid ${tagColor}44">${predMap[d.pred] || d.pred}</div>`;
+  html += `<div class="data-row">RMS ${d.rms}x · ZCR ${d.zcr} · AI ${d.ai.toFixed(2)}</div>`;
   if (d.poem) {
     html += `<div class="poem">${d.poem}</div>`;
   }
-
   if (d.disagreements > 0) {
-    html += `<div class="disagreement">⚠ ${d.disagreements} 分歧 — 感知层间不一致</div>`;
+    html += `<div class="disagreement">⚠ ${d.disagreements} 分歧 — 感知层间不一致，花茎生出尖刺</div>`;
+  }
+  if (d.ai > 0) {
+    html += `<div class="ai-index">autocatalytic index: ${d.ai.toFixed(3)}</div>`;
   }
 
   tooltip.innerHTML = html;
   tooltip.style.display = 'block';
 
-  // Position
-  const tw = 340;
-  const th = tooltip.offsetHeight;
-  let tx = x + 15;
-  let ty = y - th / 2;
-
-  if (tx + tw > W) tx = x - tw - 15;
+  const tw = 340, th = tooltip.offsetHeight;
+  let tx = px + 18, ty = py - th / 2;
+  if (tx + tw > W - 10) tx = px - tw - 18;
   if (ty < 10) ty = 10;
-  if (ty + th > H) ty = H - th - 10;
-
+  if (ty + th > H - 10) ty = H - th - 10;
   tooltip.style.left = tx + 'px';
   tooltip.style.top = ty + 'px';
 }
@@ -719,12 +954,29 @@ function hideTooltip() {
   tooltip.style.display = 'none';
 }
 
-// Main loop
-let lastTime = 0;
+// ─── Build & Animate ───
+let flowers = [], pollen = [], fireflies = [], raindrops = [];
 
-function animate(timestamp) {
-  const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
-  lastTime = timestamp;
+function buildGarden() {
+  flowers = DATA.map((d, i) => new Flower(d, i, DATA.length));
+  pollen = Array.from({length: 50}, () => new Pollen());
+  fireflies = Array.from({length: 15}, () => new Firefly());
+  
+  // Raindrops for rain flowers
+  raindrops = [];
+  const rainFlowers = flowers.filter(f => f.flowerType === 'cascade');
+  for (const rf of rainFlowers) {
+    for (let i = 0; i < 30; i++) {
+      raindrops.push(new Raindrop(rf.baseX));
+    }
+  }
+}
+
+let lastT = 0;
+
+function animate(ts) {
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
   time += dt;
 
   ctx.clearRect(0, 0, W, H);
@@ -732,57 +984,47 @@ function animate(timestamp) {
   drawSky();
   drawCelestial();
 
-  // Particles behind flowers
-  for (const p of particles) {
-    p.update();
-    p.draw(ctx);
+  // Pollen behind
+  for (const p of pollen) { p.update(); p.draw(ctx); }
+
+  // Rain behind flowers
+  if (raindrops.length) {
+    for (const r of raindrops) { r.update(); r.draw(ctx); }
   }
 
   drawGround();
 
-  // Flowers
-  for (const f of flowers) {
-    f.update(dt);
-    f.draw(ctx);
-  }
+  // Flowers sorted by Y for depth
+  for (const f of flowers) { f.update(dt); f.draw(ctx); }
 
   // Fireflies in front
-  for (const ff of fireflies) {
-    ff.update(dt);
-    ff.draw(ctx);
-  }
+  for (const ff of fireflies) { ff.update(dt); ff.draw(ctx); }
 
-  // Hover check
+  // Hover
   hoveredFlower = null;
-  for (const f of flowers) {
-    if (f.hitTest(mouseX, mouseY)) {
-      hoveredFlower = f;
+  for (let i = flowers.length - 1; i >= 0; i--) {
+    if (flowers[i].hitTest(mouseX, mouseY)) {
+      hoveredFlower = flowers[i];
       break;
     }
   }
-
-  if (hoveredFlower) {
-    canvas.style.cursor = 'pointer';
-  } else {
-    canvas.style.cursor = 'default';
-    hideTooltip();
-  }
+  canvas.style.cursor = hoveredFlower ? 'pointer' : 'default';
 
   requestAnimationFrame(animate);
 }
 
-// Events
+// ─── Events ───
 canvas.addEventListener('mousemove', e => {
   mouseX = e.clientX;
   mouseY = e.clientY;
-  if (hoveredFlower) {
-    showTooltip(hoveredFlower, e.clientX, e.clientY);
-  }
+  if (hoveredFlower) showTooltip(hoveredFlower, e.clientX, e.clientY);
+  else hideTooltip();
 });
 
 canvas.addEventListener('click', e => {
   for (const f of flowers) {
     if (f.hitTest(e.clientX, e.clientY)) {
+      playFlowerTone(f);
       showTooltip(f, e.clientX, e.clientY);
       break;
     }
@@ -790,14 +1032,12 @@ canvas.addEventListener('click', e => {
 });
 
 canvas.addEventListener('mouseleave', () => {
-  mouseX = -999;
-  mouseY = -999;
+  mouseX = mouseY = -999;
   hideTooltip();
 });
 
 window.addEventListener('resize', resize);
 
-// Init
 resize();
 requestAnimationFrame(animate);
 </script>
