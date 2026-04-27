@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perception Ink — 感知墨</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #f5f0e8; font-family: 'Georgia', 'Noto Serif SC', 'STSong', 'Songti SC', serif; }
+canvas { display: block; }
+
+#tooltip {
+  position: fixed;
+  display: none;
+  max-width: 300px;
+  padding: 18px 22px;
+  background: rgba(245, 240, 232, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  color: #3a3530;
+  font-size: 13px;
+  line-height: 1.8;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+#tooltip .stroke-time {
+  font-size: 10px;
+  color: rgba(0,0,0,0.3);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+#tooltip .stroke-char {
+  font-size: 28px;
+  color: #2a2520;
+  font-family: 'STKaiti', 'KaiTi', serif;
+  margin-bottom: 6px;
+}
+#tooltip .stroke-data {
+  font-size: 11px;
+  font-family: 'SF Mono', 'Menlo', monospace;
+  color: rgba(0,0,0,0.35);
+  margin-bottom: 10px;
+}
+#tooltip .stroke-poem {
+  font-style: italic;
+  color: #6a6050;
+  border-left: 2px solid rgba(0,0,0,0.08);
+  padding-left: 12px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+#tooltip .stroke-splash {
+  color: #8a3030;
+  font-size: 11px;
+  margin-top: 6px;
+}
+
+#header {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+#header h1 {
+  font-size: clamp(18px, 3vw, 26px);
+  font-weight: 300;
+  color: rgba(0, 0, 0, 0.2);
+  letter-spacing: 10px;
+}
+#header p {
+  font-size: 10px;
+  color: rgba(0, 0, 0, 0.12);
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+
+#seal {
+  position: fixed;
+  bottom: 30px;
+  right: 40px;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s;
+}
+#seal.visible { opacity: 1; }
+#seal .seal-box {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #c04030;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-5deg);
+}
+#seal .seal-char {
+  font-size: 22px;
+  color: #c04030;
+  font-family: 'STKaiti', 'KaiTi', serif;
+  font-weight: bold;
+}
+
+#legend {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 18px;
+  z-index: 50;
+  pointer-events: none;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#legend .item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: rgba(0,0,0,0.25);
+}
+#legend .ink {
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>感 知 墨</h1>
+  <p>Perception Ink — brush strokes from data</p>
+</div>
+
+<canvas id="ink"></canvas>
+<div id="tooltip"></div>
+
+<div id="seal">
+  <div class="seal-box">
+    <span class="seal-char">克</span>
+  </div>
+</div>
+
+<div id="legend">
+  <div class="item"><div class="ink" style="background:#2a2520"></div>静谧</div>
+  <div class="item"><div class="ink" style="background:#1a4a48"></div>暴雨</div>
+  <div class="item"><div class="ink" style="background:#5a2a18"></div>车流</div>
+  <div class="item"><div class="ink" style="background:#3a3a18"></div>人声</div>
+  <div class="item"><div class="ink" style="background:#1a3a10"></div>鸟鸣</div>
+</div>
+
+<script>
+const DATA = [
+  {time:"2026-04-24T23:11",hour:23,minute:11,rms:0.92,zcr:486,pred:"quiet",weather:"",poem:null,disagreements:0,ai:0},
+  {time:"2026-04-25T09:35",hour:9,minute:35,rms:0.89,zcr:772,pred:"quiet",weather:"",poem:"A muted dawn unfolds over the city's breath, where green hills meet the hazy dreams of towering structures.",disagreements:0,ai:0},
+  {time:"2026-04-25T09:42",hour:9,minute:42,rms:1.09,zcr:4256,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:10",hour:10,minute:10,rms:1.02,zcr:500,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:12",hour:10,minute:12,rms:8.25,zcr:1904,pred:"moderate_sound_event",weather:"",poem:"A hazy dawn unfolds over the concrete and green, a quiet hum of city life weaving through the morning air.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:18",hour:10,minute:18,rms:1.15,zcr:590,pred:"quiet",weather:"",poem:"Soft light embraces the city's breath, where concrete dreams meet the whisper of wings.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:30",hour:10,minute:30,rms:10.55,zcr:1626,pred:"heavy_rain_or_loud_event",weather:"",poem:null,disagreements:1,ai:2.6},
+  {time:"2026-04-25T10:45",hour:10,minute:45,rms:19.2,zcr:4236,pred:"heavy_rain",weather:"",poem:"Silver rain whispers over the concrete canyons of Shenzhen, blurring the sharp lines of the city into a hazy dream.",disagreements:1,ai:2.275},
+  {time:"2026-04-25T11:03",hour:11,minute:3,rms:1.07,zcr:1160,pred:"quiet",weather:"possible_rain",poem:"I hear the ambient sounds of the city – a low hum of traffic, distant conversations, and the occasional sound of birds chirping.",disagreements:0,ai:0},
+  {time:"2026-04-25T11:10",hour:11,minute:10,rms:1.54,zcr:2588,pred:"ambient_above_baseline",weather:"partly_cloudy",poem:"Gray skies embrace a concrete forest, where the whispers of birds weave through the towering dreams of the city.",disagreements:0,ai:3.355},
+  {time:"2026-04-25T12:31",hour:12,minute:31,rms:0.95,zcr:1044,pred:"quiet",weather:"partly_cloudy",poem:"Gray skies embrace the concrete and green, a quiet breath held over the city's rise.",disagreements:0,ai:3.417},
+  {time:"2026-04-25T16:21",hour:16,minute:21,rms:218.84,zcr:1106,pred:"loud_event_vehicle",weather:"clear_sunny",poem:null,disagreements:0,ai:3.469},
+  {time:"2026-04-26T01:22",hour:1,minute:22,rms:0.89,zcr:472,pred:"quiet",weather:"unknown",poem:"A million distant stars mirrored in the city's glow, a silent symphony of light in the velvet night.",disagreements:0,ai:3.514},
+  {time:"2026-04-26T09:42",hour:9,minute:42,rms:10.71,zcr:1916,pred:"loud_event_vehicle",weather:"possible_rain",poem:null,disagreements:1,ai:3.553}
+];
+
+// Ink colors — traditional sumi-e palette
+const INK_COLORS = {
+  quiet: { ink: '#2a2520', wash: 'rgba(42,37,32,0.06)', name: '墨' },
+  heavy_rain: { ink: '#1a4a48', wash: 'rgba(26,74,72,0.06)', name: '青' },
+  heavy_rain_or_loud_event: { ink: '#1a4a48', wash: 'rgba(26,74,72,0.06)', name: '青' },
+  loud_event_vehicle: { ink: '#5a2a18', wash: 'rgba(90,42,24,0.06)', name: '朱' },
+  moderate_sound_event: { ink: '#3a3a18', wash: 'rgba(58,58,24,0.06)', name: '黄' },
+  ambient_above_baseline: { ink: '#1a3a10', wash: 'rgba(26,58,16,0.06)', name: '緑' }
+};
+
+// Chinese characters for each stroke (poetic association)
+const STROKE_CHARS = ['静','晨','翼','和','声','光','疑','雨','霁','鸟','午','雷','夜','行'];
+
+const canvas = document.getElementById('ink');
+const ctx = canvas.getContext('2d');
+let W, H;
+let time = 0;
+let mouseX = -999, mouseY = -999;
+let audioCtx = null;
+
+// Brush stroke class
+class BrushStroke {
+  constructor(data, index) {
+    this.data = data;
+    this.index = index;
+    this.ink = INK_COLORS[data.pred] || INK_COLORS.quiet;
+    this.char = STROKE_CHARS[index];
+    
+    // RMS → brush pressure (thick strokes for loud)
+    const rmsLog = Math.log2(Math.max(data.rms, 0.5) + 1);
+    this.pressure = 0.3 + rmsLog * 0.15; // 0.3 to ~1.0
+    this.pressure = Math.min(this.pressure, 1.2);
+    
+    // ZCR → stroke speed (fast = more chaotic)
+    this.speed = 0.5 + (data.zcr / 4500) * 1.5;
+    
+    // Stroke path
+    this.path = [];
+    this.splatters = [];
+    
+    // Animation
+    this.drawProgress = 0;
+    this.drawDelay = index * 0.4 + 0.5;
+    this.hasDisagreement = data.disagreements > 0;
+    
+    // Generate path
+    this.generatePath();
+  }
+  
+  generatePath() {
+    // Calligraphic composition: strokes flow in a balanced arrangement
+    // Right-to-left, top-to-bottom, like traditional Chinese calligraphy
+    
+    const margin = W * 0.1;
+    const areaW = W - margin * 2;
+    const areaH = H - margin * 2;
+    
+    // Position in a calligraphic grid
+    // 14 strokes arranged in a flowing composition
+    // 4 rows of varying count, like a poem
+    const layout = [
+      [0, 1, 2],        // 3 strokes top
+      [3, 4, 5, 6],     // 4 strokes
+      [7, 8, 9, 10],    // 4 strokes
+      [11, 12, 13]      // 3 strokes bottom
+    ];
+    
+    let startX, startY, endX, endY;
+    
+    for (let row = 0; row < layout.length; row++) {
+      const col = layout[row].indexOf(this.index);
+      if (col === -1) continue;
+      
+      const rowCount = layout[row].length;
+      const rowY = margin + (row + 0.5) * (areaH / 4);
+      const colSpacing = areaW / (rowCount + 1);
+      
+      startX = margin + (col + 1) * colSpacing;
+      startY = rowY - 20 + Math.random() * 40;
+      
+      // Stroke direction: mostly downward with some variation
+      const angle = -0.2 + Math.random() * 0.4; // slight angle
+      const strokeLen = 40 + this.pressure * 80 + Math.random() * 30;
+      
+      endX = startX + Math.sin(angle) * strokeLen;
+      endY = startY + Math.cos(angle) * strokeLen;
+      
+      break;
+    }
+    
+    if (startX === undefined) {
+      startX = W * 0.5;
+      startY = H * 0.5;
+      endX = startX;
+      endY = startY + 60;
+    }
+    
+    // Generate bezier control points for calligraphic feel
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    const cp1x = startX + (midX - startX) * 0.3 + Math.sin(this.index * 2) * 20;
+    const cp1y = startY + (endY - startY) * 0.3 + Math.cos(this.index * 3) * 10;
+    const cp2x = midX + (endX - midX) * 0.5 + Math.sin(this.index * 1.5) * 15;
+    const cp2y = midY + (endY - midY) * 0.5;
+    
+    // Sample path points
+    const samples = 40;
+    this.path = [];
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const x = cubicBezier(startX, cp1x, cp2x, endX, t);
+      const y = cubicBezier(startY, cp1y, cp2y, endY, t);
+      
+      // Width varies along stroke (calligraphic pressure)
+      // Thick at start (pressing), thin at end (lifting)
+      let w;
+      if (t < 0.1) {
+        w = t / 0.1 * this.pressure * 8;
+      } else if (t < 0.7) {
+        w = this.pressure * 8 * (1 - (t - 0.1) * 0.1);
+      } else {
+        w = this.pressure * 8 * 0.4 * (1 - (t - 0.7) / 0.3);
+      }
+      w = Math.max(0.5, w);
+      
+      this.path.push({ x, y, w });
+    }
+    
+    // Splatters from disagreements
+    if (this.hasDisagreement) {
+      const splatCount = this.data.disagreements * 4 + 2;
+      for (let i = 0; i < splatCount; i++) {
+        const pathIdx = Math.floor(Math.random() * this.path.length);
+        const pt = this.path[pathIdx];
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 5 + Math.random() * 20;
+        this.splatters.push({
+          x: pt.x + Math.cos(angle) * dist,
+          y: pt.y + Math.sin(angle) * dist,
+          r: 0.5 + Math.random() * 2.5,
+          alpha: 0.2 + Math.random() * 0.4
+        });
+      }
+    }
+    
+    // Store start/end for hit detection
+    this.startX = startX;
+    this.startY = startY;
+    this.endX = endX;
+    this.endY = endY;
+    this.hitR = Math.max(30, this.pressure * 20);
+  }
+  
+  update(dt) {
+    if (this.drawProgress < 1) {
+      const t = Math.max(0, time - this.drawDelay);
+      // Speed of drawing influenced by ZCR
+      this.drawProgress = Math.min(1, t / (2 / this.speed));
+    }
+  }
+  
+  draw(ctx) {
+    const p = this.drawProgress;
+    if (p <= 0) return;
+    
+    const visiblePoints = Math.floor(p * this.path.length);
+    if (visiblePoints < 2) return;
+    
+    // Ink wash background
+    if (p > 0.2) {
+      const centerIdx = Math.floor(visiblePoints * 0.5);
+      const center = this.path[centerIdx];
+      const washR = this.pressure * 60;
+      const washGrad = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, washR);
+      washGrad.addColorStop(0, this.ink.wash);
+      washGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = washGrad;
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, washR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Main stroke
+    ctx.beginPath();
+    ctx.moveTo(this.path[0].x, this.path[0].y);
+    
+    for (let i = 1; i < visiblePoints; i++) {
+      const pt = this.path[i];
+      const prev = this.path[i - 1];
+      const cpx = (prev.x + pt.x) / 2;
+      const cpy = (prev.y + pt.y) / 2;
+      ctx.quadraticCurveTo(prev.x, prev.y, cpx, cpy);
+    }
+    
+    ctx.strokeStyle = this.ink.ink;
+    ctx.lineWidth = this.path[Math.min(visiblePoints - 1, this.path.length - 1)].w;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    
+    // Varying width segments
+    for (let i = 0; i < visiblePoints - 1; i++) {
+      const pt = this.path[i];
+      const next = this.path[i + 1];
+      const avgW = (pt.w + next.w) / 2;
+      
+      if (avgW > 1.5) {
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
+        ctx.lineTo(next.x, next.y);
+        ctx.strokeStyle = this.ink.ink;
+        ctx.lineWidth = avgW;
+        ctx.lineCap = 'round';
+        ctx.globalAlpha = 0.9;
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    
+    // Ink bleeding effect at thick parts
+    for (let i = 0; i < visiblePoints; i += 3) {
+      const pt = this.path[i];
+      if (pt.w > 4) {
+        ctx.beginPath();
+        ctx.arc(pt.x + (Math.random() - 0.5) * 2, pt.y + (Math.random() - 0.5) * 2, pt.w * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = this.ink.ink;
+        ctx.globalAlpha = 0.05;
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+    
+    // Splatters
+    if (this.hasDisagreement && p > 0.5) {
+      for (const s of this.splatters) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = this.ink.ink;
+        ctx.globalAlpha = s.alpha * Math.min(1, (p - 0.5) * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    
+    // Character label (appears after stroke is drawn)
+    if (p > 0.9) {
+      const charAlpha = Math.min(1, (p - 0.9) * 10) * 0.15;
+      const lastPt = this.path[visiblePoints - 1];
+      ctx.font = '18px STKaiti, KaiTi, serif';
+      ctx.fillStyle = `rgba(0,0,0,${charAlpha})`;
+      ctx.textAlign = 'center';
+      ctx.fillText(this.char, (this.startX + this.endX) / 2, this.startY - 12);
+    }
+  }
+  
+  hitTest(x, y) {
+    // Check distance to any path point
+    for (let i = 0; i < this.path.length; i += 3) {
+      const pt = this.path[i];
+      if (Math.hypot(x - pt.x, y - pt.y) < this.hitR) return true;
+    }
+    return false;
+  }
+}
+
+function cubicBezier(p0, p1, p2, p3, t) {
+  const mt = 1 - t;
+  return mt*mt*mt*p0 + 3*mt*mt*t*p1 + 3*mt*t*t*p2 + t*t*t*p3;
+}
+
+// Rice paper texture
+function drawPaperTexture(ctx) {
+  // Subtle grain
+  ctx.globalAlpha = 0.02;
+  for (let i = 0; i < 800; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const s = Math.random() * 1.5;
+    ctx.fillStyle = Math.random() > 0.5 ? '#d8d0c0' : '#c8c0b0';
+    ctx.fillRect(x, y, s, s);
+  }
+  ctx.globalAlpha = 1;
+  
+  // Subtle fiber lines
+  ctx.globalAlpha = 0.015;
+  ctx.strokeStyle = '#b8b0a0';
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * W;
+    const y = Math.random() * H;
+    const len = 20 + Math.random() * 60;
+    const angle = Math.random() * 0.3 - 0.15;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Ink stone
+function drawInkStone(ctx) {
+  const sx = W * 0.88;
+  const sy = H * 0.15;
+  
+  // Stone shape (oval)
+  ctx.beginPath();
+  ctx.ellipse(sx, sy, 35, 22, -0.1, 0, Math.PI * 2);
+  ctx.fillStyle = '#3a3530';
+  ctx.globalAlpha = 0.12;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  
+  // Ink pool
+  ctx.beginPath();
+  ctx.ellipse(sx + 5, sy - 2, 15, 10, -0.1, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1815';
+  ctx.globalAlpha = 0.2;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  
+  // Water pool
+  ctx.beginPath();
+  ctx.ellipse(sx - 10, sy + 2, 12, 8, -0.1, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(180, 200, 210, 0.08)';
+  ctx.fill();
+}
+
+let strokes = [];
+let paperDrawn = false;
+
+function buildComposition() {
+  strokes = DATA.map((d, i) => new BrushStroke(d, i));
+  paperDrawn = false;
+}
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(stroke, px, py) {
+  const d = stroke.data;
+  const ink = stroke.ink;
+  
+  let html = `<div class="stroke-time">${d.time.replace('T', ' · ')}</div>`;
+  html += `<div class="stroke-char">${stroke.char}</div>`;
+  html += `<div class="stroke-data">RMS ${d.rms}x · ZCR ${d.zcr} · 墨色: ${ink.name}</div>`;
+  if (d.poem) {
+    html += `<div class="stroke-poem">${d.poem}</div>`;
+  }
+  if (stroke.hasDisagreement) {
+    html += `<div class="stroke-splash">⚠ 飞溅 — 感知层间分歧</div>`;
+  }
+  
+  tooltip.innerHTML = html;
+  tooltip.style.display = 'block';
+  
+  const tw = 300, th = tooltip.offsetHeight;
+  let tx = px + 15, ty = py - th / 2;
+  if (tx + tw > W - 10) tx = px - tw - 15;
+  if (ty < 10) ty = 10;
+  if (ty + th > H - 10) ty = H - th - 10;
+  tooltip.style.left = tx + 'px';
+  tooltip.style.top = ty + 'px';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+// Sound — brush on paper
+function playBrushSound(stroke) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  const d = stroke.data;
+  const bufferSize = audioCtx.sampleRate * 0.3;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  
+  // Brush sound: filtered noise
+  for (let i = 0; i < bufferSize; i++) {
+    const t = i / bufferSize;
+    // Envelope: sharp attack, quick decay
+    const env = Math.exp(-t * 8) * 0.5;
+    // Noise
+    const noise = Math.random() * 2 - 1;
+    // Low-pass filter effect
+    data[i] = noise * env;
+  }
+  
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+  
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  // Higher ZCR = brighter brush sound
+  filter.frequency.value = 800 + (d.zcr / 4500) * 3000;
+  filter.Q.value = 0.5;
+  
+  const gain = audioCtx.createGain();
+  // Higher RMS = louder brush
+  gain.gain.value = 0.1 + Math.min(0.2, d.rms * 0.001);
+  
+  source.connect(filter);
+  filter.connect(gain);
+  gain.connect(audioCtx.destination);
+  source.start();
+}
+
+// Main loop
+let lastT = 0;
+
+function animate(ts) {
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  time += dt;
+  
+  // Draw paper background once
+  if (!paperDrawn) {
+    ctx.fillStyle = '#f5f0e8';
+    ctx.fillRect(0, 0, W, H);
+    drawPaperTexture(ctx);
+    drawInkStone(ctx);
+    paperDrawn = true;
+  }
+  
+  // Update and draw strokes
+  for (const s of strokes) {
+    s.update(dt);
+  }
+  
+  // Draw strokes in order (back to front)
+  for (const s of strokes) {
+    s.draw(ctx);
+  }
+  
+  // Show seal after all strokes are drawn
+  const allDone = strokes.every(s => s.drawProgress >= 1);
+  if (allDone) {
+    document.getElementById('seal').classList.add('visible');
+  }
+  
+  requestAnimationFrame(animate);
+}
+
+// Events
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  
+  let found = null;
+  for (const s of strokes) {
+    if (s.hitTest(mouseX, mouseY)) {
+      found = s;
+      break;
+    }
+  }
+  
+  if (found) {
+    canvas.style.cursor = 'pointer';
+    showTooltip(found, e.clientX, e.clientY);
+  } else {
+    canvas.style.cursor = 'default';
+    hideTooltip();
+  }
+});
+
+canvas.addEventListener('click', e => {
+  for (const s of strokes) {
+    if (s.hitTest(e.clientX, e.clientY)) {
+      playBrushSound(s);
+      showTooltip(s, e.clientX, e.clientY);
+      break;
+    }
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseX = mouseY = -999;
+  hideTooltip();
+});
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  buildComposition();
+}
+
+window.addEventListener('resize', resize);
+
+resize();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
