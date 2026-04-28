@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perception Metamorphosis — 感知变形</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #080810; font-family: 'Georgia', 'Noto Serif SC', serif; }
+canvas { display: block; }
+
+#controls {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 50;
+  background: rgba(10,10,20,0.6);
+  backdrop-filter: blur(10px);
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+#controls button {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+}
+#controls button:hover {
+  color: rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.05);
+}
+#controls button.active {
+  color: #fff;
+  background: rgba(255,255,255,0.1);
+}
+#controls .sep {
+  width: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 4px 4px;
+}
+
+#morph-label {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+#morph-label h1 {
+  font-size: clamp(16px, 2.5vw, 22px);
+  font-weight: 300;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 8px;
+  transition: color 0.8s;
+}
+#morph-label .subtitle {
+  font-size: 10px;
+  color: rgba(255,255,255,0.15);
+  margin-top: 4px;
+  letter-spacing: 2px;
+}
+
+#info-card {
+  position: fixed;
+  top: 50%;
+  right: 30px;
+  transform: translateY(-50%);
+  max-width: 260px;
+  padding: 20px 22px;
+  background: rgba(10,10,20,0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  color: #c8c0b8;
+  font-size: 12px;
+  line-height: 1.8;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+#info-card.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+#info-card .card-time {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+#info-card .card-poem {
+  font-style: italic;
+  color: #a09888;
+  border-left: 2px solid rgba(255,255,255,0.08);
+  padding-left: 10px;
+  font-size: 11px;
+  line-height: 1.8;
+  margin-top: 8px;
+}
+
+#morph-progress {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 2px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 1px;
+  z-index: 50;
+  pointer-events: none;
+}
+#morph-progress .fill {
+  height: 100%;
+  border-radius: 1px;
+  background: rgba(255,255,255,0.2);
+  transition: width 0.1s;
+}
+</style>
+</head>
+<body>
+
+<div id="morph-label">
+  <h1>感 知 变 形</h1>
+  <div class="subtitle">Metamorphosis — same data, shifting forms</div>
+</div>
+
+<canvas id="morph"></canvas>
+
+<div id="controls">
+  <button class="active" data-mode="garden">🌸 花园</button>
+  <button data-mode="constellation">✨ 星座</button>
+  <button data-mode="loom">🧵 织机</button>
+  <button data-mode="ink">🖌️ 墨</button>
+  <div class="sep"></div>
+  <button data-mode="auto">⟳ 自动</button>
+</div>
+
+<div id="morph-progress"><div class="fill"></div></div>
+
+<div id="info-card">
+  <div class="card-time"></div>
+  <div class="card-data"></div>
+  <div class="card-poem"></div>
+</div>
+
+<script>
+const DATA = [
+  {time:"2026-04-24T23:11",hour:23,minute:11,rms:0.92,zcr:486,pred:"quiet",weather:"",poem:null,disagreements:0,ai:0},
+  {time:"2026-04-25T09:35",hour:9,minute:35,rms:0.89,zcr:772,pred:"quiet",weather:"",poem:"A muted dawn unfolds over the city's breath, where green hills meet the hazy dreams of towering structures.",disagreements:0,ai:0},
+  {time:"2026-04-25T09:42",hour:9,minute:42,rms:1.09,zcr:4256,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:10",hour:10,minute:10,rms:1.02,zcr:500,pred:"quiet",weather:"",poem:null,disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:12",hour:10,minute:12,rms:8.25,zcr:1904,pred:"moderate_sound_event",weather:"",poem:"A hazy dawn unfolds over the concrete and green, a quiet hum of city life weaving through the morning air.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:18",hour:10,minute:18,rms:1.15,zcr:590,pred:"quiet",weather:"",poem:"Soft light embraces the city's breath, where concrete dreams meet the whisper of wings.",disagreements:0,ai:2.6},
+  {time:"2026-04-25T10:30",hour:10,minute:30,rms:10.55,zcr:1626,pred:"heavy_rain_or_loud_event",weather:"",poem:null,disagreements:1,ai:2.6},
+  {time:"2026-04-25T10:45",hour:10,minute:45,rms:19.2,zcr:4236,pred:"heavy_rain",weather:"",poem:"Silver rain whispers over the concrete canyons of Shenzhen, blurring the sharp lines of the city into a hazy dream.",disagreements:1,ai:2.275},
+  {time:"2026-04-25T11:03",hour:11,minute:3,rms:1.07,zcr:1160,pred:"quiet",weather:"possible_rain",poem:"I hear the ambient sounds of the city – a low hum of traffic, distant conversations, and the occasional sound of birds chirping.",disagreements:0,ai:0},
+  {time:"2026-04-25T11:10",hour:11,minute:10,rms:1.54,zcr:2588,pred:"ambient_above_baseline",weather:"partly_cloudy",poem:"Gray skies embrace a concrete forest, where the whispers of birds weave through the towering dreams of the city.",disagreements:0,ai:3.355},
+  {time:"2026-04-25T12:31",hour:12,minute:31,rms:0.95,zcr:1044,pred:"quiet",weather:"partly_cloudy",poem:"Gray skies embrace the concrete and green, a quiet breath held over the city's rise.",disagreements:0,ai:3.417},
+  {time:"2026-04-25T16:21",hour:16,minute:21,rms:218.84,zcr:1106,pred:"loud_event_vehicle",weather:"clear_sunny",poem:null,disagreements:0,ai:3.469},
+  {time:"2026-04-26T01:22",hour:1,minute:22,rms:0.89,zcr:472,pred:"quiet",weather:"unknown",poem:"A million distant stars mirrored in the city's glow, a silent symphony of light in the velvet night.",disagreements:0,ai:3.514},
+  {time:"2026-04-26T09:42",hour:9,minute:42,rms:10.71,zcr:1916,pred:"loud_event_vehicle",weather:"possible_rain",poem:null,disagreements:1,ai:3.553}
+];
+
+const COLORS = {
+  quiet: '#8a7bb5',
+  heavy_rain: '#4cc8c0',
+  heavy_rain_or_loud_event: '#4cb8c0',
+  loud_event_vehicle: '#e89858',
+  moderate_sound_event: '#d4b050',
+  ambient_above_baseline: '#90c858'
+};
+
+// Canvas
+const canvas = document.getElementById('morph');
+const ctx = canvas.getContext('2d');
+let W, H, time = 0;
+let mouseX = -999, mouseY = -999;
+let hoveredIdx = -1;
+let audioCtx = null;
+
+// Morph state
+let currentMode = 'garden';
+let targetMode = 'garden';
+let morphT = 1; // 0 = currentMode, 1 = targetMode
+let autoMode = false;
+let autoTimer = 0;
+const AUTO_CYCLE = ['garden', 'constellation', 'loom', 'ink'];
+let autoIdx = 0;
+
+// Per-point state: position, size, color, shape parameters
+class MorphPoint {
+  constructor(data, index) {
+    this.data = data;
+    this.index = index;
+    this.color = COLORS[data.pred] || COLORS.quiet;
+    this.rmsLog = Math.log2(Math.max(data.rms, 0.5) + 1);
+    
+    // Current interpolated position
+    this.x = 0; this.y = 0;
+    this.targetX = 0; this.targetY = 0;
+    this.size = 0; this.targetSize = 0;
+    this.rotation = 0; this.targetRotation = 0;
+    this.alpha = 1;
+    
+    // Per-mode positions (computed on resize)
+    this.positions = {};
+    this.sizes = {};
+    this.rotations = {};
+    
+    // Animation
+    this.swayPhase = Math.random() * Math.PI * 2;
+    this.pulsePhase = Math.random() * Math.PI * 2;
+    this.hasDisagreement = data.disagreements > 0;
+    this.glowI = data.ai > 0 ? Math.min(data.ai / 5, 1) : 0;
+  }
+  
+  computePositions() {
+    const groundY = H * 0.78;
+    const n = DATA.length;
+    
+    // GARDEN: along the ground, height from RMS
+    const gMargin = W * 0.06;
+    const gSpacing = (W - gMargin * 2) / (n - 1);
+    this.positions.garden = {
+      x: gMargin + this.index * gSpacing,
+      y: groundY - 60 - this.rmsLog * 30
+    };
+    this.sizes.garden = 8 + this.rmsLog * 3;
+    this.rotations.garden = 0;
+    
+    // CONSTELLATION: constellation arrangement
+    const constPositions = {
+      0:  {x: W*0.12, y: H*0.25},
+      1:  {x: W*0.18, y: H*0.2},
+      2:  {x: W*0.16, y: H*0.32},
+      3:  {x: W*0.22, y: H*0.28},
+      4:  {x: W*0.30, y: H*0.35},
+      5:  {x: W*0.26, y: H*0.22},
+      6:  {x: W*0.38, y: H*0.20},
+      7:  {x: W*0.42, y: H*0.28},
+      8:  {x: W*0.35, y: H*0.38},
+      9:  {x: W*0.55, y: H*0.25},
+      10: {x: W*0.50, y: H*0.35},
+      11: {x: W*0.68, y: H*0.30},
+      12: {x: W*0.78, y: H*0.22},
+      13: {x: W*0.72, y: H*0.38}
+    };
+    this.positions.constellation = constPositions[this.index] || {x: W*0.5, y: H*0.5};
+    this.sizes.constellation = 3 + (1 / (5 - this.rmsLog)) * 4;
+    this.rotations.constellation = this.swayPhase;
+    
+    // LOOM: horizontal threads
+    const lMargin = H * 0.1;
+    const lSpacing = (H - lMargin * 2) / (n + 1);
+    this.positions.loom = {
+      x: W * 0.5,
+      y: lMargin + (this.index + 1) * lSpacing
+    };
+    this.sizes.loom = 2 + this.rmsLog * 1.5;
+    this.rotations.loom = 0;
+    
+    // INK: calligraphic grid
+    const layout = [[0,1,2],[3,4,5,6],[7,8,9,10],[11,12,13]];
+    let ix, iy;
+    for (let row = 0; row < layout.length; row++) {
+      const col = layout[row].indexOf(this.index);
+      if (col === -1) continue;
+      const rc = layout[row].length;
+      ix = W * 0.15 + (col + 1) * (W * 0.7 / (rc + 1));
+      iy = H * 0.18 + (row + 0.5) * (H * 0.64 / 4);
+    }
+    this.positions.ink = { x: ix || W*0.5, y: iy || H*0.5 };
+    this.sizes.ink = 6 + this.rmsLog * 4;
+    this.rotations.ink = -0.2 + this.index * 0.04;
+    
+    // Set initial position
+    if (this.x === 0) {
+      const p = this.positions[currentMode];
+      this.x = p.x; this.y = p.y;
+      this.size = this.sizes[currentMode];
+      this.rotation = this.rotations[currentMode];
+    }
+  }
+  
+  setTarget(mode) {
+    const p = this.positions[mode];
+    if (!p) return;
+    this.targetX = p.x;
+    this.targetY = p.y;
+    this.targetSize = this.sizes[mode];
+    this.targetRotation = this.rotations[mode];
+  }
+  
+  update(dt) {
+    this.swayPhase += 0.4 * dt;
+    this.pulsePhase += 1.5 * dt;
+    
+    // Lerp toward target
+    const ease = 0.04;
+    this.x += (this.targetX - this.x) * ease;
+    this.y += (this.targetY - this.y) * ease;
+    this.size += (this.targetSize - this.size) * ease;
+    this.rotation += (this.targetRotation - this.rotation) * ease;
+  }
+  
+  draw(ctx) {
+    const sway = Math.sin(this.swayPhase) * 2;
+    const pulse = (Math.sin(this.pulsePhase) + 1) * 0.5;
+    const px = this.x + sway;
+    const py = this.y;
+    
+    // Disagreement pulse ring
+    if (this.hasDisagreement) {
+      const pr = this.size * 4 + pulse * this.size * 2;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(200, 80, 80, ${0.08 + pulse * 0.06})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    
+    // AI glow
+    if (this.glowI > 0) {
+      const gr = this.size * 6;
+      const grad = ctx.createRadialGradient(px, py, 0, px, py, gr);
+      const c = this.hexToRgb(this.color);
+      grad.addColorStop(0, `rgba(${c}, ${this.glowI * 0.12})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(px, py, gr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Core shape — morph between representations
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(this.rotation);
+    
+    // Base circle
+    ctx.beginPath();
+    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = 0.7;
+    ctx.fill();
+    
+    // Bright center
+    ctx.beginPath();
+    ctx.arc(0, 0, this.size * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.3;
+    ctx.fill();
+    
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    
+    // Mode-specific decorations (faded by morph progress)
+    // These add character based on the current/target blend
+  }
+  
+  hitTest(x, y) {
+    return Math.hypot(x - this.x, y - this.y) < this.size + 15;
+  }
+  
+  hexToRgb(hex) {
+    const r = parseInt(hex.slice(1,3), 16);
+    const g = parseInt(hex.slice(3,5), 16);
+    const b = parseInt(hex.slice(5,7), 16);
+    return `${r},${g},${b}`;
+  }
+}
+
+// Background renderer per mode
+const BGS = {
+  garden: (ctx, t) => {
+    // Ground + sky gradient
+    const groundY = H * 0.78;
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, '#0a0a1a');
+    skyGrad.addColorStop(0.5, '#0f1028');
+    skyGrad.addColorStop(0.75, '#2a3825');
+    skyGrad.addColorStop(1, '#0a120a');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+    
+    // Ground
+    ctx.fillStyle = '#1e2d1a';
+    ctx.fillRect(0, groundY, W, H - groundY);
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    for (let x = 0; x <= W; x += 2) ctx.lineTo(x, groundY + Math.sin(x * 0.015 + t * 0.15) * 2);
+    ctx.strokeStyle = '#3a5830';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  },
+  
+  constellation: (ctx, t) => {
+    // Deep night sky
+    const skyGrad = ctx.createRadialGradient(W*0.5, H*0.4, 0, W*0.5, H*0.4, W*0.7);
+    skyGrad.addColorStop(0, '#0a0a1a');
+    skyGrad.addColorStop(0.5, '#060612');
+    skyGrad.addColorStop(1, '#030308');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+    
+    // Stars
+    for (let i = 0; i < 150; i++) {
+      const sx = (Math.sin(i * 127.1 + 43.7) * 0.5 + 0.5) * W;
+      const sy = (Math.cos(i * 311.7 + 89.3) * 0.5 + 0.5) * H;
+      const b = (Math.sin(t * 0.3 + i * 2.3) + 1) * 0.5;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.3 + b * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,210,230,${0.1 + b * 0.2})`;
+      ctx.fill();
+    }
+  },
+  
+  loom: (ctx, t) => {
+    // Warm dark
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0e0c08');
+    bgGrad.addColorStop(1, '#0a0806');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+    
+    // Frame
+    const m = W * 0.08;
+    ctx.strokeStyle = '#3a2820';
+    ctx.lineWidth = 6;
+    ctx.globalAlpha = 0.4;
+    ctx.strokeRect(m, H*0.1, W-2*m, H*0.8);
+    ctx.globalAlpha = 1;
+    
+    // Weft lines
+    for (let i = 0; i < 20; i++) {
+      const y = H * 0.12 + i * (H * 0.76 / 20);
+      ctx.beginPath();
+      ctx.moveTo(m + 20, y);
+      ctx.lineTo(W - m - 20, y);
+      ctx.strokeStyle = 'rgba(80,60,40,0.04)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+    }
+  },
+  
+  ink: (ctx, t) => {
+    // Rice paper
+    ctx.fillStyle = '#f5f0e8';
+    ctx.fillRect(0, 0, W, H);
+    
+    // Grain
+    ctx.globalAlpha = 0.015;
+    for (let i = 0; i < 400; i++) {
+      const x = (Math.sin(i * 83.1) * 0.5 + 0.5) * W;
+      const y = (Math.cos(i * 47.7) * 0.5 + 0.5) * H;
+      ctx.fillStyle = '#c8c0b0';
+      ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+};
+
+let points = [];
+let particles = [];
+
+function build() {
+  points = DATA.map((d, i) => new MorphPoint(d, i));
+  points.forEach(p => p.computePositions());
+  points.forEach(p => p.setTarget(currentMode));
+  
+  particles = Array.from({length: 30}, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 0.2,
+    vy: -0.05 - Math.random() * 0.1,
+    size: 0.5 + Math.random() * 1.5,
+    alpha: 0.03 + Math.random() * 0.08
+  }));
+}
+
+function switchMode(mode) {
+  if (mode === currentMode && morphT >= 1) return;
+  targetMode = mode;
+  morphT = 0;
+  points.forEach(p => p.setTarget(mode));
+  
+  // Update buttons
+  document.querySelectorAll('#controls button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  
+  // Update title color
+  const titleEl = document.querySelector('#morph-label h1');
+  const colorMap = { garden: '#8a7bb5', constellation: '#4cc8c0', loom: '#c8a840', ink: '#3a3530' };
+  titleEl.style.color = colorMap[mode] || 'rgba(255,255,255,0.35)';
+}
+
+// Connection lines between same-prediction points
+function drawConnections(ctx) {
+  const groups = {};
+  points.forEach(p => {
+    const pred = p.data.pred;
+    if (!groups[pred]) groups[pred] = [];
+    groups[pred].push(p);
+  });
+  
+  for (const [pred, pts] of Object.entries(groups)) {
+    if (pts.length < 2) continue;
+    const color = COLORS[pred];
+    
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i], b = pts[i + 1];
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = color;
+      ctx.globalAlpha = 0.08;
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 5]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Trails during morph
+function drawMorphTrails(ctx) {
+  if (morphT >= 0.99) return;
+  
+  for (const p of points) {
+    const dx = p.targetX - p.x;
+    const dy = p.targetY - p.y;
+    const dist = Math.hypot(dx, dy);
+    
+    if (dist > 5) {
+      // Trail from old position
+      ctx.beginPath();
+      ctx.moveTo(p.targetX, p.targetY);
+      ctx.lineTo(p.x, p.y);
+      ctx.strokeStyle = p.color;
+      ctx.globalAlpha = 0.04;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+}
+
+// Particles
+function drawParticles(ctx, dt) {
+  const isDark = targetMode !== 'ink';
+  
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.y < 0 || p.x < 0 || p.x > W) {
+      p.x = Math.random() * W;
+      p.y = Math.random() * H;
+    }
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = isDark ? `rgba(240,230,200,${p.alpha})` : `rgba(80,60,40,${p.alpha})`;
+    ctx.fill();
+  }
+}
+
+// Info card
+const infoCard = document.getElementById('info-card');
+
+function showInfo(point) {
+  const d = point.data;
+  infoCard.querySelector('.card-time').textContent = d.time.replace('T', ' · ');
+  infoCard.querySelector('.card-data').textContent = `RMS ${d.rms}x · ZCR ${d.zcr} · AI ${d.ai.toFixed(2)}`;
+  const poemEl = infoCard.querySelector('.card-poem');
+  poemEl.textContent = d.poem || '(这一刻没有诗)';
+  poemEl.style.display = 'block';
+  infoCard.classList.add('visible');
+}
+
+function hideInfo() {
+  infoCard.classList.remove('visible');
+}
+
+// Sound
+function playTone(point) {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const d = point.data;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const freq = 150 + (d.zcr / 4500) * 600;
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.5);
+}
+
+// Main loop
+let lastT = 0;
+
+function animate(ts) {
+  const dt = Math.min((ts - lastT) / 1000, 0.05);
+  lastT = ts;
+  time += dt;
+  
+  // Auto morph
+  if (autoMode) {
+    autoTimer += dt;
+    if (autoTimer > 8) {
+      autoTimer = 0;
+      autoIdx = (autoIdx + 1) % AUTO_CYCLE.length;
+      switchMode(AUTO_CYCLE[autoIdx]);
+    }
+  }
+  
+  // Morph progress
+  if (morphT < 1) {
+    morphT = Math.min(1, morphT + dt * 0.5);
+  }
+  
+  // Update progress bar
+  const progressFill = document.querySelector('#morph-progress .fill');
+  if (autoMode) {
+    progressFill.style.width = (autoTimer / 8 * 100) + '%';
+  } else {
+    progressFill.style.width = '0%';
+  }
+  
+  ctx.clearRect(0, 0, W, H);
+  
+  // Blend backgrounds
+  const bgAlpha = Math.min(1, morphT);
+  BGS[targetMode](ctx, time);
+  
+  // Morph trails
+  drawMorphTrails(ctx);
+  
+  // Connections
+  drawConnections(ctx);
+  
+  // Update and draw points
+  for (const p of points) {
+    p.update(dt);
+    p.draw(ctx);
+  }
+  
+  // Particles
+  drawParticles(ctx, dt);
+  
+  // Hover
+  hoveredIdx = -1;
+  for (const p of points) {
+    if (p.hitTest(mouseX, mouseY)) {
+      hoveredIdx = p.index;
+      break;
+    }
+  }
+  canvas.style.cursor = hoveredIdx >= 0 ? 'pointer' : 'default';
+  
+  requestAnimationFrame(animate);
+}
+
+// Events
+document.querySelectorAll('#controls button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    if (mode === 'auto') {
+      autoMode = !autoMode;
+      btn.classList.toggle('active', autoMode);
+      if (autoMode) {
+        autoTimer = 0;
+        autoIdx = AUTO_CYCLE.indexOf(currentMode);
+      }
+    } else {
+      autoMode = false;
+      document.querySelector('[data-mode="auto"]').classList.remove('active');
+      switchMode(mode);
+    }
+  });
+});
+
+canvas.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  
+  if (hoveredIdx >= 0) {
+    showInfo(points[hoveredIdx]);
+  } else {
+    hideInfo();
+  }
+});
+
+canvas.addEventListener('click', e => {
+  if (hoveredIdx >= 0) {
+    playTone(points[hoveredIdx]);
+    showInfo(points[hoveredIdx]);
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  mouseX = mouseY = -999;
+  hideInfo();
+});
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  points.forEach(p => p.computePositions());
+  points.forEach(p => p.setTarget(targetMode));
+}
+
+window.addEventListener('resize', resize);
+
+resize();
+build();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
