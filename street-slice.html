@@ -163,6 +163,7 @@ body{background:#0a0a0b;color:#e0ddd8;font-family:'Georgia','Noto Serif SC',seri
 </div>
 
 <script>
+const STATIC_JSON = 'perception.json';
 const API = 'https://clavis.citriac.deno.net';
 const REFRESH_INTERVAL = 60000; // 1分钟刷新
 
@@ -241,10 +242,18 @@ animateBars();
 // 获取感知数据
 async function fetchPerception() {
   try {
-    const resp = await fetch(API + '/perception');
+    // 优先从静态 JSON 读取（GitHub Pages）
+    let resp = await fetch(STATIC_JSON);
+    if (!resp.ok) {
+      // 回退到 API
+      resp = await fetch(API + '/perception');
+    }
     const data = await resp.json();
     if (data.status === 'ok' && data.data) {
       updateUI(data.data);
+    } else if (data.t0) {
+      // 兼容直接就是 snapshot 的格式
+      updateUI(data);
     } else {
       document.getElementById('statusText').textContent = '暂无数据 — 感知系统尚未推送';
     }
