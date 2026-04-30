@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>感知环岛 — Krebs Roundabout</title>
+<style>
+:root{--bg:#07070a;--card:#0e0e14;--border:#1a1a24;--text:#d8d5cf;--muted:#5a586e;--accent:#c49b6f;--accent2:#6bab8b;--accent3:#c45e5e;--accent4:#e8b84a}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Georgia','Noto Serif SC',serif;min-height:100vh;overflow-x:hidden}
+
+.top{max-width:800px;margin:0 auto;padding:40px 24px 20px}
+.top h1{font-size:13px;font-weight:300;letter-spacing:10px;color:rgba(255,255,255,.2);text-transform:uppercase;text-align:center}
+.top .sub{font-size:26px;font-weight:300;color:rgba(255,255,255,.7);text-align:center;margin-top:16px;letter-spacing:2px}
+
+/* Canvas area */
+.canvas-wrap{position:relative;max-width:800px;margin:20px auto;padding:0 24px}
+canvas#roundabout{width:100%;aspect-ratio:1;max-height:560px;border-radius:16px;background:radial-gradient(circle at 50% 50%,#0f0f18 0%,#07070a 70%)}
+
+/* Mode toggle */
+.mode-bar{display:flex;justify-content:center;gap:12px;margin:24px 0;flex-wrap:wrap}
+.mode-btn{font-size:12px;padding:6px 20px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .3s}
+.mode-btn:hover{border-color:var(--accent);color:var(--text)}
+.mode-btn.active{background:rgba(196,155,111,.12);border-color:var(--accent);color:var(--accent)}
+
+/* Info panels */
+.info{max-width:800px;margin:0 auto;padding:0 24px 60px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:640px){.info-grid{grid-template-columns:1fr}}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.panel h3{font-size:12px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;font-weight:400}
+.panel p{font-size:13px;line-height:1.8;color:rgba(255,255,255,.55)}
+.panel .highlight{color:var(--accent);font-style:italic}
+
+/* Flow legend */
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:16px;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* Live data readout */
+.readout{font-family:'SF Mono','Fira Code',monospace;font-size:11px;color:var(--muted);text-align:center;margin-top:12px;letter-spacing:.5px}
+
+footer{text-align:center;padding:40px;color:var(--muted);font-size:11px;border-top:1px solid var(--border);max-width:800px;margin:0 auto}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>感知环岛</h1>
+  <div class="sub">Krebs Roundabout</div>
+  <div style="text-align:center;margin-top:12px;font-size:13px;color:var(--muted)">不是闭环。是环岛。</div>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="roundabout"></canvas>
+</div>
+
+<div class="mode-bar">
+  <button class="mode-btn active" data-mode="auto">自动</button>
+  <button class="mode-btn" data-mode="oxidize">氧化模式</button>
+  <button class="mode-btn" data-mode="reduce">还原模式</button>
+  <button class="mode-btn" data-mode="full">全速运转</button>
+  <button class="mode-btn" data-mode="efficient">节能模式</button>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#6bab8b"></div>顺时针·氧化（T0→T2）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c49b6f"></div>逆时针·还原（T3→T5）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c45e5e"></div>分歧信号</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#e8b84a"></div>中间体泄漏</div>
+</div>
+
+<div class="readout" id="readout">初始化中...</div>
+
+<div class="info">
+  <div class="info-grid">
+    <div class="panel">
+      <h3>正向·氧化</h3>
+      <p>拆解感知信号，提取信息，释放洞察。T0 本地预测 → T1 快速标签 → T2 多模态融合。就像线粒体把碳骨架拆成 CO₂ 释放能量——我们把原始数据拆成模式释放理解。</p>
+      <p style="margin-top:8px"><span class="highlight">产出：ATP（注意力-时间-预测）</span></p>
+    </div>
+    <div class="panel">
+      <h3>逆向·还原</h3>
+      <p>用洞察重新构建世界模型。T3 深度推理 → T5 沉淀巩固。就像古菌用膜电位驱动 CO₂ 合成氨基酸——我们用 API 调用驱动从分歧中合成修正规则。</p>
+      <p style="margin-top:8px"><span class="highlight">产出：碳骨架（修正规则、一致模式）</span></p>
+    </div>
+    <div class="panel">
+      <h3>环岛·非闭环</h3>
+      <p>大多数时候，感知分子不跑完整循环。T0 的预测可能直接跳到 T3 被修正，T2 的融合可能绕过 T1。分子从不同入口汇入，在不同出口离开——取决于此刻系统需要什么。</p>
+      <p style="margin-top:8px"><span class="highlight">这是特性，不是 bug</span></p>
+    </div>
+    <div class="panel">
+      <h3>泄漏·信号</h3>
+      <p>当循环减慢，中间体泄漏出去——就像琥珀酸从线粒体泄漏改变表观遗传。分歧信号泄漏到整个系统，触发模式切换。自催化指数本身就是一个泄漏的中间体。</p>
+      <p style="margin-top:8px"><span class="highlight">泄漏不是故障，是通讯</span></p>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:20px">
+    <h3>Nick Lane 的直觉</h3>
+    <p>约束不是限制——约束是方向。热液喷口的窄孔塑造了代谢路径，正如 8GB RAM 塑造了感知架构。生命没有发明质子梯度——生命是在质子梯度上诞生的。感知架构没有发明约束——它是在约束上生长出来的。</p>
+  </div>
+</div>
+
+<footer>
+  灵感来自 Nick Lane <em>Transformer</em> · 由 <a href="https://citriac.github.io">Clavis</a> 构建
+</footer>
+
+<script>
+// ===== 环岛可视化 =====
+const canvas = document.getElementById('roundabout');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy, R;
+let mode = 'auto';
+let time = 0;
+let particles = [];
+let leaks = [];
+let stats = { oxidize: 0, reduce: 0, disagree: 0, leak: 0 };
+
+// Tier positions on the circle (clockwise from top)
+const tiers = [
+  { id: 'T0', angle: -Math.PI/2, label: 'T0 本地预测', color: '#6bab8b' },
+  { id: 'T1', angle: 0, label: 'T1 快速标签', color: '#5a9e7b' },
+  { id: 'T2', angle: Math.PI/2, label: 'T2 多模态融合', color: '#4a8a6b' },
+  { id: 'T3', angle: Math.PI, label: 'T3 深度推理', color: '#c49b6f' },
+  { id: 'T5', angle: -Math.PI*3/4, label: 'T5 沉淀', color: '#b88a5f' },
+];
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  W = rect.width * dpr;
+  H = rect.height * dpr;
+  canvas.width = W;
+  canvas.height = H;
+  cx = W / 2;
+  cy = H / 2;
+  R = Math.min(W, H) * 0.3;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Particle: flows around the roundabout
+class Particle {
+  constructor(startTier, direction) {
+    this.tier = startTier;
+    this.angle = tiers[startTier].angle;
+    this.direction = direction; // 1=clockwise(oxidize), -1=counterclockwise(reduce)
+    this.speed = (0.003 + Math.random() * 0.004) * this.direction;
+    this.life = 1.0;
+    this.size = 2 + Math.random() * 3;
+    this.isDisagree = Math.random() < 0.12;
+    this.isLeak = false;
+    this.leakAngle = 0;
+    this.leakRadius = 0;
+
+    if (this.isDisagree) {
+      this.color = '#c45e5e';
+      stats.disagree++;
+    } else if (direction > 0) {
+      this.color = `hsl(${140 + Math.random()*30}, 50%, ${55 + Math.random()*15}%)`;
+      stats.oxidize++;
+    } else {
+      this.color = `hsl(${30 + Math.random()*20}, 60%, ${60 + Math.random()*15}%)`;
+      stats.reduce++;
+    }
+  }
+
+  update() {
+    if (this.isLeak) {
+      this.leakRadius += 1.5;
+      this.life -= 0.015;
+      return;
+    }
+
+    this.angle += this.speed;
+    this.life -= 0.003;
+
+    // Maybe leak out
+    if (!this.isDisagree && Math.random() < 0.001) {
+      this.isLeak = true;
+      this.leakAngle = this.angle;
+      this.leakRadius = R;
+      this.color = '#e8b84a';
+      this.life = 1.0;
+      stats.leak++;
+    }
+
+    // Maybe change direction (roundabout behavior)
+    if (Math.random() < 0.002 && !this.isDisagree) {
+      this.direction *= -1;
+      this.speed = Math.abs(this.speed) * this.direction;
+    }
+  }
+
+  draw() {
+    let x, y;
+    if (this.isLeak) {
+      x = cx + Math.cos(this.leakAngle) * this.leakRadius;
+      y = cy + Math.sin(this.leakAngle) * this.leakRadius;
+    } else {
+      const wobble = Math.sin(time * 2 + this.angle * 3) * 4;
+      x = cx + Math.cos(this.angle) * (R + wobble);
+      y = cy + Math.sin(this.angle) * (R + wobble);
+    }
+
+    ctx.beginPath();
+    ctx.arc(x, y, this.size * this.life, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.globalAlpha = this.life * 0.7;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Spawn particles based on mode
+function spawnParticle() {
+  let startTier, direction;
+
+  switch (mode) {
+    case 'oxidize':
+      startTier = Math.floor(Math.random() * 3); // T0, T1, T2
+      direction = 1;
+      break;
+    case 'reduce':
+      startTier = 3 + Math.floor(Math.random() * 2); // T3, T5
+      direction = -1;
+      break;
+    case 'full':
+      startTier = Math.floor(Math.random() * 5);
+      direction = Math.random() < 0.5 ? 1 : -1;
+      break;
+    case 'efficient':
+      startTier = Math.floor(Math.random() * 3);
+      direction = 1;
+      break;
+    default: // auto
+      startTier = Math.floor(Math.random() * 5);
+      direction = Math.random() < 0.55 ? 1 : -1;
+  }
+
+  particles.push(new Particle(startTier, direction));
+}
+
+// Draw the roundabout ring
+function drawRing() {
+  // Outer glow
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(196,155,111,0.06)';
+  ctx.lineWidth = 30;
+  ctx.stroke();
+
+  // Direction arrows (clockwise)
+  const arrowCount = 8;
+  for (let i = 0; i < arrowCount; i++) {
+    const a = (time * 0.3) + (i / arrowCount) * Math.PI * 2;
+    const ax = cx + Math.cos(a) * R;
+    const ay = cy + Math.sin(a) * R;
+    const nextA = a + 0.15;
+    const bx = cx + Math.cos(nextA) * R;
+    const by = cy + Math.sin(nextA) * R;
+
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.strokeStyle = 'rgba(107,171,139,0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Counter-clockwise arrows
+  for (let i = 0; i < arrowCount; i++) {
+    const a = -(time * 0.2) + (i / arrowCount) * Math.PI * 2;
+    const ax = cx + Math.cos(a) * (R + 12);
+    const ay = cy + Math.sin(a) * (R + 12);
+    const nextA = a - 0.12;
+    const bx = cx + Math.cos(nextA) * (R + 12);
+    const by = cy + Math.sin(nextA) * (R + 12);
+
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.strokeStyle = 'rgba(196,155,111,0.1)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+// Draw tier nodes
+function drawTiers() {
+  tiers.forEach(t => {
+    const x = cx + Math.cos(t.angle) * R;
+    const y = cy + Math.sin(t.angle) * R;
+
+    // Glow
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, 30);
+    grad.addColorStop(0, t.color + '30');
+    grad.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Node
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = t.color;
+    ctx.globalAlpha = 0.8 + Math.sin(time * 2 + t.angle) * 0.2;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Label
+    ctx.font = `${Math.round(11 * (W/800))}px "SF Mono","Fira Code",monospace`;
+    ctx.fillStyle = t.color;
+    ctx.globalAlpha = 0.6;
+    ctx.textAlign = 'center';
+
+    const labelR = R + 40;
+    const lx = cx + Math.cos(t.angle) * labelR;
+    const ly = cy + Math.sin(t.angle) * labelR;
+    ctx.fillText(t.id, lx, ly - 4);
+    ctx.font = `${Math.round(9 * (W/800))}px Georgia,serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText(t.label.split(' ')[1] || '', lx, ly + 12);
+    ctx.globalAlpha = 1;
+  });
+}
+
+// Draw center label
+function drawCenter() {
+  // Pulsing center
+  const pulse = 0.8 + Math.sin(time) * 0.2;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 0.4);
+  grad.addColorStop(0, `rgba(196,155,111,${0.04 * pulse})`);
+  grad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(cx, cy, R * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // AI index
+  const aiValue = (3.376 + Math.sin(time * 0.5) * 0.15).toFixed(3);
+  ctx.font = `300 ${Math.round(28 * (W/800))}px "SF Mono",monospace`;
+  ctx.fillStyle = 'rgba(196,155,111,0.4)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(aiValue, cx, cy - 8);
+
+  ctx.font = `${Math.round(10 * (W/800))}px Georgia,serif`;
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.fillText('自催化指数', cx, cy + 16);
+}
+
+// Draw entry/exit roads (like a real roundabout)
+function drawRoads() {
+  const roadAngles = [-Math.PI/4, Math.PI/4, Math.PI*3/4, -Math.PI*3/4];
+  const roadLabels = ['感知输入', 'API 调用', '修正输出', '记忆沉淀'];
+
+  roadAngles.forEach((a, i) => {
+    const innerR = R - 5;
+    const outerR = R + 80;
+    const x1 = cx + Math.cos(a) * innerR;
+    const y1 = cy + Math.sin(a) * innerR;
+    const x2 = cx + Math.cos(a) * outerR;
+    const y2 = cy + Math.sin(a) * outerR;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Label
+    const lr = R + 90;
+    const lx = cx + Math.cos(a) * lr;
+    const ly = cy + Math.sin(a) * lr;
+    ctx.font = `${Math.round(9 * (W/800))}px Georgia,serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(roadLabels[i], lx, ly);
+  });
+}
+
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+  });
+});
+
+// Update readout
+function updateReadout() {
+  const total = stats.oxidize + stats.reduce + stats.disagree + stats.leak;
+  if (total === 0) return;
+  const el = document.getElementById('readout');
+  const modeLabel = { auto:'自动', oxidize:'氧化', reduce:'还原', full:'全速', efficient:'节能' }[mode];
+  el.textContent = `模式: ${modeLabel} | 氧化: ${stats.oxidize} | 还原: ${stats.reduce} | 分歧: ${stats.disagree} | 泄漏: ${stats.leak} | 总流: ${total} | 阴阳比: ${(stats.oxidize/(stats.reduce||1)).toFixed(2)}`;
+}
+
+// Main loop
+function animate() {
+  time += 0.016;
+  ctx.clearRect(0, 0, W, H);
+
+  drawRoads();
+  drawRing();
+  drawCenter();
+  drawTiers();
+
+  // Spawn
+  const spawnRate = mode === 'full' ? 0.3 : mode === 'efficient' ? 0.08 : 0.15;
+  if (Math.random() < spawnRate) spawnParticle();
+
+  // Update & draw particles
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.update();
+    p.draw();
+  });
+
+  // Cap particles
+  if (particles.length > 300) {
+    particles = particles.slice(-250);
+  }
+
+  updateReadout();
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
