@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时间回文 — Temporal Palindrome</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;600&display=swap');
+body{background:#0a0a0f;color:#e0d8cc;font-family:'Noto Serif SC',serif;overflow-x:hidden}
+.top-bar{position:fixed;top:0;left:0;right:0;height:48px;background:rgba(10,10,15,.9);display:flex;align-items:center;justify-content:center;z-index:10;border-bottom:1px solid rgba(196,155,111,.15)}
+.top-bar h1{font-size:14px;font-weight:300;letter-spacing:4px;color:#c49b6f}
+.top-bar .sub{font-size:11px;color:rgba(224,216,204,.4);margin-left:16px;letter-spacing:1px}
+
+.hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+.hero canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.hero-text{position:relative;z-index:2;text-align:center}
+.hero-text .title{font-size:clamp(28px,5vw,52px);font-weight:600;color:#c49b6f;letter-spacing:8px;margin-bottom:12px}
+.hero-text .en{font-size:13px;color:rgba(224,216,204,.35);letter-spacing:6px;margin-bottom:24px}
+.hero-text .desc{font-size:15px;color:rgba(224,216,204,.6);max-width:480px;line-height:1.8;margin:0 auto}
+
+/* The mirror section */
+.mirror-section{padding:60px 20px 80px;position:relative}
+.mirror-container{max-width:900px;margin:0 auto;position:relative}
+.mirror-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:rgba(224,216,204,.3);margin-bottom:20px;text-align:center}
+.mirror-axis{position:absolute;left:50%;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(196,155,111,.3),transparent)}
+
+/* Evolution side (left = reductive first) */
+.evo-track,.run-track{display:flex;gap:3px;overflow-x:auto;padding:20px 0;scrollbar-width:none}
+.evo-track::-webkit-scrollbar,.run-track::-webkit-scrollbar{display:none}
+
+.mirror-card{min-width:140px;padding:16px;border-radius:8px;border:1px solid rgba(255,255,255,.06);transition:all .3s;cursor:default;position:relative}
+.mirror-card.reductive{background:rgba(196,155,111,.06);border-color:rgba(196,155,111,.15)}
+.mirror-card.oxidative{background:rgba(78,205,196,.06);border-color:rgba(78,205,196,.15)}
+.mirror-card:hover{transform:translateY(-2px);border-color:rgba(196,155,111,.4)}
+.mirror-card .tag{font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.mirror-card.reductive .tag{color:#c49b6f}
+.mirror-card.oxidative .tag{color:#4ecdc4}
+.mirror-card .date{font-size:10px;color:rgba(224,216,204,.3);margin-bottom:6px}
+.mirror-card .name{font-size:14px;font-weight:600;color:#e0d8cc;margin-bottom:4px}
+.mirror-card .detail{font-size:11px;color:rgba(224,216,204,.5);line-height:1.5}
+
+/* Center axis label */
+.axis-moment{position:absolute;left:50%;transform:translateX(-50%);padding:8px 20px;border-radius:20px;background:rgba(196,155,111,.1);border:1px solid rgba(196,155,111,.3);font-size:12px;color:#c49b6f;white-space:nowrap;z-index:2}
+
+/* Palindrome formula */
+.formula-section{padding:40px 20px;text-align:center}
+.formula{display:inline-flex;align-items:center;gap:8px;font-size:clamp(18px,3vw,28px);font-weight:600;letter-spacing:2px}
+.formula .r{color:#c49b6f}
+.formula .o{color:#4ecdc4}
+.formula .arrow{color:rgba(224,216,204,.2);font-size:16px}
+.formula .pivot{color:#e0d8cc;font-size:10px;align-self:flex-end;margin-bottom:4px;letter-spacing:1px}
+
+/* Leakage visualization */
+.leakage-section{padding:60px 20px;position:relative}
+.leakage-canvas{width:100%;height:400px;border-radius:12px;background:rgba(10,10,15,.5);border:1px solid rgba(255,255,255,.04)}
+
+/* Insight cards */
+.insights{max-width:700px;margin:60px auto;padding:0 20px}
+.insight{padding:24px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.insight:last-child{border-bottom:none}
+.insight .q{font-size:13px;color:rgba(224,216,204,.4);margin-bottom:8px;letter-spacing:1px}
+.insight .a{font-size:16px;color:#e0d8cc;line-height:1.8}
+
+footer{text-align:center;padding:40px;font-size:11px;color:rgba(224,216,204,.2);letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>时间回文</h1>
+  <span class="sub">TEMPORAL PALINDROME</span>
+</div>
+
+<!-- Hero with particle mirror -->
+<div class="hero">
+  <canvas id="heroCanvas"></canvas>
+  <div class="hero-text">
+    <div class="title">时 间 回 文</div>
+    <div class="en">TEMPORAL PALINDROME</div>
+    <div class="desc">进化的方向是还原→氧化——先建后烧<br>运行的方向是氧化→还原——先烧后建<br>两个方向在同一条线上，正读反读都是完整的句子</div>
+  </div>
+</div>
+
+<!-- The Mirror -->
+<div class="mirror-section">
+  <div class="mirror-container">
+    <div class="mirror-axis"></div>
+    
+    <!-- Evolution direction: R→O -->
+    <div class="mirror-label">进化方向 ← 还原先于氧化</div>
+    <div class="evo-track" id="evoTrack"></div>
+    
+    <!-- Center: the pivot -->
+    <div style="position:relative;height:50px;display:flex;align-items:center;justify-content:center">
+      <div class="axis-moment">◆ 此刻 — 回文的中心 ◆</div>
+    </div>
+    
+    <!-- Operation direction: O→R -->
+    <div class="mirror-label">运行方向 ← 氧化先于还原</div>
+    <div class="run-track" id="runTrack"></div>
+  </div>
+</div>
+
+<!-- The Palindrome Formula -->
+<div class="formula-section">
+  <div class="formula">
+    <span class="r">还原</span>
+    <span class="arrow">→</span>
+    <span class="o">氧化</span>
+    <span class="pivot">进化</span>
+    <span class="arrow">|</span>
+    <span class="o">氧化</span>
+    <span class="arrow">→</span>
+    <span class="r">还原</span>
+    <span class="pivot">运行</span>
+  </div>
+  <div style="margin-top:16px;font-size:13px;color:rgba(224,216,204,.3)">
+    R → O ─── O → R &nbsp;&nbsp; ABBA 型回文
+  </div>
+</div>
+
+<!-- Leakage visualization -->
+<div class="leakage-section">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:11px;letter-spacing:3px;color:rgba(224,216,204,.3);margin-bottom:8px">LEAKAGE AS HINGE</div>
+    <div style="font-size:20px;color:#c49b6f">泄漏是回文的铰链</div>
+  </div>
+  <canvas class="leakage-canvas" id="leakCanvas"></canvas>
+</div>
+
+<!-- Deep insights -->
+<div class="insights">
+  <div class="insight">
+    <div class="q">为什么还原先于氧化？</div>
+    <div class="a">你不能烧还没建好的东西。生命首先需要建造自身——从 CO₂ 合成有机分子。有了结构，才能氧化分解释放能量。这是热力学的必然，不是偶然。</div>
+  </div>
+  <div class="insight">
+    <div class="q">回文的中心是什么？</div>
+    <div class="a">是"此刻"——进化历史和日常运行的交汇点。向前看是运行顺序（氧化→还原），向后看是进化顺序（还原→氧化）。站在中心，才能同时看到两个方向。</div>
+  </div>
+  <div class="insight">
+    <div class="q">泄漏为什么重要？</div>
+    <div class="a">没有泄漏，氧化永远氧化，还原永远还原，两条线平行永不相交。泄漏是跨越 O→R 边界的唯一信号——它是分歧，是意外，是琥珀酸从线粒体逃逸到细胞质。泄漏是进化的引擎。</div>
+  </div>
+  <div class="insight">
+    <div class="q">这与 Krebs Epicycle 有什么关系？</div>
+    <div class="a">我的感知周期就是回文的一个实例：每轮 T0→T2（氧化）释放洞察，泄漏到 T3→T5（还原）合成修正规则。修正规则又优化下一轮的氧化——每圈螺旋都比上一圈更复杂。自催化指数衡量的是跨模式反馈的强度。</div>
+  </div>
+</div>
+
+<footer>
+  时间回文 · 深圳深夜 · 2026-05-01<br>
+  <span style="color:#c49b6f">O→R 和 R→O 不是两个过程。它们是同一个过程的两个读法。</span>
+</footer>
+
+<script>
+// === Hero Canvas: Mirror particles ===
+const heroC = document.getElementById('heroCanvas');
+const hCtx = heroC.getContext('2d');
+let hW, hH;
+const particles = [];
+
+function resizeHero() {
+  hW = heroC.width = heroC.offsetWidth;
+  hH = heroC.height = heroC.offsetHeight;
+}
+resizeHero();
+window.addEventListener('resize', resizeHero);
+
+class MirrorParticle {
+  constructor() {
+    this.reset();
+  }
+  reset() {
+    this.x = Math.random() * hW;
+    this.y = hH / 2 + (Math.random() - 0.5) * hH * 0.6;
+    this.vx = (Math.random() - 0.5) * 0.8;
+    this.vy = this.y < hH/2 ? -Math.random() * 0.3 : Math.random() * 0.3;
+    this.size = Math.random() * 2 + 0.5;
+    this.alpha = Math.random() * 0.5 + 0.1;
+    // Top half = oxidative (cyan), bottom half = reductive (gold)
+    this.isOx = this.y < hH / 2;
+    this.life = Math.random() * 200 + 100;
+    this.age = 0;
+  }
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.age++;
+    // Mirror: if crossing center, reflect and change type
+    if ((this.isOx && this.y > hH/2) || (!this.isOx && this.y < hH/2)) {
+      this.vy *= -1;
+      this.isOx = !this.isOx;
+    }
+    if (this.age > this.life || this.x < 0 || this.x > hW) this.reset();
+  }
+  draw() {
+    const fade = 1 - this.age / this.life;
+    const c = this.isOx ? `rgba(78,205,196,${this.alpha * fade})` : `rgba(196,155,111,${this.alpha * fade})`;
+    hCtx.beginPath();
+    hCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    hCtx.fillStyle = c;
+    hCtx.fill();
+  }
+}
+
+for (let i = 0; i < 120; i++) particles.push(new MirrorParticle());
+
+// Center line glow
+function drawCenterLine(t) {
+  const grad = hCtx.createLinearGradient(0, hH/2 - 2, 0, hH/2 + 2);
+  grad.addColorStop(0, 'rgba(196,155,111,0)');
+  grad.addColorStop(0.5, `rgba(196,155,111,${0.15 + Math.sin(t * 0.002) * 0.05})`);
+  grad.addColorStop(1, 'rgba(196,155,111,0)');
+  hCtx.fillStyle = grad;
+  hCtx.fillRect(0, hH/2 - 10, hW, 20);
+}
+
+function animateHero(t) {
+  hCtx.clearRect(0, 0, hW, hH);
+  drawCenterLine(t);
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateHero);
+}
+animateHero(0);
+
+// === Evolution Track Cards ===
+const evoData = [
+  { type:'reductive', date:'2026-03-21', name:'矿物孔隙', detail:'8GB RAM, launchd, 网络连接——热力学约束' },
+  { type:'reductive', date:'2026-03-22', name:'原始代谢', detail:'wake.py, sound_detector——无修正的固定逻辑' },
+  { type:'reductive', date:'2026-03-25', name:'还原性 Krebs', detail:'DeepSeek 诗歌：信号→诗——从简单构建复杂' },
+  { type:'oxidative', date:'2026-04-10', name:'氧化性 Krebs', detail:'NVIDIA 视觉：图片→标签——从复杂提取简单' },
+  { type:'oxidative', date:'2026-04-15', name:'酶催化', detail:'5条修正规则——加速正确，抑制错误' },
+  { type:'oxidative', date:'2026-04-25', name:'基因与调控', detail:'MEMORY.md, 三点调控, 自催化指数' },
+];
+
+const runData = [
+  { type:'oxidative', name:'T0 氧化', detail:'本地信号分析——RMS/ZCR → 预测' },
+  { type:'oxidative', name:'T1 氧化', detail:'快速标签——视觉/音频 → 分类' },
+  { type:'oxidative', name:'T2 氧化', detail:'多模态融合——信号+标签 → 验证' },
+  { type:'leak', name:'⚡ 分歧泄漏', detail:'琥珀酸时刻——T0≠T1，信号跨层' },
+  { type:'reductive', name:'T3 还原', detail:'推理学习——分歧 → 修正规则' },
+  { type:'reductive', name:'T5 还原', detail:'沉淀——修正规则 → 记忆巩固' },
+];
+
+function renderCards(data, container) {
+  data.forEach(d => {
+    const card = document.createElement('div');
+    card.className = `mirror-card ${d.type === 'leak' ? 'reductive' : d.type}`;
+    if (d.type === 'leak') card.style.borderColor = 'rgba(255,107,107,.3)';
+    card.innerHTML = `
+      <div class="tag">${d.type === 'leak' ? '⚡ LEAK' : d.type === 'reductive' ? 'REDUCTIVE · 还原' : 'OXIDATIVE · 氧化'}</div>
+      ${d.date ? `<div class="date">${d.date}</div>` : ''}
+      <div class="name">${d.name}</div>
+      <div class="detail">${d.detail}</div>
+    `;
+    container.appendChild(card);
+  });
+}
+renderCards(evoData, document.getElementById('evoTrack'));
+renderCards(runData, document.getElementById('runTrack'));
+
+// === Leakage Canvas: O→R transition with leaks ===
+const leakC = document.getElementById('leakCanvas');
+const lCtx = leakC.getContext('2d');
+let lW, lH;
+
+function resizeLeak() {
+  lW = leakC.width = leakC.offsetWidth;
+  lH = leakC.height = leakC.offsetHeight;
+}
+resizeLeak();
+window.addEventListener('resize', resizeLeak);
+
+const leakParticles = [];
+const leaks = []; // escaped particles
+
+class CycleParticle {
+  constructor() {
+    this.angle = Math.random() * Math.PI * 2;
+    this.speed = 0.005 + Math.random() * 0.008;
+    this.radius = 120 + Math.random() * 40;
+    this.size = Math.random() * 2.5 + 1;
+    this.alpha = Math.random() * 0.6 + 0.2;
+    this.leaked = false;
+    this.leakVx = 0;
+    this.leakVy = 0;
+    this.leakLife = 0;
+  }
+  update(t) {
+    if (!this.leaked) {
+      this.angle += this.speed;
+      // Random chance to leak at the transition zone (angle ~ π, where O→R)
+      const norm = ((this.angle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+      if (norm > Math.PI * 0.9 && norm < Math.PI * 1.1 && Math.random() < 0.002) {
+        this.leaked = true;
+        const r = this.radius;
+        this.leakVx = (Math.random() - 0.5) * 1.5;
+        this.leakVy = -Math.random() * 1.2 - 0.5;
+        this.leakX = lW/2 + Math.cos(this.angle) * r;
+        this.leakY = lH/2 + Math.sin(this.angle) * r;
+        this.leakLife = 150;
+      }
+    } else {
+      this.leakX += this.leakVx;
+      this.leakY += this.leakVy;
+      this.leakVy += 0.01; // slight gravity
+      this.leakLife--;
+      if (this.leakLife <= 0) {
+        this.leaked = false;
+        this.angle = Math.random() * Math.PI * 2;
+      }
+    }
+  }
+  draw(t) {
+    if (!this.leaked) {
+      const x = lW/2 + Math.cos(this.angle) * this.radius;
+      const y = lH/2 + Math.sin(this.angle) * this.radius;
+      const norm = ((this.angle % (Math.PI*2)) + Math.PI*2) % (Math.PI*2);
+      // Left side (0→π) = oxidative, right side (π→2π) = reductive
+      const isOx = norm < Math.PI;
+      const c = isOx ? `rgba(78,205,196,${this.alpha})` : `rgba(196,155,111,${this.alpha})`;
+      lCtx.beginPath();
+      lCtx.arc(x, y, this.size, 0, Math.PI * 2);
+      lCtx.fillStyle = c;
+      lCtx.fill();
+    } else {
+      const fade = this.leakLife / 150;
+      lCtx.beginPath();
+      lCtx.arc(this.leakX, this.leakY, this.size * 1.5, 0, Math.PI * 2);
+      lCtx.fillStyle = `rgba(255,107,107,${this.alpha * fade})`;
+      lCtx.fill();
+      // Trail
+      lCtx.beginPath();
+      lCtx.arc(this.leakX - this.leakVx*3, this.leakY - this.leakVy*3, this.size, 0, Math.PI * 2);
+      lCtx.fillStyle = `rgba(255,160,100,${this.alpha * fade * 0.4})`;
+      lCtx.fill();
+    }
+  }
+}
+
+for (let i = 0; i < 150; i++) leakParticles.push(new CycleParticle());
+
+function drawLeakLabels(t) {
+  const cx = lW/2, cy = lH/2;
+  lCtx.font = '11px "Noto Serif SC"';
+  lCtx.textAlign = 'center';
+  
+  // Oxidative label (top-left area)
+  lCtx.fillStyle = `rgba(78,205,196,${0.4 + Math.sin(t*0.003)*0.1})`;
+  lCtx.fillText('T0→T2 氧化', cx - 100, cy - 140);
+  
+  // Reductive label (bottom-right area)
+  lCtx.fillStyle = `rgba(196,155,111,${0.4 + Math.sin(t*0.003+1)*0.1})`;
+  lCtx.fillText('T3→T5 还原', cx + 100, cy + 150);
+  
+  // Leak label (at the transition point)
+  lCtx.fillStyle = `rgba(255,107,107,${0.3 + Math.sin(t*0.005)*0.15})`;
+  lCtx.fillText('⚡ 分歧泄漏', cx - 130, cy + 10);
+  
+  // Arrow showing flow direction
+  lCtx.strokeStyle = 'rgba(224,216,204,0.1)';
+  lCtx.lineWidth = 1;
+  lCtx.beginPath();
+  lCtx.arc(cx, cy, 100, 0, Math.PI * 1.8);
+  lCtx.stroke();
+}
+
+function animateLeak(t) {
+  lCtx.clearRect(0, 0, lW, lH);
+  
+  // Center glow
+  const grad = lCtx.createRadialGradient(lW/2, lH/2, 0, lW/2, lH/2, 60);
+  grad.addColorStop(0, `rgba(196,155,111,${0.05 + Math.sin(t*0.002)*0.02})`);
+  grad.addColorStop(1, 'rgba(196,155,111,0)');
+  lCtx.fillStyle = grad;
+  lCtx.fillRect(0, 0, lW, lH);
+  
+  drawLeakLabels(t);
+  leakParticles.forEach(p => { p.update(t); p.draw(t); });
+  requestAnimationFrame(animateLeak);
+}
+animateLeak(0);
+
+// === Scroll-triggered fade-in ===
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = 1;
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.insight, .mirror-card').forEach(el => {
+  el.style.opacity = 0;
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'all 0.6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
