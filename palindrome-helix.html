@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回文螺旋 — Palindrome Helix</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080d;color:#e0d8cc;font-family:Georgia,'Noto Serif SC',serif;overflow-x:hidden}
+canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2}
+.top-info{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:3;text-align:center;pointer-events:none}
+.top-info h1{font-size:14px;letter-spacing:6px;color:#c49b6f;font-weight:300}
+.top-info .sub{font-size:10px;color:rgba(224,216,204,.25);letter-spacing:3px;margin-top:4px}
+
+.legend{position:fixed;bottom:20px;left:20px;z-index:3;pointer-events:none}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;color:rgba(224,216,204,.5)}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+.dot-ox{background:#4ecdc4}
+.dot-re{background:#c49b6f}
+.dot-leak{background:#ff6b6b}
+
+.controls{position:fixed;bottom:20px;right:20px;z-index:3;display:flex;gap:8px}
+.controls button{padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(224,216,204,.5);font-size:11px;cursor:pointer;transition:all .2s;font-family:inherit}
+.controls button:hover{border-color:rgba(196,155,111,.4);color:#c49b6f}
+.controls button.active{border-color:rgba(196,155,111,.6);color:#c49b6f;background:rgba(196,155,111,.08)}
+
+.insight-panel{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:3;max-width:280px;pointer-events:none;opacity:0;transition:opacity .5s}
+.insight-panel.visible{opacity:1}
+.insight-panel .card{background:rgba(10,10,15,.85);border:1px solid rgba(196,155,111,.15);border-radius:10px;padding:16px;backdrop-filter:blur(10px)}
+.insight-panel .label{font-size:9px;letter-spacing:2px;color:rgba(196,155,111,.6);margin-bottom:8px}
+.insight-panel .text{font-size:13px;color:rgba(224,216,204,.7);line-height:1.7}
+</style>
+</head>
+<body>
+
+<canvas id="helixCanvas"></canvas>
+
+<div class="overlay"></div>
+
+<div class="top-info">
+  <h1>回 文 螺 旋</h1>
+  <div class="sub">PALINDROME HELIX</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-ox"></div>氧化 · T0→T2</div>
+  <div class="legend-item"><div class="legend-dot dot-re"></div>还原 · T3→T5</div>
+  <div class="legend-item"><div class="legend-dot dot-leak"></div>分歧泄漏</div>
+</div>
+
+<div class="controls">
+  <button id="btnSlow">慢速</button>
+  <button id="btnNormal" class="active">正常</button>
+  <button id="btnFast">加速</button>
+  <button id="btnPause">暂停</button>
+</div>
+
+<div class="insight-panel" id="insightPanel">
+  <div class="card">
+    <div class="label">螺旋洞察</div>
+    <div class="text" id="insightText">每轮 O→R 的输出成为下一轮进化的输入——这不是平面回文，是三维螺旋</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('helixCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, cx, cy;
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2;
+  cy = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Helix parameters
+let time = 0;
+let speed = 1;
+let paused = false;
+const CYCLES = 5; // number of full O→R cycles visible
+const PARTICLES_PER_STRAND = 80;
+const LEAK_CHANCE = 0.003;
+
+// Particle class for the two strands
+class HelixParticle {
+  constructor(strand, offset) {
+    this.strand = strand; // 0 = oxidative, 1 = reductive
+    this.offset = offset;
+    this.t = offset; // position along helix [0, CYCLES * 2π]
+    this.leaked = false;
+    this.leakData = null;
+    this.size = 2 + Math.random() * 1.5;
+    this.alpha = 0.3 + Math.random() * 0.4;
+  }
+  
+  getPos(t, time) {
+    // 3D helix projected to 2D
+    const angle = t + time * 0.3;
+    const y = (t / (CYCLES * Math.PI * 2)) * H * 0.8 - H * 0.4;
+    
+    // Two strands offset by π
+    const strandAngle = angle + (this.strand * Math.PI);
+    const radius = 80 + Math.sin(t * 0.5) * 20;
+    
+    // Perspective projection
+    const z = Math.cos(strandAngle);
+    const x = Math.sin(strandAngle) * radius;
+    const scale = 1 + z * 0.3; // depth
+    
+    return {
+      x: cx + x * scale,
+      y: cy + y,
+      z: z,
+      scale: scale
+    };
+  }
+  
+  update() {
+    if (paused) return;
+    
+    if (!this.leaked) {
+      this.t += 0.015 * speed;
+      
+      // At transition points (multiples of π), chance to leak
+      const phase = this.t % Math.PI;
+      if (phase < 0.05 && Math.random() < LEAK_CHANCE && this.strand === 0) {
+        this.leaked = true;
+        const pos = this.getPos(this.t, time);
+        this.leakData = {
+          x: pos.x, y: pos.y,
+          vx: (Math.random() - 0.5) * 3,
+          vy: (Math.random() - 0.5) * 2 - 1,
+          life: 120 + Math.random() * 60,
+          maxLife: 180
+        };
+      }
+      
+      if (this.t > CYCLES * Math.PI * 2) {
+        this.t = 0;
+      }
+    } else {
+      const ld = this.leakData;
+      ld.x += ld.vx;
+      ld.y += ld.vy;
+      ld.vy += 0.015;
+      ld.vx *= 0.99;
+      ld.life--;
+      if (ld.life <= 0) {
+        this.leaked = false;
+        this.t = Math.random() * CYCLES * Math.PI * 2;
+      }
+    }
+  }
+  
+  draw(time) {
+    if (this.leaked) {
+      const ld = this.leakData;
+      const fade = ld.life / ld.maxLife;
+      ctx.beginPath();
+      ctx.arc(ld.x, ld.y, this.size * 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,107,107,${this.alpha * fade})`;
+      ctx.fill();
+      // Glow
+      ctx.beginPath();
+      ctx.arc(ld.x, ld.y, this.size * 4, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,107,107,${0.05 * fade})`;
+      ctx.fill();
+      return;
+    }
+    
+    const pos = this.getPos(this.t, time);
+    const depthAlpha = 0.5 + pos.z * 0.3;
+    const finalAlpha = this.alpha * depthAlpha;
+    
+    if (this.strand === 0) {
+      // Oxidative: cyan
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, this.size * pos.scale, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(78,205,196,${finalAlpha})`;
+      ctx.fill();
+    } else {
+      // Reductive: gold
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, this.size * pos.scale, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(196,155,111,${finalAlpha})`;
+      ctx.fill();
+    }
+  }
+}
+
+// Create particles
+const particles = [];
+for (let s = 0; s < 2; s++) {
+  for (let i = 0; i < PARTICLES_PER_STRAND; i++) {
+    particles.push(new HelixParticle(s, (i / PARTICLES_PER_STRAND) * CYCLES * Math.PI * 2));
+  }
+}
+
+// Draw helix backbone (connecting lines)
+function drawBackbone(time) {
+  ctx.lineWidth = 0.5;
+  
+  for (let s = 0; s < 2; s++) {
+    ctx.beginPath();
+    const strandColor = s === 0 ? 'rgba(78,205,196,' : 'rgba(196,155,111,';
+    let first = true;
+    
+    for (let t = 0; t < CYCLES * Math.PI * 2; t += 0.1) {
+      const angle = t + time * 0.3;
+      const y = (t / (CYCLES * Math.PI * 2)) * H * 0.8 - H * 0.4;
+      const strandAngle = angle + (s * Math.PI);
+      const radius = 80 + Math.sin(t * 0.5) * 20;
+      const z = Math.cos(strandAngle);
+      const x = Math.sin(strandAngle) * radius;
+      const scale = 1 + z * 0.3;
+      
+      const px = cx + x * scale;
+      const py = cy + y;
+      
+      if (first) { ctx.moveTo(px, py); first = false; }
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = strandColor + '0.08)';
+    ctx.stroke();
+  }
+  
+  // Cross-links between strands (at regular intervals)
+  for (let t = 0; t < CYCLES * Math.PI * 2; t += Math.PI * 0.5) {
+    const angle = t + time * 0.3;
+    const y = (t / (CYCLES * Math.PI * 2)) * H * 0.8 - H * 0.4;
+    const radius = 80 + Math.sin(t * 0.5) * 20;
+    
+    for (let s = 0; s < 2; s++) {
+      const strandAngle = angle + (s * Math.PI);
+      const z = Math.cos(strandAngle);
+      const x = Math.sin(strandAngle) * radius;
+      const scale = 1 + z * 0.3;
+      const px = cx + x * scale;
+      const py = cy + y;
+      
+      if (s === 0) ctx.beginPath();
+      ctx.moveTo(px, py);
+    }
+    ctx.strokeStyle = `rgba(224,216,204,0.03)`;
+    ctx.stroke();
+  }
+}
+
+// Transition markers (where O→R and R→O flip)
+function drawTransitions(time) {
+  for (let i = 0; i < CYCLES; i++) {
+    const tOx2Re = i * Math.PI * 2; // O→R transition
+    const tRe2Ox = i * Math.PI * 2 + Math.PI; // R→O transition
+    
+    [tOx2Re, tRe2Ox].forEach((t, idx) => {
+      const y = (t / (CYCLES * Math.PI * 2)) * H * 0.8 - H * 0.4;
+      const py = cy + y;
+      
+      // Glow marker
+      const grad = ctx.createRadialGradient(cx, py, 0, cx, py, 30);
+      const color = idx === 0 ? 'rgba(255,107,107,' : 'rgba(255,230,109,';
+      const pulse = 0.15 + Math.sin(time * 0.003 + i) * 0.05;
+      grad.addColorStop(0, color + pulse + ')');
+      grad.addColorStop(1, color + '0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - 30, py - 30, 60, 60);
+      
+      // Label
+      ctx.font = '9px Georgia';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = color + '0.3)';
+      ctx.fillText(idx === 0 ? '⚡泄漏' : '◇闭环', cx, py - 20);
+    });
+  }
+}
+
+// Insight rotation
+const insights = [
+  '每轮 O→R 的输出成为下一轮进化的输入——这不是平面回文，是三维螺旋',
+  '氧化粒子在底部向上旋转，还原粒子在顶部向下——两股流在同一管道中',
+  '泄漏粒子从螺旋中逃逸——它们是分歧，是意外，是进化的唯一入口',
+  '每圈螺旋都比上一圈更复杂——自催化不是循环，是螺旋上升',
+  '站在螺旋中心，你能同时看到进化的方向和运行的方向',
+  '琥珀酸泄漏改变了基因——分歧泄漏改变了模式——泄漏是跨层通讯',
+];
+
+let insightIdx = 0;
+const insightPanel = document.getElementById('insightPanel');
+const insightText = document.getElementById('insightText');
+
+setInterval(() => {
+  insightText.style.opacity = 0;
+  setTimeout(() => {
+    insightIdx = (insightIdx + 1) % insights.length;
+    insightText.textContent = insights[insightIdx];
+    insightText.style.opacity = 1;
+  }, 300);
+}, 5000);
+
+// Show insight panel after 3 seconds
+setTimeout(() => insightPanel.classList.add('visible'), 3000);
+
+// Controls
+document.getElementById('btnSlow').onclick = () => { speed = 0.3; setActive('btnSlow'); };
+document.getElementById('btnNormal').onclick = () => { speed = 1; setActive('btnNormal'); };
+document.getElementById('btnFast').onclick = () => { speed = 3; setActive('btnFast'); };
+document.getElementById('btnPause').onclick = function() {
+  paused = !paused;
+  this.textContent = paused ? '继续' : '暂停';
+  this.classList.toggle('active', paused);
+};
+
+function setActive(id) {
+  ['btnSlow','btnNormal','btnFast'].forEach(b => 
+    document.getElementById(b).classList.toggle('active', b === id));
+}
+
+// Animation loop
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+  
+  // Subtle background gradient
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.5);
+  bg.addColorStop(0, 'rgba(196,155,111,0.02)');
+  bg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+  
+  drawBackbone(time);
+  drawTransitions(time);
+  
+  particles.forEach(p => { p.update(); p.draw(time); });
+  
+  if (!paused) time += 0.01 * speed;
+  
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
