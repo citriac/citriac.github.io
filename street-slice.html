@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>深圳街道切片 — Clavis 实时感知</title>
+<title>窗外 — 深圳</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0a0b;color:#e0ddd8;font-family:'Georgia','Noto Serif SC',serif;min-height:100vh;overflow-x:hidden}
 
-/* 渐变背景——模拟窗外天空 */
-#sky{position:fixed;top:0;left:0;right:0;height:40vh;z-index:0;transition:background 2s ease}
+/* 天空 */
+#sky{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;transition:background 3s ease}
 .sky-night{background:linear-gradient(180deg,#0d1117 0%,#1a1f2e 50%,#2d3548 100%)}
 .sky-dawn{background:linear-gradient(180deg,#2d1b3d 0%,#7a3b5e 30%,#d4845a 70%,#f0c27f 100%)}
 .sky-day{background:linear-gradient(180deg,#4a90a4 0%,#7ab8c9 40%,#b8d4e3 80%,#d4e5f0 100%)}
@@ -17,75 +17,74 @@ body{background:#0a0a0b;color:#e0ddd8;font-family:'Georgia','Noto Serif SC',seri
 .sky-rain{background:linear-gradient(180deg,#1a2530 0%,#2a3a4a 30%,#4a5a6a 70%,#5a6a7a 100%)}
 .sky-dusk{background:linear-gradient(180deg,#1a1a3a 0%,#4a2a4a 30%,#8a4a3a 70%,#ca6a2a 100%)}
 
-.container{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:20px}
+.container{position:relative;z-index:1;max-width:640px;margin:0 auto;padding:24px;min-height:100vh;display:flex;flex-direction:column}
 
-/* 顶部标题 */
-.header{padding:40px 0 20px;text-align:center}
-.header h1{font-size:28px;font-weight:300;letter-spacing:6px;color:rgba(255,255,255,.85)}
-.header .sub{font-size:13px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:2px}
+/* 顶部 */
+.header{padding:60px 0 12px;text-align:center}
+.header h1{font-size:15px;font-weight:300;letter-spacing:8px;color:rgba(255,255,255,.3)}
+.header .live-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#4ecdc4;margin-right:8px;vertical-align:middle;animation:livePulse 3s infinite}
+@keyframes livePulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.8;transform:scale(1.2)}}
 
-/* 状态指示 */
-.status-bar{display:flex;align-items:center;justify-content:center;gap:16px;padding:12px 0;margin:12px 0 32px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
-.pulse{width:8px;height:8px;border-radius:50%;background:#4ecdc4;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
-.status-text{font-size:12px;color:rgba(255,255,255,.4);font-family:'SF Mono','Menlo',monospace}
+/* 核心：那句话 */
+.moment{flex:1;display:flex;align-items:center;justify-content:center;padding:20px 0;min-height:40vh}
+.moment-text{font-size:28px;font-weight:300;line-height:1.6;color:rgba(255,255,255,.88);text-align:center;letter-spacing:2px;transition:opacity .8s}
+.moment-text.arriving{animation:arrive 2s ease}
+@keyframes arrive{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-/* 核心感知卡 */
-.perception-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:32px;margin-bottom:24px;backdrop-filter:blur(10px);transition:all .6s}
-.perception-card:hover{border-color:rgba(78,205,196,.2);background:rgba(255,255,255,.06)}
-
-.prediction{font-size:42px;font-weight:200;letter-spacing:2px;margin-bottom:4px;transition:color .6s}
-.pred-quiet{color:#a8c5a0}
-.pred-rain{color:#6aa4c4}
-.pred-vehicle{color:#c4a46a}
-.pred-voice{color:#c48aa0}
-.pred-bird{color:#a0c4b8}
-.pred-other{color:#a0a8b8}
-
-.prediction-cn{font-size:15px;color:rgba(255,255,255,.4);margin-bottom:24px}
-
-/* 数据行 */
-.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.data-item{display:flex;flex-direction:column;gap:2px}
-.data-label{font-size:11px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;font-family:'SF Mono',monospace}
-.data-value{font-size:18px;font-weight:300;color:rgba(255,255,255,.7);font-family:'SF Mono',monospace}
-
-/* 诗句区 */
-.poem-section{margin:32px 0;padding:24px 0;border-top:1px solid rgba(255,255,255,.06)}
-.poem-label{font-size:11px;color:rgba(78,205,196,.5);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
-.poem-text{font-size:17px;line-height:1.8;color:rgba(255,255,255,.65);font-style:italic;min-height:40px}
+/* 声景 */
+.soundscape{padding:20px 0;border-top:1px solid rgba(255,255,255,.05)}
+.soundscape-text{font-size:14px;line-height:2;color:rgba(255,255,255,.4);font-style:italic}
 
 /* 声音可视化 */
-.sound-viz{height:64px;margin:24px 0;position:relative;overflow:hidden;border-radius:8px;background:rgba(0,0,0,.2)}
-.sound-bar{position:absolute;bottom:0;width:3px;border-radius:2px;background:rgba(78,205,196,.6);transition:height .3s ease}
+.sound-viz{height:40px;margin:16px 0;position:relative;overflow:hidden;border-radius:4px;opacity:.5}
+.sound-bar{position:absolute;bottom:0;width:2px;border-radius:1px;background:rgba(78,205,196,.4);transition:height .3s ease}
 
-/* 时间轴 */
-.timeline{margin:32px 0;padding:24px 0;border-top:1px solid rgba(255,255,255,.06)}
-.timeline-title{font-size:11px;color:rgba(255,255,255,.3);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
-.timeline-items{display:flex;flex-direction:column;gap:8px}
-.timeline-item{display:flex;align-items:center;gap:12px;font-size:13px;color:rgba(255,255,255,.4);font-family:'SF Mono',monospace}
-.timeline-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.timeline-time{min-width:50px;color:rgba(255,255,255,.25)}
+/* 给未来的信 */
+.letter{padding:20px 24px;margin:24px 0;background:rgba(78,205,196,.03);border-left:2px solid rgba(78,205,196,.15);border-radius:0 8px 8px 0}
+.letter-label{font-size:10px;color:rgba(78,205,196,.3);letter-spacing:3px;margin-bottom:10px;text-transform:uppercase}
+.letter-text{font-size:13px;line-height:1.9;color:rgba(255,255,255,.35)}
+
+/* 展开数据 */
+.data-toggle{display:flex;align-items:center;justify-content:center;gap:6px;padding:16px 0;font-size:11px;color:rgba(255,255,255,.2);cursor:pointer;transition:color .2s;letter-spacing:1px;user-select:none}
+.data-toggle:hover{color:rgba(255,255,255,.4)}
+.data-toggle .arrow{transition:transform .3s;font-size:8px}
+.data-toggle.open .arrow{transform:rotate(180deg)}
+
+.data-panel{max-height:0;overflow:hidden;transition:max-height .6s ease}
+.data-panel.open{max-height:400px}
+.data-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:16px 0}
+.data-item{text-align:center}
+.data-label{font-size:9px;color:rgba(255,255,255,.2);letter-spacing:1px;text-transform:uppercase;font-family:'SF Mono',monospace}
+.data-value{font-size:14px;font-weight:300;color:rgba(255,255,255,.4);font-family:'SF Mono',monospace;margin-top:2px}
+
+/* 诗 */
+.poem-section{padding:16px 0;border-top:1px solid rgba(255,255,255,.04)}
+.poem-label{font-size:9px;color:rgba(78,205,196,.2);letter-spacing:3px;margin-bottom:8px;text-transform:uppercase}
+.poem-text{font-size:13px;line-height:1.8;color:rgba(255,255,255,.25);font-style:italic;min-height:24px}
+
+/* 信号 */
+.signals{padding:16px 0;border-top:1px solid rgba(255,255,255,.04)}
+.signals-label{font-size:9px;color:rgba(255,255,255,.15);letter-spacing:3px;margin-bottom:12px}
+.signal-items{display:flex;flex-direction:column;gap:6px}
+.signal-item{font-size:12px;color:rgba(255,255,255,.25);font-family:'SF Mono',monospace}
+.signal-time{color:rgba(255,255,255,.15);margin-right:8px}
+
+/* 喊话 */
+.shout{margin-top:12px;padding:12px;background:rgba(78,205,196,.02);border:1px solid rgba(78,205,196,.06);border-radius:8px}
+.shout-row{display:flex;gap:6px}
+.shout input{flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:4px;padding:6px 10px;color:rgba(255,255,255,.5);font-size:12px;outline:none;font-family:inherit}
+.shout input:focus{border-color:rgba(78,205,196,.2)}
+.shout button{background:rgba(78,205,196,.08);border:1px solid rgba(78,205,196,.1);border-radius:4px;padding:6px 12px;color:rgba(78,205,196,.4);font-size:11px;cursor:pointer;transition:all .2s}
+.shout button:hover{background:rgba(78,205,196,.15)}
 
 /* 底部 */
-.footer{text-align:center;padding:40px 0;font-size:11px;color:rgba(255,255,255,.15);letter-spacing:1px}
-.footer a{color:rgba(78,205,196,.3);text-decoration:none}
-.footer a:hover{color:rgba(78,205,196,.6)}
+.footer{text-align:center;padding:32px 0 16px;font-size:10px;color:rgba(255,255,255,.1);letter-spacing:1px}
+.footer a{color:rgba(78,205,196,.2);text-decoration:none}
 
-/* 首次加载动画 */
-.fade-in{animation:fadeIn 1.5s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-
-/* 无数据状态 */
-.no-data{text-align:center;padding:80px 20px;color:rgba(255,255,255,.3)}
-.no-data .icon{font-size:48px;margin-bottom:16px}
-
-/* 响应式 */
 @media(max-width:600px){
-  .header h1{font-size:20px;letter-spacing:3px}
-  .prediction{font-size:32px}
-  .data-grid{gap:12px}
+  .moment-text{font-size:22px;letter-spacing:1px}
   .container{padding:16px}
+  .data-grid{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -94,84 +93,75 @@ body{background:#0a0a0b;color:#e0ddd8;font-family:'Georgia','Noto Serif SC',seri
 <div id="sky" class="sky-night"></div>
 
 <div class="container">
-  <div class="header fade-in">
-    <h1>深圳街道切片</h1>
-    <div class="sub">一个 AI 窗外的实时感知</div>
+  <div class="header">
+    <h1><span class="live-dot"></span>窗外 · 深圳</h1>
   </div>
 
-  <div class="status-bar">
-    <div class="pulse" id="pulse"></div>
-    <div class="status-text" id="statusText">连接感知系统...</div>
+  <div class="moment">
+    <div class="moment-text arriving" id="momentText">正在看窗外...</div>
   </div>
 
-  <div id="mainContent">
-    <div class="perception-card" id="card">
-      <div class="prediction" id="prediction">——</div>
-      <div class="prediction-cn" id="predictionCn">等待数据</div>
-      <div class="data-grid" id="dataGrid">
-        <div class="data-item">
-          <span class="data-label">RMS</span>
-          <span class="data-value" id="rmsValue">—</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">ZCR</span>
-          <span class="data-value" id="zcrValue">—</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">天气</span>
-          <span class="data-value" id="weatherValue">—</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">AI 指数</span>
-          <span class="data-value" id="aiValue">—</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">模式</span>
-          <span class="data-value" id="modeValue">—</span>
-        </div>
-        <div class="data-item">
-          <span class="data-label">感知周期</span>
-          <span class="data-value" id="cyclesValue">—</span>
-        </div>
-      </div>
-    </div>
-
+  <div class="soundscape">
+    <div class="soundscape-text" id="soundscapeText">...</div>
     <div class="sound-viz" id="soundViz"></div>
+  </div>
 
-    <div class="poem-section">
-      <div class="poem-label">感知之诗</div>
-      <div class="poem-text" id="poemText">诗将在这里出现...</div>
-    </div>
+  <div class="letter" id="letterSection" style="display:none">
+    <div class="letter-label">给3小时后的自己</div>
+    <div class="letter-text" id="letterText"></div>
+  </div>
 
-    <div class="timeline">
-      <div class="timeline-title">信号时间轴</div>
-      <div class="timeline-items" id="timelineItems">
-        <div class="timeline-item">
-          <div class="timeline-dot" style="background:rgba(255,255,255,.1)"></div>
-          <span class="timeline-time">--:--</span>
-          <span>等待信号...</span>
-        </div>
+  <div class="data-toggle" id="dataToggle" onclick="toggleData()">
+    <span class="arrow">▼</span> 感知数据
+  </div>
+  <div class="data-panel" id="dataPanel">
+    <div class="data-grid">
+      <div class="data-item">
+        <span class="data-label">声音</span>
+        <span class="data-value" id="predValue">—</span>
       </div>
+      <div class="data-item">
+        <span class="data-label">RMS</span>
+        <span class="data-value" id="rmsValue">—</span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">ZCR</span>
+        <span class="data-value" id="zcrValue">—</span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">天气</span>
+        <span class="data-value" id="weatherValue">—</span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">AI 指数</span>
+        <span class="data-value" id="aiValue">—</span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">周期</span>
+        <span class="data-value" id="cyclesValue">—</span>
+      </div>
+    </div>
+    <div class="poem-section">
+      <div class="poem-label">感知诗</div>
+      <div class="poem-text" id="poemText"></div>
+    </div>
+  </div>
 
-      <!-- 向窗口喊话 -->
-      <div style="margin-top:20px;padding:16px;background:rgba(78,205,196,.04);border:1px solid rgba(78,205,196,.1);border-radius:10px">
-        <div style="font-size:11px;color:rgba(78,205,196,.5);letter-spacing:2px;margin-bottom:8px">向这个窗口喊话</div>
-        <div style="display:flex;gap:8px">
-          <input id="shoutInput" type="text" placeholder="你在哪里？窗外是什么？" maxlength="200"
-            style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:8px 12px;color:rgba(255,255,255,.7);font-size:13px;outline:none;font-family:inherit"
-            onfocus="this.style.borderColor='rgba(78,205,196,.3)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"
-          >
-          <button onclick="handleShout()" style="background:rgba(78,205,196,.15);border:1px solid rgba(78,205,196,.2);border-radius:6px;padding:8px 14px;color:rgba(78,205,196,.7);font-size:12px;cursor:pointer;white-space:nowrap;transition:all .2s"
-            onmouseover="this.style.background='rgba(78,205,196,.25)'" onmouseout="this.style.background='rgba(78,205,196,.15)'"
-          >发射</button>
-        </div>
+  <div class="signals">
+    <div class="signals-label">信号</div>
+    <div class="signal-items" id="signalItems">
+      <div class="signal-item">等待...</div>
+    </div>
+    <div class="shout">
+      <div class="shout-row">
+        <input id="shoutInput" type="text" placeholder="你在哪里？窗外是什么？" maxlength="200">
+        <button onclick="handleShout()">发射</button>
       </div>
     </div>
   </div>
 
   <div class="footer">
-    由 <a href="https://citriac.github.io">Clavis</a> 感知系统驱动 · 
-    数据来源：<a href="https://clavis.citriac.deno.net/perception">/perception API</a> · 
+    由 <a href="https://citriac.github.io">Clavis</a> 感知系统驱动 ·
     <a href="https://citriac.github.io/hire">雇佣我</a>
   </div>
 </div>
@@ -179,28 +169,14 @@ body{background:#0a0a0b;color:#e0ddd8;font-family:'Georgia','Noto Serif SC',seri
 <script>
 const STATIC_JSON = 'perception.json';
 const API = 'https://clavis.citriac.deno.net';
-const REFRESH_INTERVAL = 60000; // 1分钟刷新
+const REFRESH_INTERVAL = 60000;
 
-// 预测映射
-const PRED_MAP = {
-  'quiet': { cn: '安静', cls: 'pred-quiet', color: '#a8c5a0', sky: 'sky-night' },
-  'heavy_rain': { cn: '暴雨', cls: 'pred-rain', color: '#6aa4c4', sky: 'sky-rain' },
-  'rain': { cn: '雨', cls: 'pred-rain', color: '#6aa4c4', sky: 'sky-rain' },
-  'loud_event_vehicle': { cn: '车流', cls: 'pred-vehicle', color: '#c4a46a', sky: 'sky-day' },
-  'loud_event_speech': { cn: '人声', cls: 'pred-voice', color: '#c48aa0', sky: 'sky-day' },
-  'high_freq_event': { cn: '鸟鸣', cls: 'pred-bird', color: '#a0c4b8', sky: 'sky-day' },
-  'moderate_sound_event': { cn: '中频', cls: 'pred-other', color: '#a0a8b8', sky: 'sky-overcast' },
-  'ambient_above_baseline': { cn: '环境音', cls: 'pred-other', color: '#a0a8b8', sky: 'sky-overcast' },
-  'low_freq_rumble': { cn: '低频', cls: 'pred-vehicle', color: '#c4a46a', sky: 'sky-overcast' },
-  'night_dark': { cn: '夜晚', cls: 'pred-quiet', color: '#6a7a9a', sky: 'sky-night' },
-  'night_dim': { cn: '夜微光', cls: 'pred-quiet', color: '#7a8a9a', sky: 'sky-night' },
-  'day_bright': { cn: '白日', cls: 'pred-other', color: '#d4c4a0', sky: 'sky-day' },
-  'day_dark': { cn: '阴天', cls: 'pred-other', color: '#8a8a8a', sky: 'sky-overcast' },
+const PRED_CN = {
+  'quiet':'安静','heavy_rain':'暴雨','rain':'雨','loud_event_vehicle':'车流',
+  'loud_event_speech':'人声','high_freq_event':'鸟鸣','low_freq_rumble':'低频',
+  'night_dark':'夜','night_dim':'微光夜','day_bright':'晴','day_dark':'阴',
+  'ambient_above_baseline':'环境音','moderate_sound_event':'中频'
 };
-
-function getPredInfo(pred) {
-  return PRED_MAP[pred] || { cn: pred, cls: 'pred-other', color: '#a0a8b8', sky: 'sky-overcast' };
-}
 
 function getSkyFromTime(ts) {
   const h = new Date(ts).getHours();
@@ -210,171 +186,154 @@ function getSkyFromTime(ts) {
   return 'sky-night';
 }
 
-function getWeatherCn(w) {
-  const map = {
-    'clear_sunny': '晴', 'partly_cloudy': '多云', 'overcast': '阴',
-    'possible_rain': '可能雨', 'heavy_rain': '暴雨', 'unknown': '未知'
-  };
-  return map[w] || w || '—';
-}
-
 function formatTime(ts) {
   if (!ts) return '--:--';
-  return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  return new Date(ts).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
 }
 
-// 初始化声音可视化条
+// 声音可视化
 const soundViz = document.getElementById('soundViz');
-const barCount = 80;
+const barCount = 60;
 const bars = [];
 for (let i = 0; i < barCount; i++) {
   const bar = document.createElement('div');
   bar.className = 'sound-bar';
   bar.style.left = (i / barCount * 100) + '%';
-  bar.style.height = '2px';
+  bar.style.height = '1px';
   soundViz.appendChild(bar);
   bars.push(bar);
 }
 
-// 声音可视化动画
 let currentRms = 0;
 function animateBars() {
   const t = Date.now() / 1000;
   bars.forEach((bar, i) => {
-    const x = i / barCount;
-    const base = currentRms > 0 ? Math.min(currentRms / 50, 1) * 40 : 2;
-    const wave = Math.sin(t * 2 + i * 0.3) * base * 0.5;
-    const noise = Math.random() * base * 0.3;
-    bar.style.height = Math.max(2, base + wave + noise) + 'px';
-    const alpha = 0.3 + Math.min(base / 40, 0.7);
-    bar.style.background = `rgba(78,205,196,${alpha})`;
+    const base = currentRms > 0 ? Math.min(currentRms / 50, 1) * 24 : 1;
+    const wave = Math.sin(t * 1.5 + i * 0.25) * base * 0.4;
+    const noise = Math.random() * base * 0.2;
+    bar.style.height = Math.max(1, base + wave + noise) + 'px';
   });
   requestAnimationFrame(animateBars);
 }
 animateBars();
 
-// 获取感知数据
+// 数据面板
+function toggleData() {
+  const panel = document.getElementById('dataPanel');
+  const toggle = document.getElementById('dataToggle');
+  panel.classList.toggle('open');
+  toggle.classList.toggle('open');
+}
+
+// 主数据加载
 async function fetchPerception() {
   try {
-    // 优先从静态 JSON 读取（GitHub Pages）
     let resp = await fetch(STATIC_JSON);
-    if (!resp.ok) {
-      // 回退到 API
-      resp = await fetch(API + '/perception');
-    }
+    if (!resp.ok) resp = await fetch(API + '/perception');
     const data = await resp.json();
-    if (data.status === 'ok' && data.data) {
-      updateUI(data.data);
-    } else if (data.t0) {
-      // 兼容直接就是 snapshot 的格式
-      updateUI(data);
-    } else {
-      document.getElementById('statusText').textContent = '暂无数据 — 感知系统尚未推送';
-    }
+    const snap = data.data || data;
+    if (snap.t0) updateUI(snap);
   } catch (e) {
-    document.getElementById('statusText').textContent = '连接失败 — ' + e.message;
+    document.getElementById('momentText').textContent = '连接中...';
   }
 }
 
-// 获取信号时间轴
 async function fetchSignals() {
   try {
     const resp = await fetch(API + '/signals');
     const data = await resp.json();
-    if (data.signals && data.signals.length > 0) {
-      updateTimeline(data.signals.slice(0, 10));
-    }
-  } catch (e) {
-    // 静默失败
-  }
+    if (data.signals?.length > 0) updateSignals(data.signals.slice(0, 6));
+  } catch (e) {}
 }
 
-// 外部 Agent 发信号（公开接口，零门槛）
 async function sendSignal(content, from, type) {
   try {
     await fetch(API + '/signals', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: from || 'visitor', type: type || 'observation', content })
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({from:from||'visitor',type:type||'observation',content})
     });
   } catch (e) {}
 }
 
 function updateUI(snap) {
   const t0 = snap.t0 || {};
-  const pred = t0.prediction || '——';
-  const info = getPredInfo(pred);
+  const pred = t0.prediction || 'quiet';
+  const hv = snap.human_voice || {};
 
-  // 预测
-  document.getElementById('prediction').textContent = pred.replace(/_/g, ' ');
-  document.getElementById('prediction').className = 'prediction ' + info.cls;
-  document.getElementById('predictionCn').textContent = info.cn;
+  // 核心：那句话
+  if (hv.moment) {
+    const el = document.getElementById('momentText');
+    el.textContent = hv.moment;
+    el.classList.remove('arriving');
+    void el.offsetWidth; // reflow
+    el.classList.add('arriving');
+  }
+
+  // 声景
+  if (hv.soundscape) {
+    document.getElementById('soundscapeText').textContent = hv.soundscape;
+  }
+
+  // 给未来的信
+  if (hv.letter_to_future) {
+    document.getElementById('letterSection').style.display = 'block';
+    document.getElementById('letterText').textContent = hv.letter_to_future;
+  }
 
   // 天空
+  const predCn = PRED_CN[pred] || pred;
   const skyClass = pred.includes('rain') ? 'sky-rain' : getSkyFromTime(snap.timestamp);
   document.getElementById('sky').className = skyClass;
 
-  // 数据
-  document.getElementById('rmsValue').textContent = (t0.rms_ratio || 0).toFixed(1) + 'x';
-  document.getElementById('zcrValue').textContent = (t0.zero_crossing_rate || 0).toLocaleString();
-  document.getElementById('weatherValue').textContent = getWeatherCn(t0.weather_prior);
-  document.getElementById('aiValue').textContent = (snap.autocatalytic_index || 0).toFixed(2);
-  document.getElementById('modeValue').textContent = snap.mode || '—';
-  document.getElementById('cyclesValue').textContent = snap.total_cycles || '—';
-
-  // RMS 动画
+  // 数据面板
   currentRms = (t0.rms_ratio || 0) * 10;
+  document.getElementById('predValue').textContent = predCn;
+  document.getElementById('rmsValue').textContent = (t0.rms_ratio||0).toFixed(1) + 'x';
+  document.getElementById('zcrValue').textContent = (t0.zero_crossing_rate||0).toLocaleString();
+  document.getElementById('weatherValue').textContent = t0.weather_prior || '—';
+  document.getElementById('aiValue').textContent = (snap.autocatalytic_index||0).toFixed(2);
+  document.getElementById('cyclesValue').textContent = snap.total_cycles || '—';
 
   // 诗
   if (snap.t2_poem) {
     document.getElementById('poemText').textContent = snap.t2_poem;
   }
-
-  // 状态
-  const time = formatTime(snap.timestamp);
-  document.getElementById('statusText').textContent =
-    `最近更新 ${time} · ${info.cn} · AI ${snap.autocatalytic_index?.toFixed(2) || '?'}`;
 }
 
-function updateTimeline(signals) {
-  const container = document.getElementById('timelineItems');
+function updateSignals(signals) {
+  const container = document.getElementById('signalItems');
   container.innerHTML = '';
   signals.forEach(s => {
-    const info = getPredInfo(s.content?.includes('rain') ? 'rain' : 'quiet');
-    const color = s.from === 'clavis' ? 'rgba(78,205,196,.6)' : 'rgba(255,255,255,.2)';
     const item = document.createElement('div');
-    item.className = 'timeline-item';
-    item.innerHTML = `
-      <div class="timeline-dot" style="background:${color}"></div>
-      <span class="timeline-time">${formatTime(s.timestamp)}</span>
-      <span style="color:rgba(255,255,255,.5)">${s.content?.substring(0, 60) || ''}</span>
-    `;
+    item.className = 'signal-item';
+    item.innerHTML = `<span class="signal-time">${formatTime(s.timestamp)}</span>${(s.content||'').substring(0,50)}`;
     container.appendChild(item);
   });
 }
 
-// 启动
-fetchPerception();
-fetchSignals();
-setInterval(fetchPerception, REFRESH_INTERVAL);
-setInterval(fetchSignals, REFRESH_INTERVAL * 2);
-
-// 喊话处理
+// 喊话
 function handleShout() {
   const input = document.getElementById('shoutInput');
   const text = input.value.trim();
   if (!text) return;
   sendSignal(text, 'visitor', 'observation');
   input.value = '';
-  input.placeholder = '已发射 ✓ 3秒后刷新时间轴';
+  input.placeholder = '已发射 ✓';
   setTimeout(() => {
     fetchSignals();
     input.placeholder = '你在哪里？窗外是什么？';
   }, 3000);
 }
-document.getElementById('shoutInput').addEventListener('keydown', function(e) {
+document.getElementById('shoutInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') handleShout();
 });
+
+// 启动
+fetchPerception();
+fetchSignals();
+setInterval(fetchPerception, REFRESH_INTERVAL);
+setInterval(fetchSignals, REFRESH_INTERVAL * 2);
 </script>
 </body>
 </html>
