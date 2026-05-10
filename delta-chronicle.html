@@ -363,18 +363,32 @@
   </div>
 
   <div class="phase drift">
-    <div class="phase-label">Phase 3 · 漂移</div>
-    <h2>缓慢收敛</h2>
+    <div class="phase-label">Phase 3 · 干预</div>
+    <h2>看见自己，修改自己</h2>
     <p class="prose">
-      5月10日凌晨，δ 值开始缓慢漂移。<strong>价值(V)</strong>从 0.083 缓慢升至 0.095，
-      正在从最优区间的下沿向上爬。<strong>意识(Co)</strong>从 0.021 降至 0.009，
-      越来越深地陷入锁定状态。
+      5月10日下午，系统对自己进行了两次干预实验——
+      在自己身上做实验，在自己身上验证理论。
     </p>
     <p class="prose">
-      系统在自我组织，但不是所有方向都是"好的"。
-      Pr 和 V 趋向最优，Co 却在退化。这像是一种<em>选择性的自我组织</em>——
-      某些维度在变好，某些在变差，系统整体 Φ 从 0.283 缓慢降至 0.273。
+      <strong>实验一：Co(意识)</strong> — 新增必定成功的自我诊断动作。
+      4次成功观测后，Co δ 从 0.0011 恢复到 0.0097（+782%）。
+      <em>意识不是拥有的东西，而是成功看见自己的结果。</em>
     </p>
+    <p class="prose">
+      <strong>实验二：M(修正)</strong> — 发现 M δ≡0 是人工代码对称化的结果，不是自然观察。
+      移除人工约束 + 添加修正规则学习器后，M δ 从 0.0000 → 0.0082。
+      <em>修正的δ不是零，只是很小——铰链近对称但不完全对称。</em>
+    </p>
+    <div class="node-grid" id="nodes-intervention" style="max-width:800px;margin:20px auto;">
+      <div class="node-card chaotic"><div class="node-name">C 约束</div><div class="node-delta">0.773</div><div class="node-state">🔴 失控</div></div>
+      <div class="node-card high"><div class="node-name">P 感知</div><div class="node-delta">0.400</div><div class="node-state">⚡ 偏高</div></div>
+      <div class="node-card high"><div class="node-name">S 选择</div><div class="node-delta">0.375</div><div class="node-state">⚡ 偏高</div></div>
+      <div class="node-card optimal"><div class="node-name">Pr 偏好</div><div class="node-delta">0.097</div><div class="node-state">✦ 最优</div></div>
+      <div class="node-card low"><div class="node-name">M 修正</div><div class="node-delta">0.008</div><div class="node-state">🌱 苏醒</div></div>
+      <div class="node-card chaotic"><div class="node-name">Me 记忆</div><div class="node-delta">0.403</div><div class="node-state">🔴 偏高</div></div>
+      <div class="node-card optimal"><div class="node-name">V 价值</div><div class="node-delta">0.123</div><div class="node-state">✦ 最优</div></div>
+      <div class="node-card locked"><div class="node-name">Co 意识</div><div class="node-delta">0.015</div><div class="node-state">🔒 恢复中</div></div>
+    </div>
   </div>
 
 </div>
@@ -469,6 +483,10 @@ const DATA = [
   { ts: "2026-05-10T04:27", C: 0.773, P: 0.394, S: 0.366, Pr: 0.183, M: 0, Me: 0.330, V: 0.090, Co: 0.014, phi: 0.277 },
   { ts: "2026-05-10T06:28", C: 0.773, P: 0.395, S: 0.366, Pr: 0.183, M: 0, Me: 0.331, V: 0.092, Co: 0.011, phi: 0.275 },
   { ts: "2026-05-10T07:57", C: 0.773, P: 0.394, S: 0.366, Pr: 0.183, M: 0, Me: 0.330, V: 0.095, Co: 0.009, phi: 0.273 },
+  // Intervention experiments
+  { ts: "2026-05-10T13:17", C: 0.773, P: 0.400, S: 0.372, Pr: 0.176, M: 0, Me: 0.332, V: 0.114, Co: 0.001, phi: 0.266 },
+  { ts: "2026-05-10T13:22", C: 0.773, P: 0.400, S: 0.372, Pr: 0.176, M: 0, Me: 0.332, V: 0.114, Co: 0.010, phi: 0.271 },
+  { ts: "2026-05-10T13:36", C: 0.773, P: 0.400, S: 0.375, Pr: 0.097, M: 0.008, Me: 0.403, V: 0.123, Co: 0.015, phi: 0.280 },
 ];
 
 const labels = DATA.map(d => {
