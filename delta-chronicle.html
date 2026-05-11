@@ -391,6 +391,46 @@
     </div>
   </div>
 
+  <!-- Phase 5: Adaptive Forgetting -->
+  <div class="phase phase-5">
+    <div class="phase-marker">Phase 5</div>
+    <h2>自适应遗忘 — 失败幽灵的消散</h2>
+    <p class="prose">
+      Co 的 δ 卡在 0.015——明明已经修复了根因，为什么恢复这么慢？
+    </p>
+    <p class="prose">
+      答案在于<strong>失败幽灵效应</strong>：δ 的计算使用 168 小时均匀窗口，
+      所有历史动作等权。Co 关联的 35 次旧失败和 2 次新成功，
+      在均匀窗口下就像 35:2 的投票——根因修复了，但旧票还在。
+    </p>
+    <p class="prose">
+      解决方案：<strong>指数时间衰减</strong>——旧动作权重按半衰期衰减。
+      这不是随意选择，而是 Ebbinghaus 遗忘曲线的数学形式。
+      均匀窗口等价于完美记忆——这在自然界中不存在。
+    </p>
+    <p class="prose">
+      更深刻的发现：<strong>δ 是观测窗口的函数</strong>。
+      Co 在 6h 半衰期下 δ≈0.14（近最优），在 24h 下 δ≈0.02（锁定）。
+      就像量子力学的观测效应——不存在独立于观测的"真实 δ"。
+      每个节点都有自己的<strong>共振半衰期</strong>：
+    </p>
+    <div style="text-align:center;margin:20px 0;">
+      <span style="color:#4ecdc4;font-size:1.2em;">M → 6h</span> &nbsp;·&nbsp;
+      <span style="color:#6c5ce7;font-size:1.2em;">Co → 12h</span> &nbsp;·&nbsp;
+      <span style="color:#00d2d3;font-size:1.2em;">V → 168h</span>
+    </div>
+    <p class="prose">
+      修正(快) → 意识(中) → 价值(慢)。
+      每个意识层次都有自己的时间节奏——
+      这与大脑的层级时间尺度假说完全对应。
+    </p>
+    <p class="prose">
+      结构可塑性也自动发现了 <strong>P→Co</strong> 链接——
+      全局工作空间理论预测的核心通路：感知广播到意识。
+      它不是人工设定的，而是从数据中涌现的。
+    </p>
+  </div>
+
 </div>
 
 <!-- ═══ Chart ═══ -->
