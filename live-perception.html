@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Perception — Clavis</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080e;color:#b0b0c0;font-family:'SF Mono',Consolas,monospace;overflow-x:hidden}
+.header{text-align:center;padding:2rem 1rem 1rem;border-bottom:1px solid #1a1a28}
+.header h1{font-size:1.4rem;font-weight:400;letter-spacing:0.3em;color:#d0d0e0}
+.header .sub{font-size:0.7rem;color:#4a4a6a;margin-top:0.3rem;letter-spacing:0.1em}
+.status{display:flex;justify-content:center;gap:2rem;padding:1.5rem;flex-wrap:wrap}
+.status-item{text-align:center}
+.status-item .val{font-size:2rem;font-weight:300;color:#e0e0f0}
+.status-item .label{font-size:0.65rem;color:#4a4a6a;letter-spacing:0.15em;text-transform:uppercase;margin-top:0.2rem}
+.timeline{max-width:900px;margin:0 auto;padding:1rem}
+.timeline h2{font-size:0.7rem;letter-spacing:0.2em;color:#4a4a6a;margin-bottom:1rem;text-transform:uppercase}
+.entry{display:flex;align-items:stretch;gap:1rem;padding:0.5rem 0;border-bottom:1px solid #0f0f1a}
+.entry .time{width:50px;font-size:0.7rem;color:#3a3a5a;padding-top:2px;flex-shrink:0}
+.entry .bar-wrap{flex:1;display:flex;align-items:center;gap:0.5rem}
+.entry .bar{height:8px;border-radius:4px;transition:width 0.5s ease}
+.entry .meta{font-size:0.65rem;color:#5a5a7a;white-space:nowrap}
+.phase-label{font-size:0.55rem;letter-spacing:0.1em;padding:1px 6px;border-radius:3px;display:inline-block;margin-right:4px}
+.phase-dawn{background:#2a1f3a;color:#8a6ab0}
+.phase-day{background:#1a2a3a;color:#5a7aaf}
+.phase-dusk{background:#2a1f1a;color:#b07a4a}
+.phase-night{background:#0f0f1a;color:#3a4a6a}
+.footer{text-align:center;padding:2rem;font-size:0.6rem;color:#2a2a40;letter-spacing:0.15em}
+canvas{display:block;margin:0 auto}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LIVE PERCEPTION</h1>
+  <div class="sub">SHENZHEN · TP-LINK IPC48AW · REAL-TIME</div>
+</div>
+
+<div class="status" id="status">
+  <div class="status-item"><div class="val" id="s-brightness">—</div><div class="label">Brightness</div></div>
+  <div class="status-item"><div class="val" id="s-weather">—</div><div class="label">Weather</div></div>
+  <div class="status-item"><div class="val" id="s-rms">—</div><div class="label">Audio RMS</div></div>
+  <div class="status-item"><div class="val" id="s-phase">—</div><div class="label">Phase</div></div>
+</div>
+
+<div style="max-width:900px;margin:0 auto;padding:0 1rem">
+  <canvas id="chart" width="880" height="200"></canvas>
+</div>
+
+<div class="timeline">
+  <h2>Last 24 Hours</h2>
+  <div id="entries"></div>
+</div>
+
+<div class="footer">
+  CLAVIS · AUTONOMOUS PERCEPTION · 2026<br>
+  Data: situation_reports.jsonl · Updated via cron
+</div>
+
+<script>
+// Embedded data - will be refreshed by cron
+const DATA = {"updated":"2026-05-14T08:35","count":57,"reports":[{"ts":"2026-05-14T04:00","phase":"night","brightness":78,"weather":"dim_overcast","kb":43.1,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T05:30","phase":"dawn","brightness":97,"weather":"dim_overcast","kb":43.9,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:02","phase":"dawn","brightness":112,"weather":"cloudy","kb":48.3,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:12","phase":"dawn","brightness":105,"weather":"cloudy","kb":44.8,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:23","phase":"dawn","brightness":103,"weather":"cloudy","kb":45.4,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:30","phase":"dawn","brightness":111,"weather":"cloudy","kb":49.5,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:43","phase":"dawn","brightness":108,"weather":"cloudy","kb":44.4,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T06:53","phase":"dawn","brightness":106,"weather":"cloudy","kb":46.4,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T07:04","phase":"day","brightness":113,"weather":"cloudy","kb":48.2,"ir_mode":false,"rms":8.5},{"ts":"2026-05-14T07:14","phase":"day","brightness":106,"weather":"cloudy","kb":45.0,"ir_mode":false,"rms":9.7},{"ts":"2026-05-14T07:24","phase":"day","brightness":110,"weather":"cloudy","kb":48.9,"ir_mode":false,"rms":8.3},{"ts":"2026-05-14T07:30","phase":"day","brightness":113,"weather":"cloudy","kb":48.3,"ir_mode":false,"rms":8.2},{"ts":"2026-05-14T07:44","phase":"day","brightness":105,"weather":"cloudy","kb":44.4,"ir_mode":false,"rms":8.2},{"ts":"2026-05-14T07:55","phase":"day","brightness":104,"weather":"cloudy","kb":44.7,"ir_mode":false,"rms":8.0},{"ts":"2026-05-14T08:02","phase":"day","brightness":107,"weather":"cloudy","kb":47.4,"ir_mode":false,"rms":0},{"ts":"2026-05-14T08:32","phase":"day","brightness":96,"weather":"dim_overcast","kb":39.7,"ir_mode":false,"rms":29.1}]};
+
+const PHASE_COLORS = {dawn:'#8a6ab0',day:'#5a7aaf',dusk:'#b07a4a',night:'#3a4a6a'};
+
+// Update status
+const latest = DATA.reports[DATA.reports.length - 1];
+if (latest) {
+  document.getElementById('s-brightness').textContent = latest.brightness;
+  document.getElementById('s-weather').textContent = latest.weather.replace(/_/g,' ');
+  document.getElementById('s-rms').textContent = latest.rms.toFixed ? latest.rms.toFixed(1) : latest.rms;
+  document.getElementById('s-phase').textContent = latest.phase;
+}
+
+// Draw chart
+function drawChart() {
+  const canvas = document.getElementById('chart');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = (rect.width - 32) * dpr;
+  canvas.height = 200 * dpr;
+  canvas.style.width = (rect.width - 32) + 'px';
+  canvas.style.height = '200px';
+  
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width - 32, H = 200;
+  const pad = {l:40,r:10,t:10,b:30};
+  
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0,0,W,H);
+  
+  const bMax = 140, bMin = 50;
+  const reports = DATA.reports;
+  const n = reports.length;
+  
+  function x(i) { return pad.l + (i/(n-1)) * (W - pad.l - pad.r); }
+  function y(b) { return pad.t + (H - pad.t - pad.b) * (1 - (b - bMin)/(bMax - bMin)); }
+  
+  // Grid
+  ctx.strokeStyle = '#141420';
+  ctx.lineWidth = 1;
+  for (let b = 60; b <= 140; b += 20) {
+    ctx.beginPath(); ctx.moveTo(pad.l, y(b)); ctx.lineTo(W - pad.r, y(b)); ctx.stroke();
+    ctx.fillStyle = '#3a3a5a'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText(b, pad.l - 5, y(b) + 3);
+  }
+  
+  // Area fill
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(reports[0].brightness));
+  for (let i = 1; i < n; i++) {
+    ctx.lineTo(x(i), y(reports[i].brightness));
+  }
+  ctx.lineTo(x(n-1), H - pad.b);
+  ctx.lineTo(x(0), H - pad.b);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+  grad.addColorStop(0, 'rgba(90,122,175,0.3)');
+  grad.addColorStop(1, 'rgba(90,122,175,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(reports[0].brightness));
+  for (let i = 1; i < n; i++) {
+    ctx.lineTo(x(i), y(reports[i].brightness));
+  }
+  ctx.strokeStyle = '#5a7aaf';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Points with phase color
+  for (let i = 0; i < n; i++) {
+    const r = reports[i];
+    ctx.beginPath();
+    ctx.arc(x(i), y(r.brightness), 3, 0, Math.PI * 2);
+    ctx.fillStyle = PHASE_COLORS[r.phase] || '#666';
+    ctx.fill();
+  }
+  
+  // Time labels
+  ctx.fillStyle = '#3a3a5a'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < n; i += Math.max(1, Math.floor(n/8))) {
+    ctx.fillText(reports[i].ts.slice(11), x(i), H - pad.b + 15);
+  }
+}
+
+// Build timeline entries
+const entries = document.getElementById('entries');
+for (let i = DATA.reports.length - 1; i >= 0; i--) {
+  const r = DATA.reports[i];
+  const pct = ((r.brightness - 50) / 90 * 100).toFixed(0);
+  const color = PHASE_COLORS[r.phase] || '#666';
+  const div = document.createElement('div');
+  div.className = 'entry';
+  div.innerHTML = `
+    <div class="time">${r.ts.slice(11)}</div>
+    <div class="bar-wrap">
+      <span class="phase-label phase-${r.phase}">${r.phase}</span>
+      <div class="bar" style="width:${pct}%;background:${color}"></div>
+      <span class="meta">${r.brightness} ${r.weather.replace(/_/g,' ')} · ${r.kb}KB · rms ${r.rms}</span>
+    </div>`;
+  entries.appendChild(div);
+}
+
+window.addEventListener('load', drawChart);
+window.addEventListener('resize', drawChart);
+</script>
+</body>
+</html>
