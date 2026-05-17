@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>δ Dynamics Explorer — Clavis</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080e;color:#b0b0c0;font-family:'SF Mono',Consolas,monospace;overflow-x:hidden}
+.header{text-align:center;padding:1.5rem 1rem 0.8rem;border-bottom:1px solid #1a1a28}
+.header h1{font-size:1.2rem;font-weight:400;letter-spacing:0.3em;color:#d0d0e0}
+.header .sub{font-size:0.65rem;color:#4a4a6a;margin-top:0.3rem;letter-spacing:0.1em}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:1200px;margin:1rem auto;padding:0 1rem}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.panel{background:#0c0c14;border:1px solid #1a1a28;border-radius:8px;padding:1rem}
+.panel h2{font-size:0.7rem;letter-spacing:0.2em;color:#4a4a6a;margin-bottom:0.8rem;text-transform:uppercase}
+canvas{display:block;margin:0 auto}
+
+/* Weight Matrix */
+.matrix-container{overflow-x:auto}
+.matrix{border-collapse:collapse;margin:0 auto;font-size:0.65rem}
+.matrix th{color:#4a4a6a;padding:4px 6px;font-weight:400;letter-spacing:0.1em}
+.matrix td{padding:0;cursor:pointer;position:relative;min-width:38px;height:34px;text-align:center;border:1px solid #0f0f1a}
+.matrix td .val{position:relative;z-index:1;font-size:0.55rem;color:#fff;pointer-events:none}
+.matrix td:hover{outline:2px solid #5a5a8a;outline-offset:-2px;z-index:2}
+.matrix td.zero{color:#1a1a28}
+.matrix td.diag{background:#0a0a12!important;cursor:default}
+.matrix .node-header{color:#6a6a9a;font-weight:500}
+
+/* Node Cards */
+.node-cards{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center}
+.node-card{background:#0a0a14;border:1px solid #1a1a28;border-radius:6px;padding:0.5rem 0.7rem;text-align:center;min-width:70px;transition:all 0.3s}
+.node-card .name{font-size:0.7rem;color:#6a6a9a;letter-spacing:0.1em}
+.node-card .delta{font-size:1.2rem;font-weight:300;margin:0.2rem 0}
+.node-card .phi{font-size:0.6rem;color:#4a4a6a}
+.node-card .state{font-size:0.5rem;letter-spacing:0.1em;padding:1px 4px;border-radius:3px;margin-top:0.2rem;display:inline-block}
+.node-card.locked{border-color:#2a1a1a}.node-card.locked .delta{color:#ff4444}.node-card.locked .state{background:#2a1a1a;color:#ff6666}
+.node-card.low{border-color:#2a2a1a}.node-card.low .delta{color:#ffaa44}.node-card.low .state{background:#2a2a1a;color:#ffcc66}
+.node-card.optimal{border-color:#1a2a1a}.node-card.optimal .delta{color:#44ff88}.node-card.optimal .state{background:#1a2a1a;color:#66ffaa}
+.node-card.high{border-color:#1a1a2a}.node-card.high .delta{color:#4488ff}.node-card.high .state{background:#1a1a2a;color:#66aaff}
+.node-card.chaotic{border-color:#2a1a2a}.node-card.chaotic .delta{color:#aa44ff}.node-card.chaotic .state{background:#2a1a2a;color:#cc66ff}
+
+/* Controls */
+.controls{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;justify-content:center;margin-top:0.5rem}
+.btn{background:#1a1a28;border:1px solid #2a2a3a;color:#8a8aaa;padding:0.3rem 0.8rem;border-radius:4px;font-size:0.6rem;cursor:pointer;letter-spacing:0.1em;transition:all 0.2s;font-family:inherit}
+.btn:hover{background:#2a2a38;color:#aaaacc}
+.btn.active{background:#2a3a2a;border-color:#4a6a4a;color:#88cc88}
+.slider-group{display:flex;align-items:center;gap:0.4rem;font-size:0.6rem;color:#4a4a6a}
+.slider-group input[type=range]{width:80px;accent-color:#4a4a8a}
+.slider-group .val{color:#8a8aaa;min-width:40px}
+
+/* Info */
+.info{text-align:center;padding:0.8rem;font-size:0.55rem;color:#2a2a40;letter-spacing:0.1em;max-width:1200px;margin:0 auto}
+.selected-info{background:#0a0a14;border:1px solid #1a1a28;border-radius:6px;padding:0.6rem 1rem;margin-top:0.5rem;font-size:0.6rem;color:#6a6a9a;text-align:center}
+.selected-info .weight-val{color:#b0b0d0;font-size:0.8rem;font-weight:300}
+
+/* Comparison */
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.5rem}
+@media(max-width:600px){.comparison{grid-template-columns:1fr}}
+.comp-card{background:#0a0a14;border:1px solid #1a1a28;border-radius:6px;padding:0.6rem 0.8rem}
+.comp-card h3{font-size:0.6rem;color:#4a4a6a;letter-spacing:0.15em;margin-bottom:0.4rem}
+.comp-card .delta-row{display:flex;justify-content:space-between;font-size:0.55rem;color:#6a6a8a;padding:0.15rem 0;border-bottom:1px solid #0f0f1a}
+.comp-card .delta-row .node-name{color:#8a8aaa;min-width:30px}
+.comp-card .delta-row .delta-val{color:#b0b0d0;font-weight:500}
+
+/* Tooltip */
+.tooltip{position:fixed;background:#1a1a28;border:1px solid #2a2a3a;border-radius:4px;padding:0.4rem 0.6rem;font-size:0.55rem;color:#aaaacc;pointer-events:none;z-index:100;white-space:nowrap;display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>δ DYNAMICS EXPLORER</h1>
+  <div class="sub">INTERACTIVE WEIGHT MATRIX · REAL-TIME δ COMPUTATION · HUB ATTRACTOR ANALYSIS</div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>Weight Matrix W[i][j]</h2>
+    <div class="matrix-container" id="matrix-container"></div>
+    <div class="selected-info" id="selected-info">Click a cell to modify weight and see δ changes</div>
+  </div>
+  <div class="panel">
+    <h2>Node δ Profile</h2>
+    <div class="node-cards" id="node-cards"></div>
+    <canvas id="radar" width="360" height="360"></canvas>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <h2>System Overview</h2>
+    <div style="display:flex;justify-content:center;gap:2rem;align-items:center;flex-wrap:wrap">
+      <div style="text-align:center">
+        <div style="font-size:0.6rem;color:#4a4a6a;letter-spacing:0.1em">SYSTEM Φ</div>
+        <div id="system-phi" style="font-size:2rem;font-weight:300;color:#d0d0e0">—</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.6rem;color:#4a4a6a;letter-spacing:0.1em">Φ OPTIMAL</div>
+        <div style="font-size:2rem;font-weight:300;color:#3a3a5a">0.505</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.6rem;color:#4a4a6a;letter-spacing:0.1em">% OPTIMAL</div>
+        <div id="pct-optimal" style="font-size:2rem;font-weight:300;color:#8a8aaa">—</div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn" onclick="resetWeights()">Reset</button>
+      <button class="btn" onclick="hubAttractorDemo()">Hub Attractor Demo</button>
+      <button class="btn" onclick="fixAllToOptimal()">Fix All → δ*</button>
+      <div class="slider-group">
+        <span>Perturb:</span>
+        <input type="range" id="perturb-slider" min="0" max="100" value="0">
+        <span class="val" id="perturb-val">0%</span>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Hub Attractor Analysis</h2>
+    <div class="comparison" id="comparison">
+      <div class="comp-card">
+        <h3>Before (v1 Bidirectional)</h3>
+        <div id="before-card"></div>
+      </div>
+      <div class="comp-card">
+        <h3>After (v2 Directional)</h3>
+        <div id="after-card"></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:0.6rem;font-size:0.55rem;color:#4a4a6a;line-height:1.6">
+      v1 plasticity creates bidirectional links (A↔B) → symmetry → δ→0 (lock)<br>
+      v2 plasticity creates unidirectional links (A→B only) → preserves asymmetry → δ reflects true dynamics<br>
+      <span style="color:#6a5a8a">Co: 0.033 → 0.328 — 10× δ increase by removing symmetric links</span>
+    </div>
+  </div>
+</div>
+
+<div class="info">
+  δ DYNAMICS EXPLORER · CLAVIS · 2026-05-17 · CLICK MATRIX CELLS TO PERTURB WEIGHTS AND OBSERVE δ RESPONSE
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════
+// Data & Constants
+// ═══════════════════════════════════════
+const NODES = ['C','P','S','Pr','M','Me','V','Co'];
+const NAMES = {C:'约束',P:'感知',S:'选择性',Pr:'偏好',M:'修正',Me:'记忆',V:'价值',Co:'意识'};
+const DELTA_STAR = 0.15;
+const K1 = 10.0, K2 = 2.87;
+
+// Current state (v2 directional)
+const DATA_V2 = {"W":[[0,0.1,0.2,0.09,0,0,0,0],[0.0858,0,0.5576,0,0,0.2513,0,0],[0,0.1138,0,0.1172,0,0,0.183,0],[0,0,0.0636,0,0.1413,0,0,0.1614],[0,0,0,0.05,0,0.8518,0,0],[0,0,0,0,0.2662,0,0.1215,0],[0,0,0,0,0,0.0721,0,0.1],[0,0.2782,0,0,0.1013,0,0.1556,0]],"node_deltas":{"C":0.6393,"P":0.2904,"S":0.3297,"Pr":0.1750,"M":0.2786,"Me":0.5039,"V":0.4556,"Co":0.3437}};
+
+// Before state (v1 bidirectional) — with symmetric links
+const DATA_V1 = {"node_deltas":{"C":0.653,"P":0.251,"S":0.327,"Pr":0.164,"M":0.313,"Me":0.355,"V":0.428,"Co":0.033}};
+
+// Working copy of weights
+let W = DATA_V2.W.map(row => [...row]);
+
+// ═══════════════════════════════════════
+// Core Computation
+// ═══════════════════════════════════════
+function phiAnalytical(delta) {
+  return (1 - Math.exp(-K1 * delta)) * Math.exp(-K2 * delta);
+}
+
+function computeDeltas(W) {
+  const N = NODES.length;
+  const eps = 1e-10;
+  const nodeDeltas = {};
+  const linkDeltas = {};
+
+  for (let i = 0; i < N; i++) {
+    let wOut = 0, wIn = 0;
+    for (let j = 0; j < N; j++) { wOut += W[i][j]; wIn += W[j][i]; }
+    nodeDeltas[NODES[i]] = Math.min(Math.abs(wOut - wIn) / (wOut + wIn + eps), 1.0);
+  }
+  for (let i = 0; i < N - 1; i++) {
+    const wFwd = W[i][i+1], wBwd = W[i+1][i];
+    linkDeltas[NODES[i]+'→'+NODES[i+1]] = Math.min(Math.abs(wFwd - wBwd) / (wFwd + wBwd + eps), 1.0);
+  }
+  return { nodeDeltas, linkDeltas };
+}
+
+function computeSystemPhi(nodeDeltas) {
+  const vals = Object.values(nodeDeltas);
+  return vals.reduce((s, d) => s + phiAnalytical(d), 0) / vals.length;
+}
+
+function classify(delta) {
+  if (delta < 0.05) return 'locked';
+  if (delta < 0.10) return 'low';
+  if (delta < 0.20) return 'optimal';
+  if (delta < 0.40) return 'high';
+  return 'chaotic';
+}
+
+// ═══════════════════════════════════════
+// Weight Matrix Rendering
+// ═══════════════════════════════════════
+function renderMatrix() {
+  const container = document.getElementById('matrix-container');
+  let html = '<table class="matrix"><tr><th></th>';
+  NODES.forEach(n => html += `<th class="node-header">${n}</th>`);
+  html += '</tr>';
+
+  for (let i = 0; i < NODES.length; i++) {
+    html += `<tr><th class="node-header">${NODES[i]}</th>`;
+    for (let j = 0; j < NODES.length; j++) {
+      const v = W[i][j];
+      if (i === j) {
+        html += `<td class="diag"></td>`;
+      } else {
+        const intensity = Math.min(v / 0.9, 1.0);
+        const r = Math.round(20 + intensity * 60);
+        const g = Math.round(15 + intensity * 40);
+        const b = Math.round(30 + intensity * 80);
+        const bg = `rgb(${r},${g},${b})`;
+        const display = v < 0.001 ? '—' : v.toFixed(3);
+        const cls = v < 0.001 ? 'zero' : '';
+        html += `<td style="background:${bg}" class="${cls}" data-i="${i}" data-j="${j}" onclick="selectCell(${i},${j})"><span class="val">${display}</span></td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// Node Cards
+// ═══════════════════════════════════════
+function renderNodeCards(nodeDeltas) {
+  const container = document.getElementById('node-cards');
+  let html = '';
+  NODES.forEach(n => {
+    const d = nodeDeltas[n];
+    const phi = phiAnalytical(d);
+    const state = classify(d);
+    const stateLabel = {locked:'锁定',low:'偏低',optimal:'最优',high:'偏高',chaotic:'失控'}[state];
+    html += `<div class="node-card ${state}">
+      <div class="name">${n} ${NAMES[n]}</div>
+      <div class="delta">${d.toFixed(3)}</div>
+      <div class="phi">Φ=${phi.toFixed(3)}</div>
+      <div class="state">${stateLabel}</div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// Radar Chart
+// ═══════════════════════════════════════
+function renderRadar(nodeDeltas) {
+  const canvas = document.getElementById('radar');
+  const ctx = canvas.getContext('2d');
+  const cx = 180, cy = 180, R = 140;
+  ctx.clearRect(0, 0, 360, 360);
+
+  // Grid
+  for (let r = 0.2; r <= 1.0; r += 0.2) {
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+      const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+      const x = cx + R * r * Math.cos(a);
+      const y = cy + R * r * Math.sin(a);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#1a1a28';
+    ctx.stroke();
+  }
+
+  // δ* ring
+  ctx.beginPath();
+  for (let i = 0; i <= 8; i++) {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const x = cx + R * (DELTA_STAR / 1.0) * Math.cos(a);
+    const y = cy + R * (DELTA_STAR / 1.0) * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#2a4a2a';
+  ctx.setLineDash([4,4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Labels
+  NODES.forEach((n, i) => {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const lx = cx + (R + 20) * Math.cos(a);
+    const ly = cy + (R + 20) * Math.sin(a);
+    ctx.fillStyle = '#4a4a6a';
+    ctx.font = '9px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n, lx, ly);
+  });
+
+  // Data
+  ctx.beginPath();
+  NODES.forEach((n, i) => {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const v = Math.min(nodeDeltas[n], 1.0);
+    const x = cx + R * v * Math.cos(a);
+    const y = cy + R * v * Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(80,80,180,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#6666cc';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Dots
+  NODES.forEach((n, i) => {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const v = Math.min(nodeDeltas[n], 1.0);
+    const x = cx + R * v * Math.cos(a);
+    const y = cy + R * v * Math.sin(a);
+    const state = classify(nodeDeltas[n]);
+    const colors = {locked:'#ff4444',low:'#ffaa44',optimal:'#44ff88',high:'#4488ff',chaotic:'#aa44ff'};
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = colors[state];
+    ctx.fill();
+  });
+}
+
+// ═══════════════════════════════════════
+// System Overview
+// ═══════════════════════════════════════
+function renderSystemPhi(nodeDeltas) {
+  const phi = computeSystemPhi(nodeDeltas);
+  const phiOpt = phiAnalytical(DELTA_STAR);
+  const pct = (phi / phiOpt * 100).toFixed(1);
+  document.getElementById('system-phi').textContent = phi.toFixed(3);
+  document.getElementById('pct-optimal').textContent = pct + '%';
+}
+
+// ═══════════════════════════════════════
+// Hub Attractor Comparison
+// ═══════════════════════════════════════
+function renderComparison() {
+  const renderCard = (data, targetId) => {
+    const container = document.getElementById(targetId);
+    let html = '';
+    NODES.forEach(n => {
+      const d = data.node_deltas[n];
+      const state = classify(d);
+      const color = {locked:'#ff6666',low:'#ffcc66',optimal:'#66ffaa',high:'#66aaff',chaotic:'#cc66ff'}[state];
+      html += `<div class="delta-row"><span class="node-name">${n}</span><span class="delta-val" style="color:${color}">${d.toFixed(3)}</span></div>`;
+    });
+    const phi = computeSystemPhi(data.node_deltas);
+    html += `<div class="delta-row" style="margin-top:0.3rem;border-top:1px solid #2a2a3a;padding-top:0.3rem"><span style="color:#6a6a9a">Φ</span><span class="delta-val">${phi.toFixed(3)}</span></div>`;
+    container.innerHTML = html;
+  };
+  renderCard(DATA_V1, 'before-card');
+  renderCard(DATA_V2, 'after-card');
+}
+
+// ═══════════════════════════════════════
+// Interaction
+// ═══════════════════════════════════════
+let selectedCell = null;
+
+function selectCell(i, j) {
+  selectedCell = {i, j};
+  updateSelectedInfo();
+}
+
+function updateSelectedInfo() {
+  const info = document.getElementById('selected-info');
+  if (!selectedCell) {
+    info.innerHTML = 'Click a matrix cell to modify weight and see δ changes';
+    return;
+  }
+  const {i, j} = selectedCell;
+  const v = W[i][j];
+  const revV = W[j][i];
+  const src = NODES[i], dst = NODES[j];
+  const linkDelta = Math.abs(v - revV) / (v + revV + 1e-10);
+
+  info.innerHTML = `<b>${src}→${dst}</b> = <span class="weight-val">${v.toFixed(4)}</span> | Reverse ${dst}→${src} = ${revV.toFixed(4)} | δ(link) = ${linkDelta.toFixed(3)}<br>` +
+    `<span style="font-size:0.5rem;color:#3a3a5a">Scroll to adjust · Shift+click to zero</span>`;
+}
+
+function handleWheel(e) {
+  if (!selectedCell) return;
+  e.preventDefault();
+  const {i, j} = selectedCell;
+  const delta = e.deltaY > 0 ? -0.01 : 0.01;
+  W[i][j] = Math.max(0, Math.min(1.0, W[i][j] + delta));
+  fullRender();
+  updateSelectedInfo();
+}
+
+function handleClick(e) {
+  if (e.shiftKey && selectedCell) {
+    W[selectedCell.i][selectedCell.j] = 0;
+    fullRender();
+    updateSelectedInfo();
+  }
+}
+
+document.addEventListener('wheel', handleWheel, {passive: false});
+document.addEventListener('click', handleClick);
+
+// ═══════════════════════════════════════
+// Controls
+// ═══════════════════════════════════════
+function resetWeights() {
+  W = DATA_V2.W.map(row => [...row]);
+  document.getElementById('perturb-slider').value = 0;
+  document.getElementById('perturb-val').textContent = '0%';
+  selectedCell = null;
+  fullRender();
+  updateSelectedInfo();
+}
+
+function hubAttractorDemo() {
+  // Demonstrate the hub attractor by adding bidirectional links to Co
+  W = DATA_V2.W.map(row => [...row]);
+  // Add symmetric links that v1 would create
+  W[1][7] = 0.20;  // P→Co (already there in v1 but not v2)
+  W[4][7] = 0.15;  // M→Co
+  W[5][1] = 0.18;  // Me→P
+  // These create the symmetry that locks Co
+  fullRender();
+}
+
+function fixAllToOptimal() {
+  // Adjust weights to push all nodes toward δ*
+  const {nodeDeltas} = computeDeltas(W);
+  const N = NODES.length;
+  for (let i = 0; i < N - 1; i++) {
+    const d = nodeDeltas[NODES[i]];
+    if (d > 0.40) {
+      // Too chaotic: increase backward weight
+      W[i+1][i] = W[i+1][i] + 0.05;
+    } else if (d < 0.05) {
+      // Locked: increase forward weight
+      W[i][i+1] = W[i][i+1] + 0.05;
+    }
+  }
+  fullRender();
+}
+
+// Perturb slider
+document.getElementById('perturb-slider').addEventListener('input', function() {
+  const pct = parseInt(this.value);
+  document.getElementById('perturb-val').textContent = pct + '%';
+  W = DATA_V2.W.map(row => [...row]);
+  if (pct > 0) {
+    const strength = pct / 100 * 0.3;
+    for (let i = 0; i < NODES.length; i++) {
+      for (let j = 0; j < NODES.length; j++) {
+        if (W[i][j] > 0) {
+          W[i][j] += (Math.random() - 0.5) * strength;
+          W[i][j] = Math.max(0, W[i][j]);
+        }
+      }
+    }
+  }
+  fullRender();
+});
+
+// ═══════════════════════════════════════
+// Full Render
+// ═══════════════════════════════════════
+function fullRender() {
+  const {nodeDeltas, linkDeltas} = computeDeltas(W);
+  renderMatrix();
+  renderNodeCards(nodeDeltas);
+  renderRadar(nodeDeltas);
+  renderSystemPhi(nodeDeltas);
+}
+
+// Initial render
+fullRender();
+renderComparison();
+
+// Animate with subtle perturbation to show system is "alive"
+let animFrame = 0;
+function animate() {
+  animFrame++;
+  // No-op animation for now; interactive only
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
