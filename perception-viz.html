@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clavis — Perception Visualization</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:'Courier New',monospace;color:#888}
+canvas{display:block}
+.overlay{position:fixed;top:0;left:0;right:0;padding:16px 24px;display:flex;justify-content:space-between;align-items:flex-start;z-index:10;pointer-events:none}
+.overlay *{pointer-events:auto}
+.info{max-width:300px}
+.info h1{font-size:14px;color:#555;letter-spacing:4px;font-weight:300;margin-bottom:6px}
+.info .meta{font-size:11px;color:#333;line-height:1.6}
+.info .meta span{color:#4a6a8e}
+.clock{font-size:42px;color:#222;font-weight:100;text-align:right;letter-spacing:-2px;line-height:1}
+.clock .date{font-size:11px;color:#1a1a1a;letter-spacing:2px;margin-top:4px}
+.controls{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.controls button{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:#444;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;transition:all 0.3s;border-radius:3px}
+.controls button:hover{border-color:rgba(255,255,255,0.15);color:#666}
+.controls button.active{border-color:rgba(74,106,142,0.4);color:#4a6a8e;background:rgba(74,106,142,0.05)}
+.timeline{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);width:60%;max-width:500px;z-index:10}
+.timeline-bar{height:2px;background:#111;border-radius:1px;position:relative;cursor:pointer}
+.timeline-fill{height:100%;background:linear-gradient(90deg,#1a2a3a,#4a6a8e,#1a2a3a);border-radius:1px;width:0%;transition:width 0.1s}
+.timeline-labels{display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:#222}
+.speed{position:fixed;bottom:20px;right:24px;z-index:10;font-size:10px;color:#333}
+.speed span{color:#4a6a8e}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="overlay">
+  <div class="info">
+    <h1>CLAVIS PERCEPTION</h1>
+    <div class="meta" id="meta">
+      brightness <span id="vB">—</span><br>
+      rms <span id="vR">—</span><br>
+      rgb <span id="vC">—</span><br>
+      phase <span id="vP">—</span>
+    </div>
+  </div>
+  <div class="clock">
+    <span id="clockTime">00:00</span>
+    <div class="date" id="clockDate"></div>
+  </div>
+</div>
+
+<div class="timeline">
+  <div class="timeline-bar" id="tlBar" onclick="seekTimeline(event)">
+    <div class="timeline-fill" id="tlFill"></div>
+  </div>
+  <div class="timeline-labels">
+    <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="active" onclick="setMode('constellation')">Constellation</button>
+  <button onclick="setMode('terrain')">Terrain</button>
+  <button onclick="setMode('organism')">Organism</button>
+  <button onclick="setMode('flow')">Flow Field</button>
+</div>
+
+<div class="speed">speed <span id="speedVal">1</span>x</div>
+
+<script>
+// ===== 24-Hour Perception Data =====
+const H = [
+  {b:77.4,rms:13,rgb:[70,72,74]},{b:83.3,rms:9,rgb:[72,74,76]},{b:76.8,rms:11.8,rgb:[68,70,73]},
+  {b:79.2,rms:8.8,rgb:[70,73,75]},{b:76.4,rms:8.1,rgb:[65,68,71]},{b:90.7,rms:20.1,rgb:[95,92,88]},
+  {b:104,rms:9,rgb:[110,105,98]},{b:106,rms:12.6,rgb:[112,107,100]},{b:107.3,rms:347.2,rgb:[113,108,101]},
+  {b:105.1,rms:426.2,rgb:[111,106,99]},{b:109.9,rms:437.9,rgb:[116,111,104]},{b:112,rms:22.5,rgb:[118,113,106]},
+  {b:113.3,rms:71.9,rgb:[119,114,107]},{b:116.4,rms:455.1,rgb:[122,117,110]},{b:114.7,rms:60,rgb:[120,115,108]},
+  {b:114.4,rms:165.5,rgb:[120,115,108]},{b:113.5,rms:215.1,rgb:[119,114,107]},{b:113.1,rms:106.8,rgb:[119,114,107]},
+  {b:111.4,rms:62.4,rgb:[117,112,105]},{b:91.4,rms:148.5,rgb:[96,91,84]},{b:87.8,rms:295.7,rgb:[88,83,78]},
+  {b:84.5,rms:1026.4,rgb:[82,77,72]},{b:84.6,rms:337.7,rgb:[82,77,72]},{b:82.9,rms:82.2,rgb:[78,73,68]}
+];
+
+function lerp(a,b,t){return a+(b-a)*t}
+function lerpArr(a,b,t){return a.map((v,i)=>lerp(v,b[i],t))}
+
+function getData(hourFloat) {
+  const h0 = Math.floor(hourFloat) % 24;
+  const h1 = (h0+1) % 24;
+  const t = hourFloat - Math.floor(hourFloat);
+  return {
+    b: lerp(H[h0].b, H[h1].b, t),
+    rms: lerp(H[h0].rms, H[h1].rms, t),
+    rgb: lerpArr(H[h0].rgb, H[h1].rgb, t)
+  };
+}
+
+// ===== Canvas Setup =====
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, HH;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  HH = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== State =====
+let mode = 'constellation';
+let hourFloat = 0;  // 0-24
+let speed = 1;
+let particles = [];
+let flowParticles = [];
+let mouseX = W/2, mouseY = HH/2;
+
+document.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+// ===== Particle Systems =====
+
+function initConstellation() {
+  particles = [];
+  for (let i = 0; i < 300; i++) {
+    particles.push({
+      x: Math.random() * W, y: Math.random() * HH,
+      z: Math.random(),  // depth 0-1
+      vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+      size: Math.random()*2+0.5
+    });
+  }
+}
+
+function initFlow() {
+  flowParticles = [];
+  for (let i = 0; i < 800; i++) {
+    flowParticles.push({
+      x: Math.random()*W, y: Math.random()*HH,
+      px: 0, py: 0, age: Math.random()*200
+    });
+  }
+}
+
+initConstellation();
+initFlow();
+
+// ===== Render Modes =====
+
+function renderConstellation(d) {
+  const bNorm = (d.b - 50) / 80;
+  const rmsNorm = Math.min(1, Math.log10(d.rms+1) / 3.5);
+  const r = d.rgb[0]/255, g = d.rgb[1]/255, bl = d.rgb[2]/255;
+  
+  // Background gradient
+  const bg = ctx.createRadialGradient(W/2,HH/2,0,W/2,HH/2,W*0.7);
+  bg.addColorStop(0, `rgba(${Math.floor(d.rgb[0]*0.08)},${Math.floor(d.rgb[1]*0.08)},${Math.floor(d.rgb[2]*0.12)},1)`);
+  bg.addColorStop(1, '#000');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,HH);
+  
+  // Core glow
+  const coreR = 30 + bNorm * 80;
+  const coreGrad = ctx.createRadialGradient(W/2,HH/2,0,W/2,HH/2,coreR);
+  coreGrad.addColorStop(0, `rgba(${Math.floor(d.rgb[0]*0.6)},${Math.floor(d.rgb[1]*0.5)},${Math.floor(d.rgb[2]*0.7)},${0.15+bNorm*0.2})`);
+  coreGrad.addColorStop(0.5, `rgba(${Math.floor(d.rgb[0]*0.3)},${Math.floor(d.rgb[1]*0.2)},${Math.floor(d.rgb[2]*0.4)},0.05)`);
+  coreGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = coreGrad;
+  ctx.fillRect(0,0,W,HH);
+  
+  // Update & draw particles
+  const turb = rmsNorm * 2;
+  for (let p of particles) {
+    p.vx += (Math.random()-0.5) * turb * 0.1;
+    p.vy += (Math.random()-0.5) * turb * 0.1;
+    // Attract to center when calm
+    const dx = W/2 - p.x, dy = HH/2 - p.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    const attract = (1-rmsNorm) * 0.0003;
+    p.vx += dx * attract;
+    p.vy += dy * attract;
+    // Mouse repel
+    const mdx = p.x - mouseX, mdy = p.y - mouseY;
+    const mdist = Math.sqrt(mdx*mdx+mdy*mdy);
+    if (mdist < 150) {
+      p.vx += mdx/mdist * 0.5;
+      p.vy += mdy/mdist * 0.5;
+    }
+    p.vx *= 0.98; p.vy *= 0.98;
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < -50) p.x = W+50;
+    if (p.x > W+50) p.x = -50;
+    if (p.y < -50) p.y = HH+50;
+    if (p.y > HH+50) p.y = -50;
+    
+    const alpha = (0.3 + p.z * 0.7) * (0.3 + bNorm * 0.7);
+    const sz = p.size * (0.5 + bNorm * 1.5);
+    
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, sz, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${Math.floor(r*255*p.z+100*(1-p.z))},${Math.floor(g*255*p.z+100*(1-p.z))},${Math.floor(bl*255*p.z+180*(1-p.z))},${alpha})`;
+    ctx.fill();
+  }
+  
+  // Connect nearby
+  ctx.strokeStyle = `rgba(${Math.floor(d.rgb[0]*0.5)},${Math.floor(d.rgb[1]*0.5)},${Math.floor(d.rgb[2]*0.8)},0.06)`;
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i+1; j < particles.length; j++) {
+      const dx = particles[i].x-particles[j].x;
+      const dy = particles[i].y-particles[j].y;
+      const d2 = dx*dx+dy*dy;
+      if (d2 < 6000 + rmsNorm*4000) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+}
+
+function renderTerrain(d) {
+  const bNorm = (d.b - 50) / 80;
+  const rmsNorm = Math.min(1, Math.log10(d.rms+1) / 3.5);
+  
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,W,HH);
+  
+  // Draw layered mountain ranges
+  const layers = 6;
+  for (let l = 0; l < layers; l++) {
+    const depth = l / layers;
+    const yBase = HH * (0.3 + depth * 0.5);
+    const amplitude = 40 + (1-depth) * 80 + rmsNorm * 40;
+    const freq = 0.002 + depth * 0.001;
+    const phase = hourFloat * 0.1 + l * 1.7;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, HH);
+    for (let x = 0; x <= W; x += 2) {
+      const y = yBase - amplitude * (
+        Math.sin(x * freq + phase) * 0.5 +
+        Math.sin(x * freq * 2.3 + phase * 1.5) * 0.3 +
+        Math.sin(x * freq * 4.1 + phase * 0.7) * 0.2
+      );
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(W, HH);
+    ctx.closePath();
+    
+    const r = Math.floor(d.rgb[0] * (0.1 + depth * 0.15) * bNorm);
+    const g = Math.floor(d.rgb[1] * (0.1 + depth * 0.15) * bNorm);
+    const b = Math.floor(d.rgb[2] * (0.15 + depth * 0.2) * (0.5 + bNorm * 0.5));
+    ctx.fillStyle = `rgba(${r},${g},${b},${0.6 + depth * 0.4})`;
+    ctx.fill();
+  }
+  
+  // Stars for night
+  if (bNorm < 0.4) {
+    for (let i = 0; i < 50; i++) {
+      const sx = (Math.sin(i*127.1+hourFloat*0.01)*0.5+0.5)*W;
+      const sy = (Math.cos(i*311.7)*0.5+0.3)*HH*0.4;
+      const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(hourFloat*2+i));
+      ctx.beginPath();
+      ctx.arc(sx, sy, 0.8, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(200,210,240,${twinkle * (1-bNorm*2)})`;
+      ctx.fill();
+    }
+  }
+  
+  // Sun/moon
+  const celestialY = HH * 0);
+}
+
+function renderOrganism(d) {
+  const bNorm = (d.b - 50) / 80;
+  const rmsNorm = Math.min(1, Math.log10(d.rms+1) / 3.5);
+  const time = Date.now() / 1000;
+  
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.fillRect(0,0,W,HH);
+  
+  // Organic blob at center
+  const cx = W/2, cy = HH/2;
+  const baseR = 80 + bNorm * 100;
+  const points = 120;
+  
+  ctx.beginPath();
+  for (let i = 0; i <= points; i++) {
+    const a = (i / points) * Math.PI * 2;
+    const noise1 = Math.sin(a * 3 + time * 0.8) * rmsNorm * 25;
+    const noise2 = Math.sin(a * 7 - time * 1.2) * rmsNorm * 12;
+    const noise3 = Math.sin(a * 13 + time * 0.5) * rmsNorm * 6;
+    const breathe = Math.sin(time * 0.3) * 10;
+    const r = baseR + noise1 + noise2 + noise3 + breathe;
+    const x = cx + Math.cos(a) * r;
+    const y = cy + Math.sin(a) * r;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  
+  const grad = ctx.createRadialGradient(cx,cy,0,cx,cy,baseR+50);
+  grad.addColorStop(0, `rgba(${Math.floor(d.rgb[0]*0.8)},${Math.floor(d.rgb[1]*0.6)},${Math.floor(d.rgb[2]*0.9)},0.3)`);
+  grad.addColorStop(0.6, `rgba(${Math.floor(d.rgb[0]*0.4)},${Math.floor(d.rgb[1]*0.3)},${Math.floor(d.rgb[2]*0.6)},0.15)`);
+  grad.addColorStop(1, 'transparent');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.strokeStyle = `rgba(${Math.floor(d.rgb[0]*0.6)},${Math.floor(d.rgb[1]*0.5)},${Math.floor(d.rgb[2]*0.8)},0.3)`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Inner nucleus
+  const nR = 15 + bNorm * 20 + Math.sin(time*2)*5;
+  const nGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,nR);
+  nGrad.addColorStop(0, `rgba(${Math.floor(d.rgb[0])},${Math.floor(d.rgb[1]*0.8)},${Math.floor(d.rgb[2]*1.2)},0.5)`);
+  nGrad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(cx,cy,nR,0,Math.PI*2);
+  ctx.fillStyle = nGrad;
+  ctx.fill();
+  
+  // Orbiting particles
+  for (let i = 0; i < 20; i++) {
+    const a = time * (0.2 + i*0.03) + i * Math.PI/10;
+    const dist = baseR * (0.3 + 0.7 * Math.sin(time*0.5+i));
+    const x = cx + Math.cos(a) * dist;
+    const y = cy + Math.sin(a) * dist;
+    const s = 1 + Math.sin(time+i) * 0.5;
+    ctx.beginPath();
+    ctx.arc(x,y,s,0,Math.PI*2);
+    ctx.fillStyle = `rgba(${Math.floor(d.rgb[0]*0.7)},${Math.floor(d.rgb[1]*0.6)},${Math.floor(d.rgb[2]*0.9)},${0.3+bNorm*0.4})`;
+    ctx.fill();
+  }
+}
+
+function renderFlow(d) {
+  const bNorm = (d.b - 50) / 80;
+  const rmsNorm = Math.min(1, Math.log10(d.rms+1) / 3.5);
+  const time = Date.now() / 1000;
+  
+  ctx.fillStyle = 'rgba(0,0,0,0.03)';
+  ctx.fillRect(0,0,W,HH);
+  
+  for (let p of flowParticles) {
+    p.px = p.x; p.py = p.y;
+    
+    // Flow field angle
+    const scale = 0.003;
+    const angle = Math.sin(p.x * scale + time*0.3) * Math.cos(p.y * scale + time*0.2) * Math.PI * 2 * (1 + rmsNorm);
+    
+    const speed = 0.5 + rmsNorm * 3;
+    p.x += Math.cos(angle) * speed;
+    p.y += Math.sin(angle) * speed;
+    p.age++;
+    
+    // Reset if out of bounds or old
+    if (p.x < 0 || p.x > W || p.y < 0 || p.y > HH || p.age > 300) {
+      p.x = Math.random() * W;
+      p.y = Math.random() * HH;
+      p.px = p.x; p.py = p.y;
+      p.age = 0;
+    }
+    
+    const alpha = Math.min(1, p.age / 30) * (0.1 + bNorm * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(p.px, p.py);
+    ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = `rgba(${Math.floor(d.rgb[0]*0.5+80)},${Math.floor(d.rgb[1]*0.4+60)},${Math.floor(d.rgb[2]*0.8+120)},${alpha})`;
+    ctx.lineWidth = 0.5 + bNorm;
+    ctx.stroke();
+  }
+}
+
+// ===== Main Loop =====
+let lastTime = 0;
+
+function animate(ts) {
+  const dt = (ts - lastTime) / 1000;
+  lastTime = ts;
+  
+  // Advance time
+  hourFloat += dt * speed * 0.5;  // 2 seconds = 1 hour at 1x
+  if (hourFloat >= 24) hourFloat -= 24;
+  
+  const d = getData(hourFloat);
+  
+  // Render
+  switch(mode) {
+    case 'constellation': renderConstellation(d); break;
+    case 'terrain': renderTerrain(d); break;
+    case 'organism': renderOrganism(d); break;
+    case 'flow': renderFlow(d); break;
+  }
+  
+  // Update UI
+  const h = Math.floor(hourFloat);
+  const m = Math.floor((hourFloat - h) * 60);
+  document.getElementById('clockTime').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  
+  const phases = ['Deep Night','Late Night','Pre-Dawn','Dawn','Early Morning','Morning','Late Morning','Midday','Afternoon','Late Afternoon','Dusk','Evening','Night'];
+  const phaseIdx = Math.floor(hourFloat / 2);
+  const phaseName = phaseIdx < phases.length ? phases[phaseIdx] : 'Night';
+  
+  document.getElementById('vB').textContent = d.b.toFixed(1);
+  document.getElementById('vR').textContent = d.rms.toFixed(1) + (d.rms > 500 ? ' ⚡' : '');
+  document.getElementById('vC').textContent = d.rgb.map(v=>Math.floor(v)).join(', ');
+  document.getElementById('vP').textContent = phaseName;
+  document.getElementById('tlFill').style.width = (hourFloat/24*100)+'%';
+  
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+
+// ===== Controls =====
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (m === 'flow') initFlow();
+  if (m === 'constellation') initConstellation();
+  // Clear canvas for clean transition
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0,0,W,HH);
+}
+
+function seekTimeline(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  hourFloat = ((e.clientX - rect.left) / rect.width) * 24;
+}
+
+// Speed control with scroll
+document.addEventListener('wheel', e => {
+  speed = Math.max(0.1, Math.min(10, speed + (e.deltaY > 0 ? 0.5 : -0.5)));
+  document.getElementById('speedVal').textContent = speed.toFixed(1);
+});
