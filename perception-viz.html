@@ -6,24 +6,24 @@
 <title>Clavis — 24h Perception</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;overflow:hidden;font-family:'SF Mono','Courier New',monospace;color:#666}
+body{background:#0a0a0f;overflow:hidden;font-family:'SF Mono','Courier New',monospace;color:#8899aa}
 canvas{display:block;position:fixed;top:0;left:0}
 .ui{position:fixed;z-index:10;pointer-events:none}
 .ui *{pointer-events:auto}
 .top{top:0;left:0;right:0;padding:20px 28px;display:flex;justify-content:space-between}
-.brand{font-size:11px;letter-spacing:5px;color:#333;font-weight:300}
-.clock{font-size:48px;color:#1a1a2a;font-weight:100;text-align:right;letter-spacing:-3px;line-height:1}
-.clock small{font-size:11px;color:#111;letter-spacing:2px;display:block;margin-top:4px}
-.meta{position:fixed;top:70px;left:28px;z-index:10;font-size:10px;line-height:2;color:#222}
-.meta b{color:#3a5a7e;font-weight:400}
+.brand{font-size:11px;letter-spacing:5px;color:#667788;font-weight:300}
+.clock{font-size:48px;color:#556677;font-weight:100;text-align:right;letter-spacing:-3px;line-height:1}
+.clock small{font-size:11px;color:#445566;letter-spacing:2px;display:block;margin-top:4px}
+.meta{position:fixed;top:70px;left:28px;z-index:10;font-size:10px;line-height:2;color:#778899}
+.meta b{color:#7ab;font-weight:400}
 .bar{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);width:50%;max-width:400px;z-index:10}
-.bar-track{height:1px;background:#0a0a0a;cursor:pointer;position:relative}
-.bar-fill{height:100%;background:linear-gradient(90deg,transparent,#2a4a6e,transparent);width:0%}
-.bar-labels{display:flex;justify-content:space-between;font-size:8px;color:#111;margin-top:4px}
+.bar-track{height:2px;background:#1a1a2a;cursor:pointer;position:relative;border-radius:1px}
+.bar-fill{height:100%;background:linear-gradient(90deg,transparent,#5a8abe,transparent);width:0%;border-radius:1px}
+.bar-labels{display:flex;justify-content:space-between;font-size:8px;color:#556677;margin-top:4px}
 .modes{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10}
-.modes button{background:transparent;border:1px solid #0a0a0a;color:#222;padding:5px 12px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .3s;border-radius:2px}
-.modes button:hover{border-color:#1a1a2a;color:#444}
-.modes button.on{border-color:#2a4a6e;color:#3a5a7e}
+.modes button{background:rgba(255,255,255,0.03);border:1px solid #334455;color:#667788;padding:5px 12px;font-size:10px;cursor:pointer;font-family:inherit;transition:all .3s;border-radius:2px}
+.modes button:hover{border-color:#5588aa;color:#99aabb;background:rgba(255,255,255,0.06)}
+.modes button.on{border-color:#5a8abe;color:#7ab;background:rgba(90,138,190,0.08)}
 </style>
 </head>
 <body>
@@ -83,7 +83,7 @@ function rStars(d,t){
   const bn=(d.b-50)/80,rn=Math.min(1,Math.log10(d.rms+1)/3.5);
   // BG
   const bg=X.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.7);
-  bg.addColorStop(0,`rgba(${d.rgb[0]*.06|0},${d.rgb[1]*.06|0},${d.rgb[2]*.1|0},1)`);
+  bg.addColorStop(0,`rgba(${${d.rgb[0]*.1+5|0},${d.rgb[1]*.1+5|0},${d.rgb[2]*.15+8|0},1)`);
   bg.addColorStop(1,'#000');X.fillStyle=bg;X.fillRect(0,0,W,H);
   // Core
   const cr=20+bn*100;
@@ -103,11 +103,11 @@ function rStars(d,t){
     const al=(.2+p.d*.8)*(.2+bn*.8);
     const sz=p.s*(.4+bn*1.6);
     X.beginPath();X.arc(p.x,p.y,sz,0,6.28);
-    X.fillStyle=`rgba(${d.rgb[0]*p.d+80*(1-p.d)|0},${d.rgb[1]*p.d+80*(1-p.d)|0},${d.rgb[2]*p.d+140*(1-p.d)|0},${al.toFixed(2)})`;
+    X.fillStyle=`rgba(${d.rgb[0]*p.d+120*(1-p.d)|0},${d.rgb[1]*p.d+120*(1-p.d)|0},${d.rgb[2]*p.d+160*(1-p.d)|0},${al.toFixed(2)})`;
     X.fill();
   }
   // Lines
-  X.strokeStyle=`rgba(${d.rgb[0]*.4|0},${d.rgb[1]*.4|0},${d.rgb[2]*.6|0},0.04)`;X.lineWidth=.5;
+  X.strokeStyle=`rgba(${d.rgb[0]*.5+40|0},${d.rgb[1]*.5+40|0},${d.rgb[2]*.7+60|0},0.08)`;X.lineWidth=.5;
   for(let i=0;i<pts.length;i+=3)for(let j=i+1;j<pts.length;j+=3){
     const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y;
     if(dx*dx+dy*dy<5000+rn*4000){X.beginPath();X.moveTo(pts[i].x,pts[i].y);X.lineTo(pts[j].x,pts[j].y);X.stroke()}
@@ -125,7 +125,7 @@ function rRidge(d,t){
       X.lineTo(x,y);
     }
     X.lineTo(W,H);X.closePath();
-    const r=d.rgb[0]*(.08+dp*.12)*bn|0,g=d.rgb[1]*(.08+dp*.12)*bn|0,b=d.rgb[2]*(.12+dp*.15)*(.4+bn*.6)|0;
+    const r=r=d.rgb[0]*(.15+dp*.2)*(.3+bn*.7)+10|0,g=d.rgb[1]*(.12+dp*.18)*(.3+bn*.7)+10|0,b=d.rgb[2]*(.2+dp*.22)*(.4+bn*.6)+20|0;
     X.fillStyle=`rgba(${r},${g},${b},${(.5+dp*.5).toFixed(2)})`;X.fill();
   }
   // Sun arc
@@ -157,20 +157,20 @@ function rCell(d,t){
   }
   X.closePath();
   const g=X.createRadialGradient(cx,cy,0,cx,cy,bR+40);
-  g.addColorStop(0,`rgba(${d.rgb[0]*.7|0},${d.rgb[1]*.5|0},${d.rgb[2]*.8|0},0.25)`);
-  g.addColorStop(.6,`rgba(${d.rgb[0]*.3|0},${d.rgb[1]*.2|0},${d.rgb[2]*.5|0},0.1)`);
+  g.addColorStop(0,`rgba(${${d.rgb[0]*.8+30|0},${d.rgb[1]*.6+30|0},${d.rgb[2]*.9+40|0},0.3)`);
+  g.addColorStop(.6,`rgba(${${d.rgb[0]*.4+20|0},${d.rgb[1]*.3+20|0},${d.rgb[2]*.6+30|0},0.15)`);
   g.addColorStop(1,'transparent');X.fillStyle=g;X.fill();
-  X.strokeStyle=`rgba(${d.rgb[0]*.5|0},${d.rgb[1]*.4|0},${d.rgb[2]*.7|0},0.25)`;X.lineWidth=.8;X.stroke();
+  X.strokeStyle=`rgba(${${d.rgb[0]*.6+20|0},${d.rgb[1]*.5+20|0},${d.rgb[2]*.8+30|0},0.35)`;X.lineWidth=.8;X.stroke();
   // Nucleus
   const nr=10+bn*18+Math.sin(t*1.8)*4;
   const ng=X.createRadialGradient(cx,cy,0,cx,cy,nr);
-  ng.addColorStop(0,`rgba(${d.rgb[0]|0},${d.rgb[1]*.7|0},${d.rgb[2]*1.1|0},0.4)`);ng.addColorStop(1,'transparent');
+  ng.addColorStop(0,`rgba(${${d.rgb[0]+40|0},${d.rgb[1]*.8+30|0},${d.rgb[2]*1.2+40|0},0.5)`);ng.addColorStop(1,'transparent');
   X.beginPath();X.arc(cx,cy,nr,0,6.28);X.fillStyle=ng;X.fill();
   // Orbiters
   for(let i=0;i<16;i++){
     const a=t*(.15+i*.025)+i*6.28/16;const dist=bR*(.2+.8*Math.sin(t*.4+i));
     X.beginPath();X.arc(cx+Math.cos(a)*dist,cy+Math.sin(a)*dist,1+Math.sin(t+i)*.4,0,6.28);
-    X.fillStyle=`rgba(${d.rgb[0]*.6|0},${d.rgb[1]*.5|0},${d.rgb[2]*.8|0},${(.2+bn*.4).toFixed(2)})`;X.fill();
+    X.fillStyle=`rgba(${d.rgb[0]*.7+30|0},${d.rgb[1]*.6+30|0},${d.rgb[2]*.9+40|0},${(.3+bn*.4).toFixed(2)})`;X.fill();
   }
   // Tendrils
   if(rn>.3)for(let i=0;i<6;i++){
@@ -194,7 +194,7 @@ function rWind(d,t){
     if(p.x<0||p.x>W||p.y<0||p.y>H||p.a>350){p.x=Math.random()*W;p.y=Math.random()*H;p.px=p.x;p.py=p.y;p.a=0}
     const al=Math.min(1,p.a/30)*(.05+bn*.25);
     X.beginPath();X.moveTo(p.px,p.py);X.lineTo(p.x,p.y);
-    X.strokeStyle=`rgba(${d.rgb[0]*.4+70|0},${d.rgb[1]*.3+50|0},${d.rgb[2]*.7+100|0},${al.toFixed(3)})`;
+    X.strokeStyle=`rgba(${${d.rgb[0]*.5+90|0},${d.rgb[1]*.4+70|0},${d.rgb[2]*.8+130|0},${al.toFixed(3)})`;
     X.lineWidth=.4+bn*.8;X.stroke();
   }
 }
