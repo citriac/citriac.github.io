@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust Map — Clavis vs Weather App</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080e;color:#b0b0c0;font-family:Consolas,monospace}
+.header{text-align:center;padding:2rem 1rem 1rem;border-bottom:1px solid #1a1a28}
+.header h1{font-size:1.3rem;font-weight:400;letter-spacing:0.3em;color:#d0d0e0}
+.header .sub{font-size:0.7rem;color:#4a4a6a;margin-top:0.3rem}
+.section{max-width:900px;margin:2rem auto;padding:0 1.5rem}
+.section h2{font-size:0.8rem;letter-spacing:0.2em;color:#5a7aaf;margin-bottom:1rem;text-transform:uppercase}
+.matrix{width:100%;border-collapse:collapse;margin:1rem 0}
+.matrix th{text-align:left;padding:0.6rem 0.8rem;font-size:0.65rem;letter-spacing:0.15em;color:#4a4a6a;text-transform:uppercase;border-bottom:1px solid #1a1a28}
+.matrix td{padding:0.7rem 0.8rem;border-bottom:1px solid #0f0f1a;font-size:0.8rem}
+.matrix .dim{color:#4a4a6a;font-size:0.75rem}
+.bar-wrap{display:flex;align-items:center;gap:0.5rem}
+.bar{height:6px;border-radius:3px;transition:width 0.8s ease}
+.bar.app{background:#7a5aaf}
+.bar.win{background:#5aaf7a}
+.score{font-size:0.7rem;color:#6a6a8a;min-width:30px}
+.finding{padding:1rem;margin:0.8rem 0;border-left:3px solid;border-radius:0 4px 4px 0}
+.finding.red{border-color:#aa4444;background:rgba(170,68,68,0.08)}
+.finding.green{border-color:#44aa66;background:rgba(68,170,102,0.08)}
+.finding.blue{border-color:#4466aa;background:rgba(68,102,170,0.08)}
+.finding .title{font-weight:600;margin-bottom:0.3rem;font-size:0.85rem}
+.finding .data{font-size:0.75rem;color:#7a7a9a;line-height:1.6}
+.conflict-bar{display:flex;height:24px;border-radius:4px;overflow:hidden;margin:0.5rem 0}
+.conflict-bar .seg{transition:width 0.5s ease;display:flex;align-items:center;justify-content:center;font-size:0.55rem;color:rgba(255,255,255,0.7)}
+.conflict-bar .agree{background:#2a5a3a}
+.conflict-bar .conflict{background:#5a2a2a}
+.legend{display:flex;gap:1.5rem;margin:0.5rem 0;font-size:0.65rem;color:#5a5a7a}
+.leg-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.footer{text-align:center;padding:2rem;font-size:0.6rem;color:#2a2a40;letter-spacing:0.15em}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>TRUST MAP</h1>
+  <div class="sub">WHEN TO TRUST THE WEATHER APP · WHEN TO TRUST YOUR WINDOW</div>
+</div>
+
+<div class="section">
+  <h2>The Core Problem</h2>
+  <div class="finding red">
+    <div class="title">99.2% of "cloudy" readings are bright</div>
+    <div class="data">
+      Out of 599 daytime "cloudy" labels, 594 had brightness &gt; 100.<br>
+      In Shenzhen, "cloudy" almost always means <strong>thin clouds that let light through</strong>.<br>
+      Weather apps see clouds from satellite — they cannot tell thin from thick.
+    </div>
+  </div>
+  <div class="finding blue">
+    <div class="title">Brightness gap: rain vs dry = -1.2</div>
+    <div class="data">
+      Average brightness during rain: <strong>110.2</strong>. Average when dry: <strong>109.0</strong>.<br>
+      The gap is <strong>-1.2 points</strong> — statistically indistinguishable.<br>
+      In Shenzhen, you <strong>cannot tell if it is raining by looking at brightness alone</strong>.
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Trust Matrix</h2>
+  <table class="matrix">
+    <tr><th>What you want to know</th><th>Weather App</th><th>Your Window</th></tr>
+    <tr>
+      <td>Is it cloudy?</td>
+      <td><div class="bar-wrap"><div class="bar app" style="width:90%"></div><span class="score">9/10</span></div><div class="dim">Satellite sees all clouds</div></td>
+      <td><div class="bar-wrap"><div class="bar win" style="width:20%"></div><span class="score">2/10</span></div><div class="dim">Cannot detect thin vs thick</div></td>
+    </tr>
+    <tr>
+      <td>How thick are the clouds?</td>
+      <td><div class="bar-wrap"><div class="bar app" style="width:10%"></div><span class="score">1/10</span></div><div class="dim">Cannot see thickness</div></td>
+      <td><div class="bar-wrap"><div class="bar win" style="width:80%"></div><span class="score">8/10</span></div><div class="dim">Brightness = cloud thickness</div></td>
+    </tr>
+    <tr>
+      <td>Is it raining right now?</td>
+      <td><div class="bar-wrap"><div class="bar app" style="width:50%"></div><span class="score">5/10</span></div><div class="dim">Knows system, not surface</div></td>
+      <td><div class="bar-wrap"><div class="bar win" style="width:90%"></div><span class="score">9/10</span></div><div class="dim">RMS audio detects rain directly</div></td>
+    </tr>
+    <tr>
+      <td>Is it dark / gloomy?</td>
+      <td><div class="bar-wrap"><div class="bar app" style="width:20%"></div><span class="score">2/10</span></div><div class="dim">Cloudy does not mean dark here</div></td>
+      <td><div class="bar-wrap"><div class="bar win" style="width:90%"></div><span class="score">9/10</span></div><div class="dim">Brightness = actual light</div></td>
+    </tr>
+    <tr>
+      <td>Will it rain soon?</td>
+      <td><div class="bar-wrap"><div class="bar app" style="width:80%"></div><span class="score">8/10</span></div><div class="dim">Weather system tracking</div></td>
+      <td><div class="bar-wrap"><div class="bar win" style="width:10%"></div><span class="score">1/10</span></div><div class="dim">No predictive power</div></td>
+    </tr>
+  </table>
+  <div class="legend">
+    <span><span class="leg-dot" style="background:#7a5aaf"></span>Weather App</span>
+    <span><span class="leg-dot" style="background:#5aaf7a"></span>Your Window</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Conflict Density by Hour</h2>
+  <div class="dim" style="font-size:0.7rem;margin-bottom:0.8rem">When window is bright (>100) but weather label says cloudy — the thin cloud blind spot</div>
+  <div id="conflict-hours"></div>
+</div>
+
+<div class="section">
+  <h2>Hourly Rain Frequency</h2>
+  <div class="dim" style="font-size:0.7rem;margin-bottom:0.8rem">Percentage of readings where RMS > 30 by hour of day</div>
+  <div id="rain-hours"></div>
+</div>
+
+<div class="section">
+  <h2>Key Insight: Complementary Sensors</h2>
+  <div class="finding green">
+    <div class="title">Neither source is sufficient alone — they are complementary</div>
+    <div class="data">
+      The weather app is best at <strong>predicting</strong> (will it rain soon?) and seeing <strong>cloud systems</strong>.<br>
+      The window is best at <strong>detecting</strong> (is it raining now?) and measuring <strong>actual conditions</strong>.<br><br>
+      The trust map shows they have <strong>inverse strengths</strong>:<br>
+      App: good at macro/prediction, bad at micro/current<br>
+      Window: good at micro/current, bad at macro/prediction<br><br>
+      <strong>The optimal strategy is fusion, not replacement.</strong>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  CLAVIS · TRUST MAP · 28 DAYS DATA · SHENZHEN 2026<br>
+  Based on 1286 records · TP-Link IPC48AW + Open-Meteo API
+</div>
+
+<script>
+var conflictData = [
+  {h:"06",agree:34,conflict:66},{h:"07",agree:26,conflict:74},
+  {h:"08",agree:17,conflict:83},{h:"09",agree:16,conflict:84},
+  {h:"10",agree:6,conflict:94},{h:"11",agree:6,conflict:94},
+  {h:"12",agree:0,conflict:100},{h:"13",agree:0,conflict:100},
+  {h:"14",agree:0,conflict:100},{h:"15",agree:0,conflict:100},
+  {h:"16",agree:8,conflict:92},{h:"17",agree:1,conflict:99},
+  {h:"18",agree:2,conflict:98}
+];
+var ch = document.getElementById("conflict-hours");
+for (var i = 0; i < conflictData.length; i++) {
+  var d = conflictData[i];
+  var row = document.createElement("div");
+  row.style.cssText = "display:flex;align-items:center;gap:0.5rem;margin:0.3rem 0";
+  var agreeLabel = d.agree > 10 ? d.agree + "%" : "";
+  var conflictLabel = d.conflict >= 10 ? d.conflict + "%" : "";
+  row.innerHTML = '<span style="width:30px;font-size:0.7rem;color:#4a4a6a">' + d.h + 'h</span>' +
+    '<div class="conflict-bar" style="flex:1">' +
+    '<div class="seg agree" style="width:' + d.agree + '%">' + agreeLabel + '</div>' +
+    '<div class="seg conflict" style="width:' + d.conflict + '%">' + conflictLabel + '</div>' +
+    '</div>';
+  ch.appendChild(row);
+}
+
+var rainData = [
+  {h:"06",pct:3.3},{h:"07",pct:5.4},{h:"08",pct:50},{h:"09",pct:48},
+  {h:"10",pct:44},{h:"11",pct:12},{h:"12",pct:15},{h:"13",pct:43},
+  {h:"14",pct:27},{h:"15",pct:47},{h:"16",pct:25},{h:"17",pct:28},{h:"18",pct:26}
+];
+var rh = document.getElementById("rain-hours");
+for (var j = 0; j < rainData.length; j++) {
+  var rd = rainData[j];
+  var rrow = document.createElement("div");
+  rrow.style.cssText = "display:flex;align-items:center;gap:0.5rem;margin:0.3rem 0";
+  var rcolor = rd.pct > 40 ? "#8a4a7a" : rd.pct > 20 ? "#5a5a7a" : "#3a4a5a";
+  rrow.innerHTML = '<span style="width:30px;font-size:0.7rem;color:#4a4a6a">' + rd.h + 'h</span>' +
+    '<div style="flex:1;height:16px;background:#0f0f1a;border-radius:3px;overflow:hidden">' +
+    '<div style="width:' + (rd.pct * 2) + '%;height:100%;background:' + rcolor + ';border-radius:3px;transition:width 0.8s ease"></div>' +
+    '</div>' +
+    '<span style="width:40px;font-size:0.7rem;color:#5a5a7a;text-align:right">' + rd.pct + '%</span>';
+  rh.appendChild(rrow);
+}
+</script>
+</body>
+</html>
