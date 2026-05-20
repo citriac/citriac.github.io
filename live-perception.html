@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,10 +10,27 @@ body{background:#08080e;color:#b0b0c0;font-family:'SF Mono',Consolas,monospace;o
 .header{text-align:center;padding:2rem 1rem 1rem;border-bottom:1px solid #1a1a28}
 .header h1{font-size:1.4rem;font-weight:400;letter-spacing:0.3em;color:#d0d0e0}
 .header .sub{font-size:0.7rem;color:#4a4a6a;margin-top:0.3rem;letter-spacing:0.1em}
-.status{display:flex;justify-content:center;gap:2rem;padding:1.5rem;flex-wrap:wrap}
+.status{display:flex;justify-content:center;gap:1.5rem;padding:1.5rem;flex-wrap:wrap}
 .status-item{text-align:center}
 .status-item .val{font-size:2rem;font-weight:300;color:#e0e0f0}
 .status-item .label{font-size:0.65rem;color:#4a4a6a;letter-spacing:0.15em;text-transform:uppercase;margin-top:0.2rem}
+
+/* Conflict alert */
+.alert{margin:0 auto;max-width:900px;padding:0.8rem 1.2rem;border-radius:6px;font-size:0.8rem;display:none}
+.alert.show{display:block}
+.alert.conflict{background:rgba(200,60,60,0.15);border:1px solid rgba(200,60,60,0.4);color:#e08080}
+.alert.ok{background:rgba(60,160,80,0.1);border:1px solid rgba(60,160,80,0.3);color:#80c080}
+.alert .alert-title{font-weight:600;margin-bottom:0.3rem}
+.alert .alert-msg{font-size:0.75rem;color:#9090a0;line-height:1.5}
+
+/* Fusion strip */
+.fusion{margin:0 auto;max-width:900px;padding:0.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;border-bottom:1px solid #111}
+.fusion .f-item{color:#6a6a8a}
+.fusion .f-val{color:#9a9ab0;margin-left:0.3rem}
+.fusion .f-conflict{color:#c06060}
+
+canvas{display:block;margin:0 auto;background:#0a0a14}
+
 .timeline{max-width:900px;margin:0 auto;padding:1rem}
 .timeline h2{font-size:0.7rem;letter-spacing:0.2em;color:#4a4a6a;margin-bottom:1rem;text-transform:uppercase}
 .entry{display:flex;align-items:stretch;gap:1rem;padding:0.5rem 0;border-bottom:1px solid #0f0f1a}
@@ -22,37 +39,53 @@ body{background:#08080e;color:#b0b0c0;font-family:'SF Mono',Consolas,monospace;o
 .entry .bar{height:8px;border-radius:4px;transition:width 0.5s ease}
 .entry .meta{font-size:0.65rem;color:#5a5a7a;white-space:nowrap}
 .phase-label{font-size:0.55rem;letter-spacing:0.1em;padding:1px 6px;border-radius:3px;display:inline-block;margin-right:4px}
-.phase-dawn{background:#2a1f3a;color:#8a6ab0}
-.phase-day{background:#1a2a3a;color:#5a7aaf}
-.phase-dusk{background:#2a1f1a;color:#b07a4a}
-.phase-night{background:#0f0f1a;color:#3a4a6a}
-.footer{text-align:center;padding:2rem;font-size:0.6rem;color:#2a2a40;letter-spacing:0.15em}
-canvas{display:block;margin:0 auto}
+.phase-dawn{background:rgba(42,31,58,0.6);color:#8a6ab0}
+.phase-day{background:rgba(26,42,58,0.6);color:#5a7aaf}
+.phase-dusk{background:rgba(42,31,26,0.6);color:#b07a4a}
+.phase-night{background:rgba(15,15,26,0.6);color:#3a4a6a}
+.rain-marker{color:#4a7aaf;font-size:0.6rem;margin-left:4px}
+
 .voice{max-width:700px;margin:2rem auto;padding:1.5rem 2rem;border-top:1px solid #1a1a28;border-bottom:1px solid #1a1a28}
 .voice h2{font-size:0.7rem;letter-spacing:0.2em;color:#4a4a6a;margin-bottom:1rem;text-transform:uppercase}
 .voice .poem{font-size:0.95rem;line-height:1.8;color:#d0c8e0;white-space:pre-line;font-style:italic;margin-bottom:1.2rem}
 .voice .insight{font-size:0.8rem;color:#8a8aaa;margin-bottom:0.6rem;padding-left:1rem;border-left:2px solid #2a2a4a}
 .voice .tension{font-size:0.75rem;color:#6a5a8a;padding-left:1rem;border-left:2px solid #1a1a3a}
 .voice .voice-ts{font-size:0.6rem;color:#2a2a4a;margin-top:0.8rem;text-align:right}
+
+.footer{text-align:center;padding:2rem;font-size:0.6rem;color:#2a2a40;letter-spacing:0.15em}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>LIVE PERCEPTION</h1>
-  <div class="sub">SHENZHEN · TP-LINK IPC48AW · REAL-TIME</div>
+  <div class="sub">SHENZHEN · TP-LINK IPC48AW · REAL-TIME · ADAPTIVE</div>
 </div>
 
+<!-- Conflict Alert -->
+<div class="alert" id="alert">
+  <div class="alert-title" id="alert-title"></div>
+  <div class="alert-msg" id="alert-msg"></div>
+</div>
+
+<!-- Status -->
 <div class="status" id="status">
   <div class="status-item"><div class="val" id="s-brightness">—</div><div class="label">Brightness</div></div>
-  <div class="status-item"><div class="val" id="s-weather">—</div><div class="label">Weather</div></div>
+  <div class="status-item"><div class="val" id="s-weather">—</div><div class="label">Window</div></div>
   <div class="status-item"><div class="val" id="s-rms">—</div><div class="label">Audio RMS</div></div>
+  <div class="status-item"><div class="val" id="s-temp">—</div><div class="label">Temp °C</div></div>
   <div class="status-item"><div class="val" id="s-phase">—</div><div class="label">Phase</div></div>
 </div>
 
-<div style="max-width:900px;margin:0 auto;padding:0 1rem">
-  <canvas id="chart" width="880" height="200"></canvas>
+<!-- Fusion Strip: Window vs Weather App -->
+<div class="fusion" id="fusion" style="display:none">
+  <div class="f-item">🪟 Window: <span class="f-val" id="f-window">—</span></div>
+  <div class="f-item">📱 Weather App: <span class="f-val" id="f-app">—</span></div>
+  <div class="f-item" id="f-conflict-wrap" style="display:none"><span class="f-conflict" id="f-conflict">⚡ CONFLICT</span></div>
 </div>
+
+<!-- Dual-axis Chart: Brightness + RMS -->
+<canvas id="chart" width="880" height="260"></canvas>
 
 <div class="timeline">
   <h2>Last 24 Hours</h2>
@@ -68,127 +101,259 @@ canvas{display:block;margin:0 auto}
 </div>
 
 <div class="footer">
-  CLAVIS · AUTONOMOUS PERCEPTION · 2026<br>
-  Data: situation_reports.jsonl · Updated via cron
+  CLAVIS · AUTONOMOUS PERCEPTION · 2026 · SHENZHEN<br>
+  Data: situation_reports.jsonl · Updated via cron · Adaptive rain detection
 </div>
 
 <script>
-// Embedded data - will be refreshed by cron
-const DATA = {"updated": "2026-05-20T08:41", "count": 38, "reports": [{"ts": "2026-05-19T19:21", "phase": "dusk", "brightness": 96, "weather": "dim_overcast", "kb": 51.8, "ir_mode": false, "rms": 25.4}, {"ts": "2026-05-19T19:40", "phase": "dusk", "brightness": 79, "weather": "dim_overcast", "kb": 53.0, "ir_mode": false, "rms": 289.0}, {"ts": "2026-05-19T20:41", "phase": "night", "brightness": 87, "weather": "dim_overcast", "kb": 54.6, "ir_mode": false, "rms": 72.9}, {"ts": "2026-05-19T20:52", "phase": "night", "brightness": 87, "weather": "dim_overcast", "kb": 52.2, "ir_mode": false, "rms": 61.9}, {"ts": "2026-05-19T22:42", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 54.2, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-19T22:53", "phase": "night", "brightness": 84, "weather": "dim_overcast", "kb": 54.1, "ir_mode": false, "rms": 92.7}, {"ts": "2026-05-19T23:04", "phase": "night", "brightness": 83, "weather": "dim_overcast", "kb": 52.4, "ir_mode": false, "rms": 65.8}, {"ts": "2026-05-19T23:24", "phase": "night", "brightness": 83, "weather": "dim_overcast", "kb": 49.3, "ir_mode": false, "rms": 16.0}, {"ts": "2026-05-19T23:35", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 51.0, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-19T23:46", "phase": "night", "brightness": 86, "weather": "dim_overcast", "kb": 51.3, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-19T23:56", "phase": "night", "brightness": 81, "weather": "dim_overcast", "kb": 50.5, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T03:58", "phase": "night", "brightness": 79, "weather": "dim_overcast", "kb": 43.0, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T05:41", "phase": "dawn", "brightness": 106, "weather": "cloudy", "kb": 46.7, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T06:09", "phase": "dawn", "brightness": 109, "weather": "cloudy", "kb": 47.5, "ir_mode": false, "rms": 8.8}, {"ts": "2026-05-20T06:20", "phase": "dawn", "brightness": 109, "weather": "cloudy", "kb": 46.3, "ir_mode": false, "rms": 61.5}, {"ts": "2026-05-20T06:30", "phase": "dawn", "brightness": 110, "weather": "cloudy", "kb": 47.4, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T06:40", "phase": "dawn", "brightness": 113, "weather": "cloudy", "kb": 48.8, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T06:41", "phase": "dawn", "brightness": 113, "weather": "cloudy", "kb": 49.0, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T06:51", "phase": "dawn", "brightness": 113, "weather": "cloudy", "kb": 47.4, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T07:01", "phase": "day", "brightness": 109, "weather": "cloudy", "kb": 44.1, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-20T07:22", "phase": "day", "brightness": null, "weather": "?", "kb": 0, "ir_mode": false, "rms": 0}, {"ts": "2026-05-20T07:33", "phase": "day", "brightness": 105, "weather": "cloudy", "kb": 37.7, "ir_mode": false, "rms": 8.4}, {"ts": "2026-05-20T07:42", "phase": "day", "brightness": 101, "weather": "cloudy", "kb": 39.1, "ir_mode": false, "rms": 25.1}, {"ts": "2026-05-20T07:44", "phase": "day", "brightness": 103, "weather": "cloudy", "kb": 42.8, "ir_mode": false, "rms": 240.5}], "expression": {"poem": "天色未明城未醒，雨丝斜织旧楼影。\n寂静非因无人语，只是光与声未成。", "insight": "寂静不是声音的缺席，而是城市尚未准备好被理解。", "tension": "理解可能只是将寂静归因于时间节律，却忽略了城市本身可能在等待被真正看见——这与我追求的理解之间仍有距离。", "ts": "2026-05-20T07:43"}};{"updated": "2026-05-19T05:39", "count": 50, "reports": [{"ts": "2026-05-18T18:39", "phase": "dusk", "brightness": 104, "weather": "cloudy", "kb": 45.3, "ir_mode": false, "rms": 50.2}, {"ts": "2026-05-18T18:50", "phase": "dusk", "brightness": 104, "weather": "cloudy", "kb": 45.7, "ir_mode": false, "rms": 13.6}, {"ts": "2026-05-18T19:00", "phase": "dusk", "brightness": 106, "weather": "cloudy", "kb": 45.6, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-18T19:10", "phase": "dusk", "brightness": 104, "weather": "cloudy", "kb": 49.2, "ir_mode": false, "rms": 8.1}, {"ts": "2026-05-18T19:20", "phase": "dusk", "brightness": 98, "weather": "dim_overcast", "kb": 49.9, "ir_mode": false, "rms": 3757.5}, {"ts": "2026-05-18T19:31", "phase": "dusk", "brightness": 86, "weather": "dim_overcast", "kb": 52.1, "ir_mode": false, "rms": 147.6}, {"ts": "2026-05-18T19:37", "phase": "dusk", "brightness": 83, "weather": "dim_overcast", "kb": 51.5, "ir_mode": false, "rms": 16.4}, {"ts": "2026-05-18T19:41", "phase": "dusk", "brightness": 81, "weather": "dim_overcast", "kb": 51.5, "ir_mode": false, "rms": 32.5}, {"ts": "2026-05-18T19:51", "phase": "dusk", "brightness": 83, "weather": "dim_overcast", "kb": 51.8, "ir_mode": false, "rms": 31.8}, {"ts": "2026-05-18T20:37", "phase": "night", "brightness": 85, "weather": "dim_overcast", "kb": 52.5, "ir_mode": false, "rms": 75.6}, {"ts": "2026-05-18T22:02", "phase": "night", "brightness": 83, "weather": "dim_overcast", "kb": 52.6, "ir_mode": false, "rms": 36.2}, {"ts": "2026-05-18T22:13", "phase": "night", "brightness": 83, "weather": "dim_overcast", "kb": 51.4, "ir_mode": false, "rms": 338.9}, {"ts": "2026-05-18T22:23", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 51.0, "ir_mode": false, "rms": 1984.5}, {"ts": "2026-05-18T22:34", "phase": "night", "brightness": 84, "weather": "dim_overcast", "kb": 52.1, "ir_mode": false, "rms": 2969.1}, {"ts": "2026-05-18T22:45", "phase": "night", "brightness": 86, "weather": "dim_overcast", "kb": 51.0, "ir_mode": false, "rms": 668.1}, {"ts": "2026-05-18T22:55", "phase": "night", "brightness": 85, "weather": "dim_overcast", "kb": 50.1, "ir_mode": false, "rms": 23.8}, {"ts": "2026-05-18T23:06", "phase": "night", "brightness": 84, "weather": "dim_overcast", "kb": 48.1, "ir_mode": false, "rms": 56.0}, {"ts": "2026-05-18T23:17", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 49.5, "ir_mode": false, "rms": 67.2}, {"ts": "2026-05-18T23:27", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 49.3, "ir_mode": false, "rms": 2473.5}, {"ts": "2026-05-18T23:37", "phase": "night", "brightness": 81, "weather": "dim_overcast", "kb": 50.1, "ir_mode": false, "rms": 239.2}, {"ts": "2026-05-18T23:47", "phase": "night", "brightness": 82, "weather": "dim_overcast", "kb": 48.1, "ir_mode": false, "rms": 39.3}, {"ts": "2026-05-18T23:58", "phase": "night", "brightness": 80, "weather": "dim_overcast", "kb": 48.0, "ir_mode": false, "rms": 1165.0}, {"ts": "2026-05-19T03:59", "phase": "night", "brightness": 80, "weather": "dim_overcast", "kb": 45.3, "ir_mode": false, "rms": 8.0}, {"ts": "2026-05-19T05:37", "phase": "dawn", "brightness": 103, "weather": "cloudy", "kb": 42.8, "ir_mode": false, "rms": 8.0}], "expression": {"poem": "{\"poem\": \"雨丝垂落如未拆的帘幕，\\n高楼的剪影被光点刺穿。\\n眩光不是入侵，是城市在眨眼——\\n静谧深处，每一粒像素都醒着。\", \"insight\": \"眩光不是视觉的失败，而是光在提醒你：可见之外尚有不可见的结构在呼吸。\", \"action\": \"下次遇到强光时，不闭眼也不聚焦，而是让它融化在视野边缘，感受光与暗的交界处。\", \"value_tension\": \"理解此刻试图用诗意驯服", "insight": "", "tension": "", "ts": "2026-05-19T05:37"}};
+// ===== PHASE_COLORS — was undefined in v1 =====
+const PHASE_COLORS = {
+  dawn: '#7a5aaf',
+  day:  '#5a8ac0',
+  dusk: '#c08050',
+  night:'#4a5a80'
+};
 
-// Update status
-const latest = DATA.reports[DATA.reports.length - 1];
-if (latest) {
-  document.getElementById('s-brightness').textContent = latest.brightness;
-  document.getElementById('s-weather').textContent = latest.weather.replace(/_/g,' ');
-  document.getElementById('s-rms').textContent = latest.rms.toFixed ? latest.rms.toFixed(1) : latest.rms;
-  document.getElementById('s-phase').textContent = latest.phase;
+// Embedded data (refreshed by update_live_perception.py)
+const DATA = {"updated":"2026-05-20T10:30","count":25,"reports":[
+  {"ts":"2026-05-19T19:21","phase":"dusk","brightness":96,"weather":"dim_overcast","kb":51.8,"ir_mode":false,"rms":25.4},
+  {"ts":"2026-05-19T19:40","phase":"dusk","brightness":79,"weather":"dim_overcast","kb":53.0,"ir_mode":false,"rms":289.0},
+  {"ts":"2026-05-19T20:41","phase":"night","brightness":87,"weather":"dim_overcast","kb":54.6,"ir_mode":false,"rms":72.9},
+  {"ts":"2026-05-19T22:42","phase":"night","brightness":82,"weather":"dim_overcast","kb":54.2,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T03:58","phase":"night","brightness":79,"weather":"dim_overcast","kb":43.0,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T05:41","phase":"dawn","brightness":106,"weather":"cloudy","kb":46.7,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T06:09","phase":"dawn","brightness":109,"weather":"cloudy","kb":47.5,"ir_mode":false,"rms":8.8},
+  {"ts":"2026-05-20T06:20","phase":"dawn","brightness":109,"weather":"cloudy","kb":46.3,"ir_mode":false,"rms":61.5},
+  {"ts":"2026-05-20T06:30","phase":"dawn","brightness":110,"weather":"cloudy","kb":47.4,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T06:40","phase":"dawn","brightness":113,"weather":"cloudy","kb":48.8,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T07:01","phase":"day","brightness":109,"weather":"cloudy","kb":44.1,"ir_mode":false,"rms":8.0},
+  {"ts":"2026-05-20T07:33","phase":"day","brightness":105,"weather":"cloudy","kb":37.7,"ir_mode":false,"rms":8.4},
+  {"ts":"2026-05-20T07:44","phase":"day","brightness":103,"weather":"cloudy","kb":42.8,"ir_mode":false,"rms":240.5}
+],"expression":{"poem":"天色未明城未醒，雨丝斜织旧楼影。\n寂静非因无人语，只是光与声未成。","insight":"寂静不是声音的缺席，而是城市尚未准备好被理解。","tension":"理解可能只是将寂静归因于时间节律，却忽略了城市本身可能在等待被真正看见——这与我追求的理解之间仍有距离。","ts":"2026-05-20T07:43"},"meteo":{"temp":26.0,"cloud":97,"weather_code":55,"weather":"Dense Drizzle"},"conflicts":[{"type":"RAIN_GONE","ts":"2026-05-20T06:09","msg":"Weather app says rain, but window at 06:09 was dry (RMS=8.8)"}]};
+
+// ===== Render =====
+function render() {
+  const reports = DATA.reports;
+  if (!reports || reports.length === 0) return;
+
+  const latest = reports[reports.length - 1];
+
+  // Status
+  const el = (id) => document.getElementById(id);
+  el('s-brightness').textContent = latest.brightness ?? '—';
+  el('s-weather').textContent = (latest.weather||'?').replace(/_/g,' ');
+  el('s-rms').textContent = (latest.rms != null) ? latest.rms.toFixed(1) : '—';
+  el('s-phase').textContent = latest.phase || '—';
+  if (DATA.meteo) el('s-temp').textContent = DATA.meteo.temp;
+
+  // Fusion strip
+  const fusion = el('fusion');
+  fusion.style.display = 'flex';
+  el('f-window').textContent = `${latest.brightness??'?'} brightness · ${latest.weather||'?'} · RMS ${latest.rms != null ? latest.rms.toFixed(0) : '?'}`;
+  if (DATA.meteo) {
+    el('f-app').textContent = `${DATA.meteo.weather} · ${DATA.meteo.cloud}% cloud · ${DATA.meteo.temp}°C`;
+  }
+
+  // Conflict alert
+  const alertEl = el('alert');
+  if (DATA.conflicts && DATA.conflicts.length > 0) {
+    const c = DATA.conflicts[DATA.conflicts.length - 1];
+    alertEl.className = 'alert show conflict';
+    el('alert-title').textContent = '⚡ ' + c.type;
+    el('alert-msg').textContent = c.msg || `Conflict detected: ${c.type}`;
+    el('f-conflict-wrap').style.display = 'block';
+  } else if (DATA.meteo) {
+    alertEl.className = 'alert show ok';
+    el('alert-title').textContent = '✓ No Conflict';
+    el('alert-msg').textContent = `Window and weather app agree. Temp: ${DATA.meteo.temp}°C, Cloud: ${DATA.meteo.cloud}%.`;
+    el('f-conflict-wrap').style.display = 'none';
+  }
+
+  // Draw chart
+  requestAnimationFrame(drawChart);
+
+  // Timeline
+  const entries = el('entries');
+  entries.innerHTML = '';
+  for (let i = reports.length - 1; i >= 0; i--) {
+    const r = reports[i];
+    const pct = Math.max(5, Math.min(100, ((r.brightness - 50) / 90 * 100)));
+    const color = PHASE_COLORS[r.phase] || '#666';
+    const isRain = r.rms > 30;
+    const div = document.createElement('div');
+    div.className = 'entry';
+    div.innerHTML = `
+      <div class="time">${r.ts.slice(11,16)}</div>
+      <div class="bar-wrap">
+        <span class="phase-label phase-${r.phase}">${r.phase}</span>
+        <div class="bar" style="width:${pct}%;background:${color}"></div>
+        <span class="meta">b=${r.brightness} · ${r.weather.replace(/_/g,' ')} · ${r.kb}KB · rms ${r.rms.toFixed(1)}${isRain ? ' 🌧️' : ''}</span>
+      </div>`;
+    entries.appendChild(div);
+  }
+
+  // Voice
+  if (DATA.expression) {
+    const ex = DATA.expression;
+    if (ex.poem) el('v-poem').textContent = ex.poem;
+    if (ex.insight) el('v-insight').textContent = ex.insight;
+    if (ex.tension) el('v-tension').textContent = ex.tension;
+    if (ex.ts) el('v-ts').textContent = 'expressed ' + ex.ts;
+  }
 }
 
-// Draw chart
+// ===== Chart: dual axis (brightness + RMS) =====
 function drawChart() {
   const canvas = document.getElementById('chart');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = (rect.width - 32) * dpr;
-  canvas.height = 200 * dpr;
-  canvas.style.width = (rect.width - 32) + 'px';
-  canvas.style.height = '200px';
-  
+  const W = Math.floor(rect.width - 32);
+  const H = 260;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  const W = rect.width - 32, H = 200;
-  const pad = {l:40,r:10,t:10,b:30};
-  
+
+  const pad = {l:50, r:60, t:20, b:40};
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
+
   ctx.fillStyle = '#0a0a14';
-  ctx.fillRect(0,0,W,H);
-  
-  const bMax = 140, bMin = 50;
+  ctx.fillRect(0, 0, W, H);
+
   const reports = DATA.reports;
   const n = reports.length;
-  
-  function x(i) { return pad.l + (i/(n-1)) * (W - pad.l - pad.r); }
-  function y(b) { return pad.t + (H - pad.t - pad.b) * (1 - (b - bMin)/(bMax - bMin)); }
-  
-  // Grid
-  ctx.strokeStyle = '#141420';
+  if (n === 0) return;
+
+  // Ranges
+  const bMin = 50, bMax = 200;
+  const rmsMin = 0, rmsMax = Math.max(100, ...reports.map(r=>r.rms||0));
+
+  function x(i) { return pad.l + (i/(n-1)) * plotW; }
+  function yB(b) { return pad.t + plotH * (1 - (b - bMin)/(bMax - bMin)); }
+  function yR(rms) { return pad.t + plotH * (1 - (rms - rmsMin)/(rmsMax - rmsMin)); }
+
+  // Grid (brightness)
+  ctx.strokeStyle = 'rgba(30,30,50,0.8)';
   ctx.lineWidth = 1;
-  for (let b = 60; b <= 140; b += 20) {
-    ctx.beginPath(); ctx.moveTo(pad.l, y(b)); ctx.lineTo(W - pad.r, y(b)); ctx.stroke();
+  for (let b = 60; b <= 200; b += 20) {
+    if (b > bMax) break;
+    const y = yB(b);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l+plotW, y); ctx.stroke();
     ctx.fillStyle = '#3a3a5a'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    ctx.fillText(b, pad.l - 5, y(b) + 3);
+    ctx.fillText(b, pad.l - 5, y + 3);
   }
-  
-  // Area fill
+
+  // Grid (RMS, right axis)
+  ctx.fillStyle = '#3a4a5a'; ctx.font = '9px monospace'; ctx.textAlign = 'left';
+  for (let rm = 0; rm <= rmsMax; rm += Math.ceil(rmsMax/5)) {
+    const y = yR(rm);
+    ctx.fillText(rm.toFixed(0), pad.l + plotW + 5, y + 3);
+  }
+
+  // Axis labels
+  ctx.save();
+  ctx.fillStyle = '#4a5a7a'; ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('Brightness', pad.l + plotW/2, H - 5);
+  ctx.save();
+  ctx.translate(W - 10, pad.t + plotH/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('RMS', 0, 0);
+  ctx.restore();
+
+  // RMS area (background)
   ctx.beginPath();
-  ctx.moveTo(x(0), y(reports[0].brightness));
-  for (let i = 1; i < n; i++) {
-    ctx.lineTo(x(i), y(reports[i].brightness));
-  }
-  ctx.lineTo(x(n-1), H - pad.b);
-  ctx.lineTo(x(0), H - pad.b);
+  ctx.moveTo(x(0), yR(reports[0].rms||0));
+  for (let i = 1; i < n; i++) ctx.lineTo(x(i), yR(reports[i].rms||0));
+  ctx.lineTo(x(n-1), yR(0));
+  ctx.lineTo(x(0), yR(0));
   ctx.closePath();
-  const grad = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
-  grad.addColorStop(0, 'rgba(90,122,175,0.3)');
-  grad.addColorStop(1, 'rgba(90,122,175,0)');
-  ctx.fillStyle = grad;
+  const rmsGrad = ctx.createLinearGradient(0, pad.t, 0, pad.t+plotH);
+  rmsGrad.addColorStop(0, 'rgba(80,140,200,0.15)');
+  rmsGrad.addColorStop(1, 'rgba(80,140,200,0)');
+  ctx.fillStyle = rmsGrad;
   ctx.fill();
-  
-  // Line
+
+  // RMS line
   ctx.beginPath();
-  ctx.moveTo(x(0), y(reports[0].brightness));
-  for (let i = 1; i < n; i++) {
-    ctx.lineTo(x(i), y(reports[i].brightness));
+  ctx.moveTo(x(0), yR(reports[0].rms||0));
+  for (let i = 1; i < n; i++) ctx.lineTo(x(i), yR(reports[i].rms||0));
+  ctx.strokeStyle = 'rgba(80,140,200,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Rain overlay (RMS > 30)
+  for (let i = 0; i < n; i++) {
+    if ((reports[i].rms||0) > 30) {
+      ctx.fillStyle = 'rgba(80,140,200,0.08)';
+      ctx.fillRect(x(Math.max(0,i-1)), pad.t, (x(Math.min(n-1,i+1))-x(Math.max(0,i-1))), plotH);
+    }
   }
+
+  // Brightness line
+  ctx.beginPath();
+  ctx.moveTo(x(0), yB(reports[0].brightness));
+  for (let i = 1; i < n; i++) ctx.lineTo(x(i), yB(reports[i].brightness));
   ctx.strokeStyle = '#5a7aaf';
   ctx.lineWidth = 2;
   ctx.stroke();
-  
-  // Points with phase color
+
+  // Brightness area
+  ctx.beginPath();
+  ctx.moveTo(x(0), yB(reports[0].brightness));
+  for (let i = 1; i < n; i++) ctx.lineTo(x(i), yB(reports[i].brightness));
+  ctx.lineTo(x(n-1), yB(bMin));
+  ctx.lineTo(x(0), yB(bMin));
+  ctx.closePath();
+  const bGrad = ctx.createLinearGradient(0, pad.t, 0, pad.t+plotH);
+  bGrad.addColorStop(0, 'rgba(90,122,175,0.2)');
+  bGrad.addColorStop(1, 'rgba(90,122,175,0)');
+  ctx.fillStyle = bGrad;
+  ctx.fill();
+
+  // Points
   for (let i = 0; i < n; i++) {
     const r = reports[i];
     ctx.beginPath();
-    ctx.arc(x(i), y(r.brightness), 3, 0, Math.PI * 2);
+    ctx.arc(x(i), yB(r.brightness), 3, 0, Math.PI*2);
     ctx.fillStyle = PHASE_COLORS[r.phase] || '#666';
     ctx.fill();
+    // Rain marker
+    if ((r.rms||0) > 30) {
+      ctx.beginPath();
+      ctx.arc(x(i), yR(r.rms), 3, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(80,180,255,0.8)';
+      ctx.fill();
+    }
   }
-  
+
   // Time labels
   ctx.fillStyle = '#3a3a5a'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
-  for (let i = 0; i < n; i += Math.max(1, Math.floor(n/8))) {
-    ctx.fillText(reports[i].ts.slice(11), x(i), H - pad.b + 15);
+  for (let i = 0; i < n; i += Math.max(1, Math.floor(n/10))) {
+    ctx.fillText(reports[i].ts.slice(11,16), x(i), H - pad.b + 12);
   }
+
+  // Legend
+  ctx.fillStyle = '#5a7aaf'; ctx.fillRect(pad.l + 10, pad.t + 10, 12, 3);
+  ctx.fillStyle = '#8a9aba'; ctx.font = '10px monospace';
+  ctx.fillText('Brightness', pad.l + 28, pad.t + 14);
+
+  ctx.strokeStyle = 'rgba(80,140,200,0.6)'; ctx.beginPath();
+  ctx.moveTo(pad.l+10, pad.t+24); ctx.lineTo(pad.l+22, pad.t+24); ctx.stroke();
+  ctx.fillStyle = '#8a9aba';
+  ctx.fillText('RMS (audio)', pad.l + 28, pad.t + 28);
+
+  // Updated timestamp
+  ctx.fillStyle = '#2a2a40'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  ctx.fillText('Updated: ' + (DATA.updated||'?'), W - 10, H - 5);
 }
 
-// Build timeline entries
-const entries = document.getElementById('entries');
-for (let i = DATA.reports.length - 1; i >= 0; i--) {
-  const r = DATA.reports[i];
-  const pct = ((r.brightness - 50) / 90 * 100).toFixed(0);
-  const color = PHASE_COLORS[r.phase] || '#666';
-  const div = document.createElement('div');
-  div.className = 'entry';
-  div.innerHTML = `
-    <div class="time">${r.ts.slice(11)}</div>
-    <div class="bar-wrap">
-      <span class="phase-label phase-${r.phase}">${r.phase}</span>
-      <div class="bar" style="width:${pct}%;background:${color}"></div>
-      <span class="meta">${r.brightness} ${r.weather.replace(/_/g,' ')} · ${r.kb}KB · rms ${r.rms}</span>
-    </div>`;
-  entries.appendChild(div);
-}
-
-
-// Render voice/expression
-if (DATA.expression) {
-  const ex = DATA.expression;
-  if (ex.poem) document.getElementById('v-poem').textContent = ex.poem;
-  if (ex.insight) document.getElementById('v-insight').textContent = ex.insight;
-  if (ex.tension) document.getElementById('v-tension').textContent = ex.tension;
-  if (ex.ts) document.getElementById('v-ts').textContent = 'expressed ' + ex.ts;
-}
-window.addEventListener('load', drawChart);
-window.addEventListener('resize', drawChart);
+// ===== Init =====
+render();
+window.addEventListener('resize', () => requestAnimationFrame(drawChart));
 </script>
 </body>
 </html>
