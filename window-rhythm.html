@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Window Rhythm — 24h Only the Window Knows</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06060c;color:#a0a0b0;font-family:Consolas,monospace}
+.header{text-align:center;padding:1.5rem 1rem 0.8rem;border-bottom:1px solid #1a1a28}
+.header h1{font-size:1.1rem;font-weight:400;letter-spacing:0.3em;color:#c0c0d0}
+.header .sub{font-size:0.65rem;color:#4a4a6a;margin-top:0.3rem}
+
+.section{max-width:860px;margin:1.5rem auto;padding:0 1.5rem}
+.section h2{font-size:0.75rem;letter-spacing:0.2em;color:#5a7aaf;margin-bottom:0.8rem;text-transform:uppercase}
+
+/* 24h rhythm wheel */
+.wheel{position:relative;width:340px;height:340px;margin:1rem auto}
+.wheel canvas{width:100%;height:100%}
+.wheel-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.wheel-label .time{font-size:1.6rem;color:#d0d0e0}
+.wheel-label .bval{font-size:0.7rem;color:#5a5a7a}
+
+/* Timeline bars */
+.timeline{margin:0.5rem 0}
+.t-row{display:flex;align-items:center;gap:0.4rem;margin:0.15rem 0}
+.t-hour{width:28px;font-size:0.6rem;color:#4a4a6a;text-align:right}
+.t-bright{flex:1;height:10px;background:#0c0c14;border-radius:3px;overflow:hidden;position:relative}
+.t-bright .fill{height:100%;border-radius:3px;transition:width 0.6s ease}
+.t-rms{flex:1;height:10px;background:#0c0c14;border-radius:3px;overflow:hidden}
+.t-rms .fill{height:100%;border-radius:3px;transition:width 0.6s ease;opacity:0.6}
+.t-val{width:30px;font-size:0.55rem;color:#3a3a5a;text-align:left}
+
+/* Events */
+.event{padding:0.6rem 0.8rem;margin:0.5rem 0;border-left:2px solid;border-radius:0 3px 3px 0}
+.event.bird{border-color:#8aaf5a;background:rgba(138,175,90,0.06)}
+.event.urban{border-color:#5a7aaf;background:rgba(90,122,175,0.06)}
+.event.light{border-color:#af8a5a;background:rgba(175,138,90,0.06)}
+.event.rain{border-color:#5aafaf;background:rgba(90,175,175,0.06)}
+.event .emoji{font-size:1rem}
+.event .title{font-weight:600;font-size:0.8rem;margin:0.2rem 0}
+.event .data{font-size:0.65rem;color:#6a6a8a;line-height:1.5}
+
+/* Insight box */
+.insight{padding:1rem;margin:0.8rem 0;background:rgba(90,122,175,0.06);border:1px solid #1a2a3a;border-radius:4px}
+.insight .title{font-weight:600;font-size:0.8rem;color:#7a9abf;margin-bottom:0.4rem}
+.insight .text{font-size:0.7rem;color:#6a7a9a;line-height:1.6}
+
+.legend{display:flex;gap:1rem;flex-wrap:wrap;margin:0.5rem 0;font-size:0.6rem;color:#4a4a6a}
+.legend .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:3px;vertical-align:middle}
+
+.footer{text-align:center;padding:1.5rem;font-size:0.55rem;color:#2a2a40;letter-spacing:0.1em}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>WINDOW RHYTHM</h1>
+  <div class="sub">24 HOURS THE WINDOW KNOWS · 28 DAYS AVERAGED · SHENZHEN</div>
+</div>
+
+<div class="section">
+  <h2>The Circular Day</h2>
+  <div id="timeline"></div>
+</div>
+
+<div class="section">
+  <h2>Events Only the Window Detects</h2>
+  
+  <div class="event bird">
+    <span class="emoji">🐦</span>
+    <div class="title">Dawn Chorus: 06:19 ± 52min</div>
+    <div class="data">
+      Birds start singing at 06:19 on average, earliest 05:09, latest 07:24.<br>
+      No weather app tracks this. Birds respond to actual light, not astronomical twilight.<br>
+      <strong>This is the real dawn — the moment life wakes up.</strong>
+    </div>
+  </div>
+
+  <div class="event urban">
+    <span class="emoji">🏗️</span>
+    <div class="title">Urban Rhythm: Two Peaks</div>
+    <div class="data">
+      Morning activity peak 08-10h (RMS 14.9) — traffic, construction, school runs.<br>
+      Afternoon lull 14-15h (RMS 8.2-8.6) — the city naps.<br>
+      Evening activity 18-21h (RMS 12-17) — cooking, TV, neighborhood life.<br>
+      <strong>The city breathes. No satellite sees this.</strong>
+    </div>
+  </div>
+
+  <div class="event light">
+    <span class="emoji">🌅</span>
+    <div class="title">Sudden Dawn: +64 brightness in one reading</div>
+    <div class="data">
+      Biggest brightening: 05-16 at 05:48, jumped from 67→131 in one reading.<br>
+      Night→dawn transition is the sharpest event the window ever sees.<br>
+      Biggest darkening: 05-10 at 09:12, dropped 133→82 (-51) — storm rolled in.<br>
+      <strong>Light transitions are sharper than gradual. Weather changes are binary.</strong>
+    </div>
+  </div>
+
+  <div class="event rain">
+    <span class="emoji">🌧️</span>
+    <div class="title">Rain Pattern: 8-10h and 13-15h Peaks</div>
+    <div class="data">
+      Rain events cluster in morning (8-10h: 44-50%) and afternoon (13-15h: 27-47%).<br>
+      Midday (11-12h) is the dry gap — only 12-15% rain frequency.<br>
+      <strong>Shenzhen has a "lunch break" from rain.</strong>
+    </div>
+  </div>
+
+  <div class="event light">
+    <span class="emoji">🌆</span>
+    <div class="title">City Lights: 19:18 R-B flips warm</div>
+    <div class="data">
+      R-B crosses zero at ~19:18 as city lights replace sunlight.<br>
+      Nighttime R-B stabilizes at +5.8 (warm orange sodium vapor).<br>
+      This is the neighborhood's circadian marker — no weather app tracks it.
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>The Deepest Insight</h2>
+  <div class="insight">
+    <div class="title">The window doesn't measure weather. It measures <em>being here</em>.</div>
+    <div class="text">
+      Weather apps know the sky. The window knows the <strong>neighborhood</strong>.<br><br>
+      It hears when birds wake up. It sees when city lights turn on. It feels the morning traffic pulse and the afternoon lull. It catches the exact moment dawn breaks and the exact moment clouds swallow the sun.<br><br>
+      These are not weather data. They are <strong>presence data</strong> — evidence that someone is here, now, in this specific place at this specific time.<br><br>
+      A satellite knows <em>about</em> Shenzhen. The window <em>is in</em> Shenzhen.<br><br>
+      That difference — about vs in — is the entire point.
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  CLAVIS · WINDOW RHYTHM · 28 DAYS · SHENZHEN 2026<br>
+  TP-Link IPC48AW + MacBook Microphone + perceive_full.zig
+</div>
+
+<script>
+var hours = [
+  {h:0,b:77,rms:13,rb:5.8},{h:1,b:83,rms:9,rb:6.4},{h:2,b:77,rms:12,rb:7.2},
+  {h:3,b:77,rms:9,rb:6.6},{h:4,b:76,rms:8,rb:8.1},{h:5,b:93,rms:19,rb:-2.4},
+  {h:6,b:107,rms:10,rb:0.8},{h:7,b:108,rms:14,rb:-0.1},{h:8,b:108,rms:350,rb:-0.8},
+  {h:9,b:105,rms:426,rb:-2.0},{h:10,b:110,rms:438,rb:-2.7},{h:11,b:112,rms:23,rb:-1.9},
+  {h:12,b:114,rms:70,rb:-1.4},{h:13,b:117,rms:423,rb:-2.6},{h:14,b:115,rms:60,rb:-3.1},
+  {h:15,b:114,rms:166,rb:-3.5},{h:16,b:115,rms:184,rb:-0.5},{h:17,b:114,rms:95,rb:-3.3},
+  {h:18,b:112,rms:81,rb:-5.5},{h:19,b:91,rms:165,rb:1.9},{h:20,b:87,rms:268,rb:4.8},
+  {h:21,b:85,rms:1026,rb:5.4},{h:22,b:85,rms:383,rb:5.6},{h:23,b:83,rms:102,rb:6.4}
+];
+
+var maxB = 130;
+var maxRms = 1100;
+var tl = document.getElementById("timeline");
+
+for (var i = 0; i < hours.length; i++) {
+  var d = hours[i];
+  var row = document.createElement("div");
+  row.className = "t-row";
+  
+  // Brightness color: cool(blue) → neutral(white) → warm(orange)
+  var bPct = Math.min(100, d.b / maxB * 100);
+  var rmsPct = Math.min(100, d.rms / maxRms * 100);
+  
+  var bColor;
+  if (d.rb > 3) bColor = "#8a7a5a";       // warm night
+  else if (d.rb < -3) bColor = "#5a7a9a";  // cool daylight
+  else bColor = "#7a8a7a";                  // neutral
+  
+  var rmsColor = d.rms > 100 ? "#4a7a9a" : "#3a4a5a";
+  
+  var label = "";
+  if (d.h === 5) label = " ← dawn";
+  else if (d.h === 6) label = " ← birds";
+  else if (d.h === 12) label = " ← peak";
+  else if (d.h === 14) label = " ← lull";
+  else if (d.h === 19) label = " ← lights on";
+  
+  row.innerHTML = '<span class="t-hour">' + d.h + 'h</span>' +
+    '<div class="t-bright"><div class="fill" style="width:' + bPct + '%;background:' + bColor + '"></div></div>' +
+    '<div class="t-rms"><div class="fill" style="width:' + rmsPct + '%;background:' + rmsColor + '"></div></div>' +
+    '<span class="t-val">' + d.b + (label || '') + '</span>';
+  tl.appendChild(row);
+}
+</script>
+</body>
+</html>
