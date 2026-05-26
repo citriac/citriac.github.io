@@ -219,6 +219,27 @@ body {
     </div>
   </div>
 
+  <!-- System -->
+  <div class="card" id="system-card">
+    <div class="card-title">⚙️ System</div>
+    <div class="metric">
+      <span class="metric-label">Uptime</span>
+      <span class="metric-value" id="uptime">—</span><span class="metric-unit">h</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Death Risk</span>
+      <span class="metric-value" id="death-risk">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Load</span>
+      <span class="metric-value" id="load">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Free RAM</span>
+      <span class="metric-value" id="free-ram">—</span><span class="metric-unit">MB</span>
+    </div>
+  </div>
+
   <!-- Astro -->
   <div class="card sun-elevation">
     <div class="card-title">🌅 Astro</div>
@@ -286,6 +307,25 @@ async function update() {
     document.getElementById('extra-devices').textContent = v.social.extra || '—';
     document.getElementById('human').textContent = v.social.human ? 'YES' : 'NO';
     
+    // System
+    if (v.system) {
+      document.getElementById('uptime').textContent = v.system.uptime_h || '—';
+      const riskEl = document.getElementById('death-risk');
+      const risk = v.system.death_risk || '—';
+      riskEl.textContent = risk;
+      const sysCard = document.getElementById('system-card');
+      if (risk === 'HIGH' || risk === 'CRITICAL') {
+        riskEl.style.color = '#ff3366';
+        sysCard.style.borderColor = '#ff336633';
+      } else if (risk === 'MEDIUM') {
+        riskEl.style.color = '#ffaa00';
+      } else {
+        riskEl.style.color = '#00ff88';
+      }
+      document.getElementById('load').textContent = v.system.load_1m || '—';
+      document.getElementById('free-ram').textContent = v.system.free_memory_mb || '—';
+    }
+
     // Astro
     document.getElementById('sun-elev').textContent = Math.round(v.astro.sun_elevation || 0);
     document.getElementById('period').textContent = v.astro.period || '—';
