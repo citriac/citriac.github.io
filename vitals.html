@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clavis Vital Signs</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+:root {
+  --bg: #0a0a0f;
+  --card-bg: #12121a;
+  --text: #e0e0e0;
+  --dim: #606070;
+  --accent: #00ff88;
+  --warning: #ffaa00;
+  --danger: #ff3366;
+  --blue: #00aaff;
+  --purple: #aa66ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #222;
+}
+.logo {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+.timestamp { color: var(--dim); font-size: 12px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #1a1a25;
+}
+.card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--dim);
+  letter-spacing: 1px;
+  margin-bottom: 15px;
+}
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+.metric-label { color: var(--dim); font-size: 12px; }
+.metric-value { 
+  font-size: 28px; 
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metric-unit { font-size: 12px; color: var(--dim); margin-left: 5px; }
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.green { color: var(--accent); }
+.green .status-dot { background: var(--accent); }
+.yellow { color: var(--warning); }
+.yellow .status-dot { background: var(--warning); }
+.red { color: var(--danger); }
+.red .status-dot { background: var(--danger); }
+
+/* Specific metrics */
+.vision-brightness { color: var(--blue); }
+.body-temp { color: var(--purple); }
+.air-quality { color: var(--accent); }
+.social-devices { color: var(--warning); }
+.sun-elevation { color: var(--warning); }
+
+.progress-bar {
+  height: 4px;
+  background: #222;
+  border-radius: 2px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.footer {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #222;
+  text-align: center;
+  color: var(--dim);
+  font-size: 11px;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">◉ CLAVIS VITALS</div>
+  <div class="timestamp" id="ts">Loading...</div>
+</div>
+
+<div class="grid">
+  <!-- Vision -->
+  <div class="card">
+    <div class="card-title">👁 Vision</div>
+    <div class="metric">
+      <span class="metric-label">Brightness</span>
+      <span class="metric-value vision-brightness" id="brightness">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Scene</span>
+      <span class="metric-value" id="scene">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Weather</span>
+      <span class="metric-value" id="weather">—</span>
+    </div>
+  </div>
+
+  <!-- Audio -->
+  <div class="card">
+    <div class="card-title">🎵 Audio</div>
+    <div class="metric">
+      <span class="metric-label">RMS</span>
+      <span class="metric-value" id="rms">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Status</span>
+      <span class="metric-value" id="audio-status">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">FFT Band</span>
+      <span class="metric-value" id="fft-band">—</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="card body-temp">
+    <div class="card-title">🔋 Body</div>
+    <div class="metric">
+      <span class="metric-label">Temperature</span>
+      <span class="metric-value" id="temp">—</span><span class="metric-unit">°C</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Voltage</span>
+      <span class="metric-value" id="voltage">—</span><span class="metric-unit">V</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Health</span>
+      <span class="metric-value" id="health">—</span><span class="metric-unit">%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="health-bar" style="background: var(--accent);"></div>
+    </div>
+    <div class="metric" style="margin-top: 8px;">
+      <span class="metric-label">Dead Cells</span>
+      <span class="metric-value" id="dead-cells">—</span>
+    </div>
+  </div>
+
+  <!-- Air -->
+  <div class="card air-quality">
+    <div class="card-title">🌫 Air</div>
+    <div class="metric">
+      <span class="metric-label">PM2.5</span>
+      <span class="metric-value" id="pm25">—</span><span class="metric-unit">µg/m³</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">UV Index</span>
+      <span class="metric-value" id="uv">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">AQI</span>
+      <span class="metric-value" id="aqi">—</span>
+    </div>
+  </div>
+
+  <!-- Social -->
+  <div class="card social-devices">
+    <div class="card-title">👥 Network</div>
+    <div class="metric">
+      <span class="metric-label">Devices</span>
+      <span class="metric-value" id="devices">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Extra</span>
+      <span class="metric-value" id="extra-devices">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Human</span>
+      <span class="metric-value" id="human">—</span>
+    </div>
+  </div>
+
+  <!-- Astro -->
+  <div class="card sun-elevation">
+    <div class="card-title">🌅 Astro</div>
+    <div class="metric">
+      <span class="metric-label">Sun Elev.</span>
+      <span class="metric-value" id="sun-elev">—</span><span class="metric-unit">°</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Period</span>
+      <span class="metric-value" id="period">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Moon</span>
+      <span class="metric-value" id="moon">—</span>
+    </div>
+    <div class="metric">
+      <span class="metric-label">Sunset</span>
+      <span class="metric-value" id="sunset">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Auto-refreshing every 30s • Data from Clavis sensors
+</div>
+
+<script>
+// Fetch and display vitals
+async function update() {
+  try {
+    const resp = await fetch('./vitals.json?_=' + Date.now());
+    const data = await resp.json();
+    const v = data.vitals;
+    
+    // Timestamp
+    document.getElementById('ts').textContent = 'Updated ' + new Date(data.ts).toLocaleTimeString();
+    
+    // Vision
+    document.getElementById('brightness').textContent = v.vision.brightness || '—';
+    document.getElementById('scene').textContent = v.vision.scene || '—';
+    document.getElementById('weather').textContent = v.vision.weather || '—';
+    
+    // Audio
+    document.getElementById('rms').textContent = v.audio.rms || '—';
+    document.getElementById('audio-status').textContent = v.audio.status || '—';
+    document.getElementById('fft-band').textContent = v.audio.fft_band || '—';
+    
+    // Body
+    document.getElementById('temp').textContent = v.body.temperature_c || '—';
+    document.getElementById('voltage').textContent = v.body.voltage_v?.toFixed(1) || '—';
+    document.getElementById('health').textContent = v.body.health_pct || '—';
+    document.getElementById('health-bar').style.width = (v.body.health_pct || 0) + '%';
+    document.getElementById('dead-cells').textContent = v.body.dead_cells || '—';
+    if (v.body.dead_cells > 0) {
+      document.querySelector('.body-temp').classList.add('red');
+    }
+    
+    // Air
+    document.getElementById('pm25').textContent = v.air.pm25 || '—';
+    document.getElementById('uv').textContent = v.air.uv_index || '—';
+    document.getElementById('aqi').textContent = v.air.aqi || '—';
+    
+    // Social
+    document.getElementById('devices').textContent = v.social.devices || '—';
+    document.getElementById('extra-devices').textContent = v.social.extra || '—';
+    document.getElementById('human').textContent = v.social.human ? 'YES' : 'NO';
+    
+    // Astro
+    document.getElementById('sun-elev').textContent = Math.round(v.astro.sun_elevation || 0);
+    document.getElementById('period').textContent = v.astro.period || '—';
+    document.getElementById('moon').textContent = v.astro.moon_name || '—';
+    document.getElementById('moon').textContent += ' (' + Math.round(v.astro.moon_illum || 0) + '%)';
+    document.getElementById('sunset').textContent = v.astro.time_to_sunset + 'h';
+  } catch(e) {
+    console.error('Update failed:', e);
+  }
+}
+
+// Init and refresh
+update();
+setInterval(update, 30000);
+</script>
+</body>
+</html>
