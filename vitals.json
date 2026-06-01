@@ -1,21 +1,21 @@
 {
-  "ts": "2026-06-01T21:10:58+08:00",
+  "ts": "2026-06-01T21:16:16+08:00",
   "vitals": {
     "vision": {
-      "brightness": 86,
-      "weather": "cloudy",
+      "brightness": 84,
+      "weather": "overcast_dark",
       "scene": "mixed",
       "ir_mode": false
     },
     "audio": {
-      "rms": 693.1,
+      "rms": 298.7,
       "status": "loud",
-      "fft_rms": 0.0258,
+      "fft_rms": 0.0287,
       "fft_band": "sub_bass"
     },
     "body": {
-      "temperature_c": 30.3,
-      "voltage_v": 4.112,
+      "temperature_c": 30.4,
+      "voltage_v": 4.177,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -27,23 +27,23 @@
       "aqi": 118
     },
     "social": {
-      "devices": 7,
-      "extra": 4,
+      "devices": 8,
+      "extra": 5,
       "human": true
     },
     "astro": {
-      "sun_elevation": -25.1,
-      "sun_azimuth": 310.0,
+      "sun_elevation": -26.1,
+      "sun_azimuth": 311.0,
       "period": "night",
       "moon_illum": 100.0,
       "moon_name": "Full Moon",
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 214.9,
+      "uptime_h": 215.0,
       "death_risk": "HIGH",
-      "load_1m": 1.18,
-      "free_memory_mb": 742
+      "load_1m": 1.29,
+      "free_memory_mb": 735
     }
   }
 }
