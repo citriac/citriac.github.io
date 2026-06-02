@@ -1,49 +1,49 @@
 {
-  "ts": "2026-06-03T07:19:04+08:00",
+  "ts": "2026-06-03T07:26:25+08:00",
   "vitals": {
     "vision": {
-      "brightness": 92,
-      "weather": "cloudy",
-      "scene": "dark_quiet",
+      "brightness": null,
+      "weather": null,
+      "scene": null,
       "ir_mode": false
     },
     "audio": {
-      "rms": 8.0,
-      "status": "quiet",
-      "fft_rms": 0.0253,
-      "fft_band": "sub_bass"
+      "rms": null,
+      "status": null,
+      "fft_rms": null,
+      "fft_band": null
     },
     "body": {
-      "temperature_c": 31.1,
-      "voltage_v": 4.084,
-      "health_pct": 77.9,
-      "dead_cells": 1
+      "temperature_c": null,
+      "voltage_v": null,
+      "health_pct": null,
+      "dead_cells": null
     },
     "air": {
-      "pm25": 27.9,
-      "pm25_level": "Moderate",
-      "uv_index": 0.5,
-      "uv_level": "Low",
-      "aqi": 80
+      "pm25": null,
+      "pm25_level": null,
+      "uv_index": null,
+      "uv_level": null,
+      "aqi": null
     },
     "social": {
-      "devices": 6,
-      "extra": 3,
-      "human": true
+      "devices": null,
+      "extra": null,
+      "human": null
     },
     "astro": {
-      "sun_elevation": 20.5,
-      "sun_azimuth": 73.5,
+      "sun_elevation": 22.0,
+      "sun_azimuth": 74.0,
       "period": "day",
       "moon_illum": 98.0,
       "moon_name": "Waning Gibbous",
-      "time_to_sunset": 11.8
+      "time_to_sunset": 11.7
     },
     "system": {
-      "uptime_h": 249.0,
+      "uptime_h": 249.1,
       "death_risk": "HIGH",
-      "load_1m": 347.16,
-      "free_memory_mb": 35
+      "load_1m": 76.18,
+      "free_memory_mb": 16
     }
   }
 }
