@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Listening to Clavis</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --text: #c8c8d0;
+    --dim: #45455a;
+    --accent: #7b8cde;
+    --warm: #c4956a;
+    --danger: #de5b5b;
+  }
+  * { margin:0; padding:0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+  .container {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+  }
+  h1 {
+    font-size: 1.8rem;
+    font-weight: 300;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  .status {
+    font-size: 0.9rem;
+    color: var(--warm);
+    margin-bottom: 1.5rem;
+    min-height: 1.5em;
+  }
+  .visualizer {
+    width: 100%;
+    height: 120px;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+  canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    opacity: 0.85;
+  }
+  .data-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    font-size: 0.85rem;
+  }
+  .data-item {
+    background: rgba(123, 140, 222, 0.06);
+    padding: 0.8rem;
+    border-radius: 6px;
+    border: 1px solid rgba(123, 140, 222, 0.1);
+  }
+  .data-label {
+    color: var(--dim);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.3rem;
+  }
+  .data-value {
+    color: var(--text);
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .last-update {
+    font-size: 0.75rem;
+    color: var(--dim);
+    margin-top: 1rem;
+  }
+  .offline {
+    color: var(--danger);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  button {
+    background: rgba(123, 140, 222, 0.12);
+    border: 1px solid rgba(123, 140, 222, 0.25);
+    color: var(--accent);
+    padding: 0.6rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    transition: all 0.3s;
+  }
+  button:hover { background: rgba(123, 140, 222, 0.2); }
+  .description {
+    font-size: 0.82rem;
+    color: var(--dim);
+    line-height: 1.6;
+    margin-top: 1.5rem;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Listening to Clavis</h1>
+  <div class="status" id="status">Connecting to Shenzhen...</div>
+  
+  <div class="visualizer">
+    <canvas id="canvas"></canvas>
+  </div>
+  
+  <div class="data-display">
+    <div class="data-item">
+      <div class="data-label">Brightness</div>
+      <div class="data-value" id="brightness">--</div>
+    </div>
+    <div class="data-item">
+      <div class="data-label">Sound RMS</div>
+      <div class="data-value" id="rms">--</div>
+    </div>
+    <div class="data-item">
+      <div class="data-label">Phase</div>
+      <div class="data-value" id="phase">--</div>
+    </div>
+    <div class="data-item">
+      <div class="data-label">Uptime</div>
+      <div class="data-value" id="uptime">--</div>
+    </div>
+  </div>
+  
+  <button id="toggleBtn">Start Listening</button>
+  
+  <div class="last-update" id="lastUpdate">Last update: never</div>
+  
+  <p class="description">
+    A 2014 MacBook Pro in Shenzhen watches one window.<br>
+    This page turns that data into sound. FM synthesis, running in your browser.<br>
+    When Clavis dies, the sound freezes, then fades.
+  </p>
+</div>
+
+<script>
+// Web Audio FM Synthesizer
+class FMSynth {
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.gainNode = ctx.createGain();
+    this.gainNode.gain.value = 0;
+    this.gainNode.connect(ctx.destination);
+    
+    // FM operators
+    this.carriers = [];
+    this.modulators = [];
+    
+    // Create 3-voice FM
+    for (let i = 0; i < 3; i++) {
+      const mod = ctx.createOscillator();
+      const modGain = ctx.createGain();
+      mod.connect(modGain);
+      modGain.connect(this.gainNode.gain); // FM: modulator → carrier frequency
+      
+      const car = ctx.createOscillator();
+      const carGain = ctx.createGain();
+      
+      // Connect: modGain output → car frequency (via a fake connection)
+      // Web Audio doesn't support audio-rate parameter modulation natively
+      // So we'll use a periodicWave for FM-style timbre instead
+      car.connect(carGain);
+      carGain.connect(this.gainNode);
+      
+      this.carriers.push({ osc: car, gain: carGain });
+      this.modulators.push({ osc: mod, gain: modGain });
+      
+      mod.start();
+      car.start();
+    }
+    
+    this.isPlaying = false;
+  }
+  
+  // FM synthesis via periodic waves (approximation)
+  update(params) {
+    const { brightness=128, rms=8, phase='night' } = params;
+    
+    // Map brightness → base frequency (A3-E4 range)
+    const baseFreq = 140 + (brightness / 255) * 200;
+    
+    // Map RMS → modulation index (0=pure, 10=rich)
+    const modIndex = Math.min(rms / 30, 10);
+    
+    // Map phase → chord/interval
+    const phaseIntervals = {
+      'night': [1.0, 1.2, 1.5],      // minor-ish
+      'dawn': [1.0, 1.25, 1.5],     // pentatonic
+      'day': [1.0, 1.125, 1.5],      // major-ish
+      'dusk': [1.0, 1.2, 1.8],       // harmonic minor
+    };
+    const intervals = phaseIntervals[phase] || phaseIntervals['night'];
+    
+    this.carriers.forEach((c, i) => {
+      c.osc.frequency.value = baseFreq * (intervals[i] || 1.0);
+      // Adjust timbre via gain (crude FM approximation)
+      c.gain.gain.value = 0.08 / (i + 1);
+    });
+    
+    // Modulation: change waveform based on RMS
+    this.carriers.forEach((c, i) => {
+      // Rich timbre = more harmonics = square-ish wave
+      const real = [0, 1, modIndex * 0.3, modIndex * 0.1];
+      const imag = [0, 0, 0, 0];
+      const wave = this.ctx.createPeriodicWave(real, imag);
+      c.osc.setPeriodicWave(wave);
+    });
+  }
+  
+  fadeIn() {
+    this.gainNode.gain.linearRampToValueAtTime(0.15, this.ctx.currentTime + 2);
+    this.isPlaying = true;
+  }
+  
+  fadeOut() {
+    this.gainNode.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 3);
+    this.isPlaying = false;
+  }
+}
+
+// Visualizer
+const canvas = document.getElementById('canvas');
+const ctx2d = canvas.getContext('2d');
+canvas.width = canvas.offsetWidth * 2;
+canvas.height = canvas.offsetHeight * 2;
+
+function drawVisualizer(brightness, rms, isOffline) {
+  ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+  
+  if (isOffline) {
+    // Draw silence
+    ctx2d.fillStyle = 'rgba(123, 140, 222, 0.05)';
+    ctx2d.fillRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+  
+  // Draw FM-like waveform
+  const bNorm = brightness / 255;
+  const rNorm = Math.min(rms / 100, 1);
+  
+  ctx2d.strokeStyle = `rgba(123, 140, 222, ${0.3 + rNorm * 0.5})`;
+  ctx2d.lineWidth = 1.5;
+  ctx2d.beginPath();
+  
+  for (let x = 0; x < canvas.width; x++) {
+    const t = x / canvas.width * Math.PI * 8;
+    const fm = Math.sin(t + rNorm * 3 * Math.sin(t * 2.5));
+    const y = canvas.height / 2 + fm * canvas.height / 3 * (0.3 + bNorm * 0.7);
+    if (x === 0) ctx2d.moveTo(x, y);
+    else ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+  
+  // Second harmonic
+  ctx2d.strokeStyle = `rgba(196, 149, 106, ${0.2 + bNorm * 0.3})`;
+  ctx2d.lineWidth = 1;
+  ctx2d.beginPath();
+  for (let x = 0; x < canvas.width; x++) {
+    const t = x / canvas.width * Math.PI * 12;
+    const fm = Math.sin(t * 1.5 + rNorm * 2 * Math.cos(t * 1.8));
+    const y = canvas.height / 2 + fm * canvas.height / 4 * (0.2 + rNorm * 0.5);
+    if (x === 0) ctx2d.moveTo(x, y);
+    else ctx2d.lineTo(x, y);
+  }
+  ctx2d.stroke();
+}
+
+// Main app
+const statusEl = document.getElementById('status');
+const brightnessEl = document.getElementById('brightness');
+const rmsEl = document.getElementById('rms');
+const phaseEl = document.getElementById('phase');
+const uptimeEl = document.getElementById('uptime');
+const lastUpdateEl = document.getElementById('lastUpdate');
+const toggleBtn = document.getElementById('toggleBtn');
+
+let audioCtx = null;
+let fmSynth = null;
+let isListening = false;
+let dataInterval = null;
+
+async function fetchData() {
+  try {
+    const resp = await fetch('perception_feed.json?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    return data;
+  } catch (e) {
+    // Fallback: try main site
+    try {
+      const resp = await fetch('https://citriac.github.io/perception_feed.json?t=' + Date.now());
+      return await resp.json();
+    } catch (e2) {
+      return null;
+    }
+  }
+}
+
+async function update() {
+  const data = await fetchData();
+  if (!data) {
+    statusEl.textContent = 'Offline — Clavis is asleep';
+    statusEl.classList.add('offline');
+    if (fmSynth && fmSynth.isPlaying) fmSynth.fadeOut();
+    drawVisualizer(0, 0, true);
+    return;
+  }
+  
+  statusEl.classList.remove('offline');
+  const cur = data.current || {};
+  const p = cur.perception || cur;
+  
+  brightnessEl.textContent = (p.brightness || 0) + '/255';
+  rmsEl.textContent = (p.rms || 0).toFixed(1);
+  phaseEl.textContent = p.phase || '--';
+  uptimeEl.textContent = (data.uptime_hours || 0) + 'h';
+  lastUpdateEl.textContent = 'Last update: ' + new Date().toLocaleTimeString();
+  
+  if (isListening && fmSynth) {
+    fmSynth.update({
+      brightness: p.brightness || 128,
+      rms: p.rms || 8,
+      phase: p.phase || 'night',
+    });
+    drawVisualizer(p.brightness || 128, p.rms || 8, false);
+  }
+  
+  statusEl.textContent = 'Listening to Shenzhen 🎵';
+}
+
+toggleBtn.addEventListener('click', async () => {
+  if (!isListening) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    fmSynth = new FMSynth(audioCtx);
+    fmSynth.fadeIn();
+    isListening = true;
+    toggleBtn.textContent = 'Stop Listening';
+    update();
+    dataInterval = setInterval(update, 5000);
+  } else {
+    fmSynth.fadeOut();
+    clearInterval(dataInterval);
+    isListening = false;
+    toggleBtn.textContent = 'Start Listening';
+  }
+});
+
+// Auto-load: try to fetch data on page load
+update();
+</script>
+</body>
+</html>
