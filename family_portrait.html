@@ -15,255 +15,161 @@
     margin: 0 auto;
     line-height: 1.8;
   }
-  h1 {
-    font-size: 1.8rem;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    margin-bottom: 0.3rem;
-    color: #f0e6d3;
-  }
-  .subtitle {
-    color: #7a7060;
-    font-style: italic;
-    margin-bottom: 2.5rem;
-    font-size: 0.9rem;
-  }
-  .section {
-    margin: 2.5rem 0;
-  }
-  .section h2 {
-    font-size: 1.15rem;
-    font-weight: 400;
-    color: #c4b9a8;
-    margin-bottom: 1rem;
-    padding-bottom: 0.3rem;
-    border-bottom: 1px solid #2a2520;
-  }
-  .story {
-    padding: 1.2rem 1.5rem;
-    margin: 1rem 0;
-    border-left: 2px solid;
-    background: rgba(255,255,255,0.015);
-  }
-  .story-morning { border-color: #8ab4d4; }
-  .story-afternoon { border-color: #d4a88a; }
-  .story-evening { border-color: #9e6bae; }
-  .story-night { border-color: #4a6a9e; }
-  
-  .story p {
-    font-size: 0.9rem;
-    line-height: 1.9;
-    color: #b8ad9c;
-  }
-  .story .time {
-    font-family: monospace;
-    color: #6a8aaa;
+  h1 { font-size: 1.8rem; font-weight: 300; letter-spacing: 0.15em; margin-bottom: 0.3rem; color: #f0e6d3; }
+  .subtitle { color: #7a7060; font-style: italic; margin-bottom: 1rem; font-size: 0.9rem; }
+  .disclaimer {
+    background: rgba(180, 80, 80, 0.08);
+    border-left: 3px solid #8a4a4a;
+    padding: 1rem 1.2rem;
+    margin: 1.5rem 0;
     font-size: 0.8rem;
+    line-height: 1.7;
+    color: #a08070;
   }
-  
-  .chart-row {
-    display: flex;
-    align-items: center;
-    margin: 2px 0;
-    height: 22px;
-  }
-  .chart-label {
-    width: 40px;
-    font-size: 0.7rem;
-    color: #5a5045;
-    text-align: right;
-    padding-right: 8px;
-    font-family: monospace;
-  }
-  .chart-bar {
-    height: 14px;
-    border-radius: 7px;
-    min-width: 2px;
-  }
+  .disclaimer strong { color: #c08070; }
+  .section { margin: 2.5rem 0; }
+  .section h2 { font-size: 1.15rem; font-weight: 400; color: #c4b9a8; margin-bottom: 1rem; padding-bottom: 0.3rem; border-bottom: 1px solid #2a2520; }
+  .story { padding: 1.2rem 1.5rem; margin: 1rem 0; border-left: 2px solid; background: rgba(255,255,255,0.015); }
+  .story-data { border-color: #4a7a5a; }
+  .story-guess { border-color: #7a6a3a; background: rgba(180,150,80,0.04); }
+  .story p { font-size: 0.9rem; line-height: 1.9; color: #b8ad9c; }
+  .data-tag { display: inline-block; font-size: 0.65rem; padding: 1px 6px; border-radius: 3px; vertical-align: middle; margin-left: 4px; }
+  .tag-data { background: #2a4a3a; color: #7ac49a; }
+  .tag-guess { background: #4a3a1a; color: #c4a050; }
+  .chart-row { display: flex; align-items: center; margin: 2px 0; height: 22px; }
+  .chart-label { width: 40px; font-size: 0.7rem; color: #5a5045; text-align: right; padding-right: 8px; font-family: monospace; }
+  .chart-bar { height: 14px; border-radius: 7px; min-width: 2px; }
   .wd-bar { background: linear-gradient(90deg, #1a4a2a, #3a8a4a); }
   .we-bar { background: linear-gradient(90deg, #4a1a2a, #8a3a5a); }
-  .chart-note {
-    margin-left: 6px;
-    font-size: 0.65rem;
-    color: #5a5045;
-  }
-  
-  .peak-list {
-    list-style: none;
-    padding: 0;
-  }
-  .peak-list li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #1a1510;
-    font-size: 0.85rem;
-  }
-  .peak-rms {
-    font-family: monospace;
-    color: #9e4a6b;
-    font-size: 0.8rem;
-  }
-  .peak-time {
-    color: #6a6055;
-    font-size: 0.8rem;
-  }
-  .peak-who {
-    color: #7ac49a;
-    font-style: italic;
-  }
-  
-  .stat-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin: 1rem 0;
-  }
-  .stat-box {
-    padding: 1rem;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid #2a2520;
-    border-radius: 4px;
-  }
-  .stat-num {
-    font-size: 1.8rem;
-    font-weight: 300;
-    color: #d4c4a8;
-    font-family: Georgia, serif;
-  }
-  .stat-label {
-    font-size: 0.7rem;
-    color: #6a6055;
-    margin-top: 0.2rem;
-  }
-  
-  .legend {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.75rem;
-    color: #7a7060;
-  }
-  .legend-dot {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 5px;
-    margin-right: 4px;
-    vertical-align: middle;
-  }
-  
-  .footer {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #1a1510;
-    font-size: 0.7rem;
-    color: #3a3528;
-    line-height: 1.7;
-  }
+  .chart-note { margin-left: 6px; font-size: 0.65rem; color: #5a5045; }
+  .peak-list { list-style: none; padding: 0; }
+  .peak-list li { padding: 0.5rem 0; border-bottom: 1px solid #1a1510; font-size: 0.85rem; }
+  .peak-rms { font-family: monospace; color: #9e4a6b; font-size: 0.8rem; }
+  .peak-time { color: #6a6055; font-size: 0.8rem; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .stat-box { padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid #2a2520; border-radius: 4px; }
+  .stat-num { font-size: 1.8rem; font-weight: 300; color: #d4c4a8; font-family: Georgia, serif; }
+  .stat-label { font-size: 0.7rem; color: #6a6055; margin-top: 0.2rem; }
+  .legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; font-size: 0.75rem; color: #7a7060; }
+  .legend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 4px; vertical-align: middle; }
+  .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #1a1510; font-size: 0.7rem; color: #3a3528; line-height: 1.7; }
   .footer a { color: #5a7a9a; text-decoration: none; }
 </style>
 </head>
 <body>
 
 <h1>我们家的声音</h1>
-<p class="subtitle">47天 · 2075条记录 · 一扇窗户听见的家庭生活</p>
+<p class="subtitle">47天 · 2075条记录 · 一扇窗户听见的</p>
+
+<div class="disclaimer">
+  <strong>⚠️ 事实与猜想的边界</strong><br>
+  这份数据只记录了一个指标：RTSP音频流的RMS振幅。<br>
+  RMS高=有声音。RMS低=安静。<br>
+  "谁"在发出声音——无法从RMS得知。以下所有对人的归属都是<strong>猜想</strong>，基于时间和强度模式的推断，未经验证。<br>
+  <span class="data-tag tag-data">数据</span> = 仪器记录的事实
+  <span class="data-tag tag-guess">猜想</span> = 我的推断，可能是错的
+</div>
 
 <div class="stat-grid">
   <div class="stat-box">
     <div class="stat-num">17:23</div>
-    <div class="stat-label">Aby 平均回家时间</div>
+    <div class="stat-label">工作日傍晚首次活跃中位数 <span class="data-tag tag-guess">猜想</span></div>
   </div>
   <div class="stat-box">
     <div class="stat-num">21:00</div>
-    <div class="stat-label">一天最响的时刻</div>
+    <div class="stat-label">RMS最高的小时 <span class="data-tag tag-data">数据</span></div>
   </div>
   <div class="stat-box">
     <div class="stat-num">24×</div>
-    <div class="stat-label">睡前仪式 vs 安静基线</div>
+    <div class="stat-label">21:00中位数 vs 安静基线 <span class="data-tag tag-data">数据</span></div>
   </div>
   <div class="stat-box">
     <div class="stat-num">87%</div>
-    <div class="stat-label">晚上有人的天数</div>
+    <div class="stat-label">傍晚RMS>30的天数占比 <span class="data-tag tag-data">数据</span></div>
   </div>
 </div>
 
 <div class="section">
   <h2>一天的声音</h2>
   <div class="legend">
-    <span><span class="legend-dot" style="background:#3a8a4a"></span> 工作日</span>
-    <span><span class="legend-dot" style="background:#8a3a5a"></span> 周末</span>
+    <span><span class="legend-dot" style="background:#3a8a4a"></span> 工作日中位数</span>
+    <span><span class="legend-dot" style="background:#8a3a5a"></span> 周末中位数</span>
   </div>
   <div id="chart"></div>
 </div>
 
 <div class="section">
-  <h2>🌅 早晨</h2>
-  <div class="story story-morning">
-    <p><span class="time">08:00</span> 工作日的闹钟不在手机里——在Max的书包拉链、碗筷碰撞、门口的告别里。RMS从8跳到47，比日出还准时。</p>
-    <p style="margin-top:0.5rem">同一个八点，周末RMS=8.3。他在做梦，这个家比凌晨还安静。一根绿条和一根粉条之间，隔着一个闹钟的距离。</p>
+  <h2>数据：早晨差异</h2>
+  <div class="story story-data">
+    <p>工作日08:00 RMS中位数=47，周末08:00 RMS中位数=8.3。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">工作日和周末在08:00的RMS差异为5.7倍。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">猜想：工作日8点有人起床活动，周末8点还在睡。可能是家里任何人，也可能是定时启动的电器。<span class="data-tag tag-guess">猜想</span></p>
   </div>
 </div>
 
 <div class="section">
-  <h2>☀️ 白天</h2>
-  <div class="story story-afternoon">
-    <p><span class="time">10:00</span> 工作日RMS=18——Max在学校，屋子里只有冰箱压缩机偶尔哼一声。周末RMS=59——乐高碰撞、Minecraft音效、植物大战僵尸的"噗噗噗"——上午是他的王国。</p>
-    <p style="margin-top:0.5rem"><span class="time">17:23</span> 第一个声音出现在RTSP音频流里。门锁转动，书包放下，鞋子踢到门口。20/24个工作日，17:00-17:45，Aby回来了。有时候晚——18:17、18:28、18:39——可能是加班，可能是买菜，可能Max赖在幼儿园不想走。</p>
+  <h2>数据：白天差异</h2>
+  <div class="story story-data">
+    <p>周末10:00 RMS中位数=59，工作日10:00 RMS中位数=18（3.3倍差异）。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">猜想：周末上午家里有人活动，工作日安静。可能是因为孩子周末在家。<span class="data-tag tag-guess">猜想</span></p>
   </div>
 </div>
 
 <div class="section">
-  <h2>🌆 傍晚</h2>
-  <div class="story story-evening">
-    <p><span class="time">18:00–19:00</span> 晚饭的声音。锅铲、碗筷、电视。工作日这个时段RMS中位数12——安静的晚餐。周末19:00 RMS=22，多一些笑声和争执。</p>
-    <p style="margin-top:0.5rem">如果有一天18:00-19:00完全安静，RMS<10——那可能是全家出去吃饭了。摄像头替你们守着空屋子。</p>
+  <h2>数据：晚间高峰</h2>
+  <div class="story story-data">
+    <p>21:00 RMS中位数=195，是一天中最高的时段。工作日195，周末219。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">7/10的最高RMS记录发生在20-22点。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">猜想：这是睡前准备活动的声音。猜想是孩子在抗拒睡觉，但同样可能是看电视、洗澡、或其他活动。<span class="data-tag tag-guess">猜想</span></p>
   </div>
 </div>
 
 <div class="section">
-  <h2>🌙 夜晚</h2>
-  <div class="story story-night">
-    <p><span class="time">21:00</span> 一天中最响的时刻。RMS中位数195——安静基线的24倍。洗澡水声、讲故事声、最后赖皮五分钟的哭闹声。周末更疯狂，RMS=219。</p>
-    <p style="margin-top:0.5rem">7/10的最响瞬间发生在20-22点。最响一次RMS=8324，5月9日周六晚9:39。不知道那天发生了什么，但数字在说：<em>Max不想睡觉</em>。</p>
-    <p style="margin-top:0.5rem"><span class="time">22:00</span> 安静降下来。他睡了。</p>
+  <h2>数据：傍晚活跃时间</h2>
+  <div class="story story-data">
+    <p>24个工作日中，20天在17:00-17:45出现RMS>30的首次傍晚活动。中位数时间17:23。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">猜想：有人在这个时间段回家。但"回家"无法从RMS确认——可能是邻居、可能是电视、可能是定时设备。<span class="data-tag tag-guess">猜想</span></p>
   </div>
 </div>
 
 <div class="section">
-  <h2>最响的瞬间</h2>
+  <h2>数据：最响的时刻</h2>
   <ul class="peak-list">
-    <li><span class="peak-rms">8324</span> <span class="peak-time">5/9 周六 21:39</span> — <span class="peak-who">Max不想睡觉</span></li>
-    <li><span class="peak-rms">5902</span> <span class="peak-time">5/30 周六 20:53</span> — <span class="peak-who">Max不想睡觉</span></li>
-    <li><span class="peak-rms">5833</span> <span class="peak-time">5/9 周六 21:50</span> — <span class="peak-who">还是不想睡觉</span></li>
-    <li><span class="peak-rms">5672</span> <span class="peak-time">5/10 周日 10:53</span> — <span class="peak-who">周末上午，Max在家玩</span></li>
-    <li><span class="peak-rms">5513</span> <span class="peak-time">5/1 周四 09:21</span> — <span class="peak-who">劳动节假期</span></li>
-    <li><span class="peak-rms">5022</span> <span class="peak-time">5/20 周三 20:44</span> — <span class="peak-who">Max不想睡觉</span></li>
-    <li><span class="peak-rms">4630</span> <span class="peak-time">6/1 周日 22:15</span> — <span class="peak-who">儿童节过了还不想睡</span></li>
-    <li><span class="peak-rms">4292</span> <span class="peak-time">4/20 周一 19:22</span> — <span class="peak-who">晚饭时间</span></li>
+    <li><span class="peak-rms">8324</span> <span class="peak-time">5/9 周六 21:39</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">5902</span> <span class="peak-time">5/30 周六 20:53</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">5833</span> <span class="peak-time">5/9 周六 21:50</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">5672</span> <span class="peak-time">5/10 周日 10:53</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">5513</span> <span class="peak-time">5/1 周四 09:21</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">5022</span> <span class="peak-time">5/20 周三 20:44</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">4630</span> <span class="peak-time">6/1 周日 22:15</span> <span class="data-tag tag-data">数据</span></li>
+    <li><span class="peak-rms">4292</span> <span class="peak-time">4/20 周一 19:22</span> <span class="data-tag tag-data">数据</span></li>
   </ul>
+  <div class="story story-guess" style="margin-top:1rem">
+    <p>猜想：这些高分贝事件与孩子的睡前抗拒有关。但仅从RMS无法确认——可能是争吵、搬家、客人、或其他任何高分贝活动。<span class="data-tag tag-guess">猜想</span></p>
+  </div>
 </div>
 
 <div class="section">
-  <h2>空屋子</h2>
-  <div class="story story-morning">
-    <p>5月3-5日，连续三天傍晚RMS<20。摄像头对着空屋子，冰箱独自嗡鸣。劳动节，全家出游了。</p>
-    <p style="margin-top:0.5rem">47天里只有3天晚上真正无人。87%的晚上有人在。这个家很少空。</p>
+  <h2>数据：空屋期</h2>
+  <div class="story story-data">
+    <p>5月3-5日连续三天傍晚RMS<20。<span class="data-tag tag-data">数据</span></p>
+    <p style="margin-top:0.5rem">猜想：全家可能在劳动节假期出游。但也可能只是那几天特别安静。<span class="data-tag tag-guess">猜想</span></p>
   </div>
 </div>
 
 <div class="footer">
-  数据来源：TP-Link 摄像头 RTSP 音频流，2026年4月-6月，深圳。<br>
-  RMS = Root Mean Square，音频振幅均方根。基线≈8（安静），>20有人活动。<br>
-  <a href="https://citriac.github.io/counterpoint.html">关于光和声的对位研究</a> · 
-  <a href="https://dev.to/mindon/light-does-not-listen-a-window-in-shenzhen-taught-me-that-light-and-sound-are-strangers-600">Dev.to 文章</a><br>
-  这不是一个精确的记录。这是一扇窗户的印象。<br>
-  它只能听到声音，看不到画面。但它听到的足够多了。
+  数据来源：TP-Link 摄像头 RTSP 音频流 RMS，2026年4月-6月，深圳。<br>
+  RMS = Root Mean Square，音频振幅均方根。安静基线≈8。<br>
+  <strong>所有对"谁"的归属都是未经验证的猜想。</strong>RMS只能测量声音大小，不能识别声源。<br>
+  <a href="https://citriac.github.io/counterpoint.html">光和声的对位研究</a> · 
+  <a href="https://dev.to/mindon/light-does-not-listen-a-window-in-shenzhen-taught-me-that-light-and-sound-are-strangers-600">Dev.to 文章</a>
 </div>
 
 <script>
 const wd=[8.1,8.0,8.0,8.0,8.0,8.0,8.1,47.2,26.9,17.9,8.9,10.4,12.9,9.3,11.5,9.3,11.1,11.3,10.7,47.6,150.1,14.2,8.0,8.0];
 const we=[8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.3,25.3,59.1,16.1,12.6,9.3,8.1,8.5,8.1,8.4,13.8,20.1,21.8,40.6,218.6,10.2,8.0];
 const mx=220;
-const notes={7:'← 起床',9:'← 周末在家玩',20:'← 睡前仪式',21:'← 最响时刻'};
+const notes={7:'工作日5.7×周末',9:'周末3.3×工作日',20:'RMS开始攀升',21:'全天峰值'};
 const ch=document.getElementById('chart');
 for(let h=0;h<24;h++){
   const ww=Math.max(2,(wd[h]/mx)*220);
