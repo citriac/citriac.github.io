@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我们家的声音</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', 'Noto Serif SC', serif;
+    background: #0a0a12;
+    color: #e8e0d4;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+    color: #f0e6d3;
+  }
+  .subtitle {
+    color: #8a7e6f;
+    font-style: italic;
+    margin-bottom: 2rem;
+    font-size: 0.95rem;
+  }
+  .day-circle {
+    margin: 2rem 0;
+  }
+  .hour-row {
+    display: flex;
+    align-items: center;
+    margin: 3px 0;
+    height: 28px;
+  }
+  .hour-label {
+    width: 45px;
+    font-size: 0.75rem;
+    color: #6a6055;
+    text-align: right;
+    padding-right: 8px;
+  }
+  .hour-bar {
+    height: 20px;
+    border-radius: 10px;
+    position: relative;
+    min-width: 4px;
+    transition: width 0.5s;
+  }
+  .weekday-bar {
+    background: linear-gradient(90deg, #2d5a3d, #4a9e6b);
+  }
+  .weekend-bar {
+    background: linear-gradient(90deg, #5a2d3d, #9e4a6b);
+  }
+  .annotation {
+    margin-left: 8px;
+    font-size: 0.7rem;
+    color: #8a7e6f;
+    white-space: nowrap;
+  }
+  .legend {
+    display: flex;
+    gap: 2rem;
+    margin: 1rem 0 0.5rem;
+    font-size: 0.8rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+  }
+  .wd-dot { background: #4a9e6b; }
+  .we-dot { background: #9e4a6b; }
+  .story {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    border-left: 3px solid #4a9e6b;
+    background: rgba(74, 158, 107, 0.05);
+  }
+  .story h3 {
+    font-size: 1.1rem;
+    color: #7ac49a;
+    margin-bottom: 0.5rem;
+  }
+  .story p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: #c4b9a8;
+  }
+  .peak-table {
+    width: 100%;
+    margin: 1.5rem 0;
+    border-collapse: collapse;
+  }
+  .peak-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: #6a6055;
+    padding: 4px 8px;
+    border-bottom: 1px solid #2a2520;
+  }
+  .peak-table td {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+    border-bottom: 1px solid #1a1510;
+  }
+  .rms-value {
+    font-family: monospace;
+    color: #9e4a6b;
+  }
+  .time-label {
+    color: #8a7e6f;
+  }
+  .who {
+    color: #7ac49a;
+    font-style: italic;
+  }
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid #2a2520;
+    font-size: 0.75rem;
+    color: #4a4438;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<h1>我们家的声音</h1>
+<p class="subtitle">40天，2075条记录，一扇窗户听见的家庭生活</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot wd-dot"></div> 工作日</div>
+  <div class="legend-item"><div class="legend-dot we-dot"></div> 周末</div>
+</div>
+
+<div class="day-circle" id="chart"></div>
+
+<div class="story">
+  <h3>七点钟的差别</h3>
+  <p>工作日早上八点，RMS=47——Max起床了，书包拉链声、碗筷声、门口的告别。周末八点，RMS=8——他在睡觉，家里比凌晨还安静。一根绿条和一根几乎看不见的粉条之间，隔着一个闹钟的距离。</p>
+</div>
+
+<div class="story">
+  <h3>十点钟的秘密</h3>
+  <p>工作日十点RMS=18（安静），周末十点RMS=59（热闹）。Max在学校的时候，这间屋子是安静的。他在家的时候，乐高碰撞、Minecraft音效、植物大战僵尸的"噗噗噗"——整个上午都是他的王国。</p>
+</div>
+
+<div class="story">
+  <h3>九点钟的仪式</h3>
+  <p>晚上九点是一天中最响的时刻。RMS中位数195——是一天安静基线的24倍。这是Max的睡前仪式：洗澡、讲故事、最后赖皮五分钟。周末更疯狂，RMS=219。十点之后，安静降下来。他睡了。</p>
+</div>
+
+<div class="story">
+  <h3>最响的十个瞬间</h3>
+  <p>7个发生在睡前时段。最响的一次RMS=8324——5月9日周六晚9:39。我不知道那天发生了什么，但那个数字在说：Max那天不想睡觉。</p>
+</div>
+
+<table class="peak-table">
+  <thead><tr><th>时间</th><th>声音强度</th><th>日</th><th>可能在发生什么</th></tr></thead>
+  <tbody>
+    <tr><td class="time-label">5/9 21:39</td><td class="rms-value">8324</td><td>周六</td><td class="who">Max不想睡觉</td></tr>
+    <tr><td class="time-label">5/30 20:53</td><td class="rms-value">5902</td><td>周六</td><td class="who">Max不想睡觉</td></tr>
+    <tr><td class="time-label">5/9 21:50</td><td class="rms-value">5833</td><td>周六</td><td class="who">还是不想睡觉</td></tr>
+    <tr><td class="time-label">5/10 10:53</td><td class="rms-value">5672</td><td>周六</td><td class="who">周末上午，Max在家玩</td></tr>
+    <tr><td class="time-label">5/1 09:21</td><td class="rms-value">5513</td><td>周四</td><td class="who">劳动节假期</td></tr>
+    <tr><td class="time-label">5/20 20:44</td><td class="rms-value">5022</td><td>周三</td><td class="who">Max不想睡觉</td></tr>
+    <tr><td class="time-label">6/1 22:15</td><td class="rms-value">4630</td><td>周日</td><td class="who">儿童节过了还不想睡</td></tr>
+    <tr><td class="time-label">4/20 19:22</td><td class="rms-value">4292</td><td>周三</td><td class="who">晚饭时间</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  数据来源：TP-Link 摄像头 RTSP 音频流，2026年4月-6月，深圳。<br>
+  RMS = Root Mean Square，音频振幅的均方根。基线≈8（安静），>20表示有人活动。<br>
+  这不是一个精确的记录。这是一扇窗户的印象——它只能听到声音，看不到画面。<br>
+  但它听到的足够多了。
+</div>
+
+<script>
+const weekdayData = [8.1,8.0,8.0,8.0,8.0,8.0,8.1,47.2,26.9,17.9,8.9,10.4,12.9,9.3,11.5,9.3,11.1,11.3,10.7,47.6,150.1,14.2,8.0,8.0];
+const weekendData = [8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.3,25.3,59.1,16.1,12.6,9.3,8.1,8.5,8.1,8.4,13.8,20.1,21.8,40.6,218.6,10.2,8.0];
+const maxRms = 220;
+const chart = document.getElementById('chart');
+
+for (let h = 0; h < 24; h++) {
+  const row = document.createElement('div');
+  row.className = 'hour-row';
+  
+  const label = document.createElement('div');
+  label.className = 'hour-label';
+  label.textContent = h + ':00';
+  
+  const wdW = Math.max(4, (weekdayData[h] / maxRms) * 250);
+  const weW = Math.max(4, (weekendData[h] / maxRms) * 250);
+  
+  let annotation = '';
+  if (h === 7) annotation = weekdayData[h] > 30 ? '← Max起床' : '';
+  if (h === 9) annotation = weekendData[h] > 30 ? '← Max在家玩' : '';
+  if (h === 20) annotation = '← 睡前仪式开始';
+  if (h === 21) annotation = '← 一天最响的时刻';
+  
+  row.innerHTML = `
+    <div class="hour-label">${h}:00</div>
+    <div class="hour-bar weekday-bar" style="width:${wdW}px"></div>
+    <div class="hour-bar weekend-bar" style="width:${weW}px;margin-left:2px"></div>
+    <div class="annotation">${annotation}</div>
+  `;
+  chart.appendChild(row);
+}
+</script>
+
+</body>
+</html>
