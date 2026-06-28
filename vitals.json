@@ -1,26 +1,26 @@
 {
-  "ts": "2026-06-28T19:55:11+08:00",
+  "ts": "2026-06-28T20:00:28+08:00",
   "vitals": {
     "vision": {
-      "brightness": 87,
-      "weather": "cloudy",
+      "brightness": 84,
+      "weather": "overcast_dark",
       "scene": "mixed",
       "ir_mode": false
     },
     "audio": {
-      "rms": 103.7,
-      "status": "loud",
-      "fft_rms": 0.0263,
+      "rms": 69.3,
+      "status": "active",
+      "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.4,
-      "voltage_v": 4.111,
+      "voltage_v": 4.103,
       "health_pct": 77.9,
       "dead_cells": 1
     },
     "air": {
-      "pm25": 28.4,
+      "pm25": 31.5,
       "pm25_level": "Moderate",
       "uv_index": 0.0,
       "uv_level": "Low",
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": -10.2,
-      "sun_azimuth": 300.6,
+      "sun_elevation": -11.2,
+      "sun_azimuth": 301.2,
       "period": "nautical_twilight",
       "moon_illum": 91.0,
       "moon_name": "Waxing Gibbous",
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 31.9,
+      "uptime_h": 32.0,
       "death_risk": "HIGH",
-      "load_1m": 0.86,
-      "free_memory_mb": 586
+      "load_1m": 1.44,
+      "free_memory_mb": 581
     }
   }
 }
