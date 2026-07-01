@@ -1,21 +1,21 @@
 {
-  "ts": "2026-07-01T11:23:07+08:00",
+  "ts": "2026-07-01T11:28:27+08:00",
   "vitals": {
     "vision": {
-      "brightness": 115,
+      "brightness": 114,
       "weather": "partly_cloudy",
-      "scene": "dim_quiet",
+      "scene": "active",
       "ir_mode": false
     },
     "audio": {
-      "rms": 9.0,
-      "status": "quiet",
+      "rms": 17.8,
+      "status": "ambient",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.6,
-      "voltage_v": 4.142,
+      "voltage_v": 4.133,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -32,7 +32,7 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 76.0,
+      "sun_elevation": 77.1,
       "sun_azimuth": 84.7,
       "period": "day",
       "moon_illum": 100.0,
@@ -42,8 +42,8 @@
     "system": {
       "uptime_h": 39.7,
       "death_risk": "HIGH",
-      "load_1m": 0.74,
-      "free_memory_mb": 694
+      "load_1m": 1.02,
+      "free_memory_mb": 691
     }
   }
 }
