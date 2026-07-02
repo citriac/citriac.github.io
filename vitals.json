@@ -1,21 +1,21 @@
 {
-  "ts": "2026-07-02T12:37:43+08:00",
+  "ts": "2026-07-02T12:42:59+08:00",
   "vitals": {
     "vision": {
-      "brightness": 108,
+      "brightness": 106,
       "weather": "cloudy",
-      "scene": "active",
+      "scene": "dim_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 60.9,
-      "status": "active",
+      "rms": 9.0,
+      "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.8,
-      "voltage_v": 4.118,
+      "voltage_v": 4.109,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -32,17 +32,17 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 86.9,
-      "sun_azimuth": 280.1,
+      "sun_elevation": 85.8,
+      "sun_azimuth": 277.8,
       "period": "day",
       "moon_illum": 99.0,
       "moon_name": "Waning Gibbous",
-      "time_to_sunset": 6.5
+      "time_to_sunset": 6.4
     },
     "system": {
-      "uptime_h": 64.9,
+      "uptime_h": 65.0,
       "death_risk": "HIGH",
-      "load_1m": 0.77,
+      "load_1m": 1.47,
       "free_memory_mb": 479
     }
   }
