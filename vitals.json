@@ -1,49 +1,49 @@
 {
-  "ts": "2026-07-09T21:34:29+08:00",
+  "ts": "2026-07-09T22:21:04+08:00",
   "vitals": {
     "vision": {
-      "brightness": 84,
-      "weather": "overcast_dark",
-      "scene": "mixed",
+      "brightness": null,
+      "weather": null,
+      "scene": null,
       "ir_mode": false
     },
     "audio": {
-      "rms": 413.7,
-      "status": "loud",
-      "fft_rms": 0.0254,
-      "fft_band": "sub_bass"
+      "rms": null,
+      "status": null,
+      "fft_rms": null,
+      "fft_band": null
     },
     "body": {
-      "temperature_c": 30.4,
-      "voltage_v": 4.112,
-      "health_pct": 77.9,
-      "dead_cells": 1
+      "temperature_c": null,
+      "voltage_v": null,
+      "health_pct": null,
+      "dead_cells": null
     },
     "air": {
-      "pm25": 30.7,
-      "pm25_level": "Moderate",
-      "uv_index": 0.0,
-      "uv_level": "Low",
-      "aqi": 66
+      "pm25": null,
+      "pm25_level": null,
+      "uv_index": null,
+      "uv_level": null,
+      "aqi": null
     },
     "social": {
-      "devices": 7,
-      "extra": 4,
-      "human": true
+      "devices": null,
+      "extra": null,
+      "human": null
     },
     "astro": {
-      "sun_elevation": -29.0,
-      "sun_azimuth": 314.5,
-      "period": "night",
-      "moon_illum": 41.0,
-      "moon_name": "Waning Crescent",
+      "sun_elevation": null,
+      "sun_azimuth": null,
+      "period": null,
+      "moon_illum": null,
+      "moon_name": null,
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 50.2,
+      "uptime_h": 51.0,
       "death_risk": "HIGH",
-      "load_1m": 1.84,
-      "free_memory_mb": 21
+      "load_1m": 583.16,
+      "free_memory_mb": 45
     }
   }
 }
