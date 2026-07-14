@@ -1,30 +1,30 @@
 {
-  "ts": "2026-07-14T10:59:41+08:00",
+  "ts": "2026-07-14T11:04:57+08:00",
   "vitals": {
     "vision": {
-      "brightness": 110,
+      "brightness": 112,
       "weather": "partly_cloudy",
-      "scene": "active",
+      "scene": "dim_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 31.5,
-      "status": "active",
+      "rms": 8.0,
+      "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.6,
-      "voltage_v": 4.146,
+      "voltage_v": 4.135,
       "health_pct": 77.9,
       "dead_cells": 1
     },
     "air": {
-      "pm25": 13.9,
+      "pm25": 12.6,
       "pm25_level": "Moderate",
-      "uv_index": 3.6,
+      "uv_index": 3.5,
       "uv_level": "Moderate",
-      "aqi": 74
+      "aqi": 73
     },
     "social": {
       "devices": 2,
@@ -32,18 +32,18 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 70.4,
-      "sun_azimuth": 88.5,
+      "sun_elevation": 71.5,
+      "sun_azimuth": 88.9,
       "period": "day",
       "moon_illum": 4.0,
       "moon_name": "Waning Crescent",
-      "time_to_sunset": 8.1
+      "time_to_sunset": 8.0
     },
     "system": {
-      "uptime_h": 85.2,
+      "uptime_h": 85.3,
       "death_risk": "HIGH",
-      "load_1m": 1.42,
-      "free_memory_mb": 736
+      "load_1m": 1.15,
+      "free_memory_mb": 715
     }
   }
 }
