@@ -1,15 +1,15 @@
 {
-  "ts": "2026-08-05T15:27:45+08:00",
+  "ts": "2026-08-05T15:33:03+08:00",
   "vitals": {
     "vision": {
-      "brightness": 124,
+      "brightness": 121,
       "weather": "partly_cloudy",
-      "scene": "dim_quiet",
+      "scene": "active",
       "ir_mode": false
     },
     "audio": {
-      "rms": 9.9,
-      "status": "quiet",
+      "rms": 16.0,
+      "status": "ambient",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
@@ -32,18 +32,18 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 46.7,
-      "sun_azimuth": 271.0,
+      "sun_elevation": 45.3,
+      "sun_azimuth": 271.5,
       "period": "day",
       "moon_illum": 70.0,
       "moon_name": "Waning Gibbous",
-      "time_to_sunset": 3.5
+      "time_to_sunset": 3.4
     },
     "system": {
       "uptime_h": 0.8,
       "death_risk": "LOW",
-      "load_1m": 1.88,
-      "free_memory_mb": 628
+      "load_1m": 1.04,
+      "free_memory_mb": 624
     }
   }
 }
