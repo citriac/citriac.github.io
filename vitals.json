@@ -1,5 +1,5 @@
 {
-  "ts": "2026-08-14T18:04:12+08:00",
+  "ts": "2026-08-14T18:09:31+08:00",
   "vitals": {
     "vision": {
       "brightness": 118,
@@ -8,14 +8,14 @@
       "ir_mode": false
     },
     "audio": {
-      "rms": 15.8,
-      "status": "ambient",
+      "rms": 55.9,
+      "status": "active",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.8,
-      "voltage_v": 4.114,
+      "voltage_v": 4.108,
       "health_pct": 78.0,
       "dead_cells": 1
     },
@@ -32,17 +32,17 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 9.8,
-      "sun_azimuth": 281.3,
+      "sun_elevation": 8.7,
+      "sun_azimuth": 281.7,
       "period": "day",
       "moon_illum": 0.0,
       "moon_name": "New Moon",
-      "time_to_sunset": 0.8
+      "time_to_sunset": 0.7
     },
     "system": {
-      "uptime_h": 212.4,
+      "uptime_h": 212.5,
       "death_risk": "HIGH",
-      "load_1m": 1.96,
+      "load_1m": 1.92,
       "free_memory_mb": 948
     }
   }
