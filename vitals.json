@@ -1,21 +1,21 @@
 {
-  "ts": "2026-08-22T12:25:06+08:00",
+  "ts": "2026-08-22T12:30:40+08:00",
   "vitals": {
     "vision": {
-      "brightness": 109,
-      "weather": "cloudy",
+      "brightness": 121,
+      "weather": "partly_cloudy",
       "scene": "dim_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 9.2,
+      "rms": 8.0,
       "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.6,
-      "voltage_v": 4.095,
+      "voltage_v": 4.087,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": 78.9,
-      "sun_azimuth": 182.5,
+      "sun_elevation": 78.8,
+      "sun_azimuth": 188.1,
       "period": "day",
       "moon_illum": 52.0,
       "moon_name": "First Quarter",
       "time_to_sunset": 6.3
     },
     "system": {
-      "uptime_h": 13.4,
+      "uptime_h": 13.5,
       "death_risk": "HIGH",
-      "load_1m": 1.98,
-      "free_memory_mb": 966
+      "load_1m": 1.32,
+      "free_memory_mb": 976
     }
   }
 }
