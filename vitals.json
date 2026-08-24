@@ -1,21 +1,21 @@
 {
-  "ts": "2026-08-24T13:20:49+08:00",
+  "ts": "2026-08-24T13:26:07+08:00",
   "vitals": {
     "vision": {
-      "brightness": 116,
+      "brightness": 112,
       "weather": "partly_cloudy",
-      "scene": "active",
+      "scene": "dim_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 18.5,
-      "status": "ambient",
+      "rms": 8.0,
+      "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.7,
-      "voltage_v": 4.089,
+      "voltage_v": 4.149,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -32,18 +32,18 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": 72.1,
-      "sun_azimuth": 230.9,
+      "sun_elevation": 71.0,
+      "sun_azimuth": 234.0,
       "period": "day",
       "moon_illum": 73.0,
       "moon_name": "Waxing Gibbous",
-      "time_to_sunset": 5.4
+      "time_to_sunset": 5.3
     },
     "system": {
-      "uptime_h": 62.3,
+      "uptime_h": 62.4,
       "death_risk": "HIGH",
-      "load_1m": 1.65,
-      "free_memory_mb": 885
+      "load_1m": 1.31,
+      "free_memory_mb": 752
     }
   }
 }
