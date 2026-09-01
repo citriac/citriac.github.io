@@ -1,5 +1,5 @@
 {
-  "ts": "2026-09-01T16:11:53+08:00",
+  "ts": "2026-09-01T16:17:11+08:00",
   "vitals": {
     "vision": {
       "brightness": 115,
@@ -15,9 +15,9 @@
     },
     "body": {
       "temperature_c": 30.5,
-      "voltage_v": 4.307,
+      "voltage_v": 4.152,
       "health_pct": 77.9,
-      "dead_cells": 0
+      "dead_cells": 1
     },
     "air": {
       "pm25": 16.2,
@@ -27,23 +27,23 @@
       "aqi": 75
     },
     "social": {
-      "devices": 5,
-      "extra": 2,
+      "devices": 4,
+      "extra": 1,
       "human": true
     },
     "astro": {
-      "sun_elevation": 33.5,
-      "sun_azimuth": 264.2,
+      "sun_elevation": 32.2,
+      "sun_azimuth": 264.9,
       "period": "day",
       "moon_illum": 90.0,
       "moon_name": "Waning Gibbous",
-      "time_to_sunset": 2.5
+      "time_to_sunset": 2.4
     },
     "system": {
       "uptime_h": 257.2,
       "death_risk": "HIGH",
-      "load_1m": 1.97,
-      "free_memory_mb": 68
+      "load_1m": 1.65,
+      "free_memory_mb": 632
     }
   }
 }
