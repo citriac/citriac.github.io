@@ -1,30 +1,30 @@
 {
-  "ts": "2026-09-06T06:19:57+08:00",
+  "ts": "2026-09-06T06:25:15+08:00",
   "vitals": {
     "vision": {
-      "brightness": 115,
+      "brightness": 116,
       "weather": "partly_cloudy",
-      "scene": "active",
+      "scene": "dim_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 17.7,
-      "status": "ambient",
+      "rms": 8.1,
+      "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.9,
-      "voltage_v": 4.095,
+      "voltage_v": 4.091,
       "health_pct": 78.0,
       "dead_cells": 1
     },
     "air": {
-      "pm25": 105.0,
-      "pm25_level": "Unhealthy",
+      "pm25": 29.3,
+      "pm25_level": "Moderate",
       "uv_index": 0.0,
       "uv_level": "Low",
-      "aqi": 162
+      "aqi": 153
     },
     "social": {
       "devices": 5,
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": 1.1,
-      "sun_azimuth": 84.2,
+      "sun_elevation": 2.5,
+      "sun_azimuth": 84.8,
       "period": "day",
       "moon_illum": 48.0,
       "moon_name": "Last Quarter",
-      "time_to_sunset": 12.3
+      "time_to_sunset": 12.2
     },
     "system": {
-      "uptime_h": 367.3,
+      "uptime_h": 367.4,
       "death_risk": "HIGH",
-      "load_1m": 4.06,
-      "free_memory_mb": 473
+      "load_1m": 3.14,
+      "free_memory_mb": 556
     }
   }
 }
