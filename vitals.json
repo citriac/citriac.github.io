@@ -1,9 +1,9 @@
 {
-  "ts": "2026-09-12T23:57:50+08:00",
+  "ts": "2026-09-13T00:03:09+08:00",
   "vitals": {
     "vision": {
-      "brightness": 84,
-      "weather": "overcast_dark",
+      "brightness": 87,
+      "weather": "cloudy",
       "scene": "dark_quiet",
       "ir_mode": false
     },
@@ -15,16 +15,16 @@
     },
     "body": {
       "temperature_c": 30.4,
-      "voltage_v": 4.107,
+      "voltage_v": 4.189,
       "health_pct": 77.9,
       "dead_cells": 1
     },
     "air": {
-      "pm25": 13.7,
-      "pm25_level": "Moderate",
+      "pm25": 11.6,
+      "pm25_level": "Good",
       "uv_index": 0.0,
       "uv_level": "Low",
-      "aqi": 89
+      "aqi": 87
     },
     "social": {
       "devices": 6,
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": -63.2,
-      "sun_azimuth": 345.0,
+      "sun_elevation": -63.9,
+      "sun_azimuth": 11.9,
       "period": "night",
       "moon_illum": 0.0,
       "moon_name": "New Moon",
-      "time_to_sunset": null
+      "time_to_sunset": 18.5
     },
     "system": {
-      "uptime_h": 528.9,
+      "uptime_h": 529.0,
       "death_risk": "HIGH",
-      "load_1m": 1.58,
-      "free_memory_mb": 693
+      "load_1m": 1.9,
+      "free_memory_mb": 670
     }
   }
 }
