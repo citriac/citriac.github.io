@@ -1,21 +1,21 @@
 {
-  "ts": "2026-09-13T19:01:58+08:00",
+  "ts": "2026-09-13T19:07:18+08:00",
   "vitals": {
     "vision": {
       "brightness": 85,
-      "weather": "cloudy",
+      "weather": "overcast_dark",
       "scene": "dark_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 8.3,
+      "rms": 11.9,
       "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.5,
-      "voltage_v": 4.101,
+      "voltage_v": 4.201,
       "health_pct": 77.9,
       "dead_cells": 1
     },
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": -7.4,
-      "sun_azimuth": 276.4,
+      "sun_elevation": -8.8,
+      "sun_azimuth": 277.0,
       "period": "nautical_twilight",
       "moon_illum": 0.0,
       "moon_name": "New Moon",
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 548.0,
+      "uptime_h": 548.1,
       "death_risk": "HIGH",
-      "load_1m": 2.17,
-      "free_memory_mb": 624
+      "load_1m": 1.66,
+      "free_memory_mb": 616
     }
   }
 }
