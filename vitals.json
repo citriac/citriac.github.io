@@ -1,21 +1,21 @@
 {
-  "ts": "2026-09-15T20:35:35+08:00",
+  "ts": "2026-09-15T20:40:58+08:00",
   "vitals": {
     "vision": {
-      "brightness": 86,
-      "weather": "cloudy",
+      "brightness": 84,
+      "weather": "overcast_dark",
       "scene": "mixed",
       "ir_mode": false
     },
     "audio": {
-      "rms": 19.3,
-      "status": "ambient",
+      "rms": 3209.3,
+      "status": "loud",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 31.2,
-      "voltage_v": 4.057,
+      "voltage_v": 4.053,
       "health_pct": 78.0,
       "dead_cells": 1
     },
@@ -32,18 +32,18 @@
       "human": true
     },
     "astro": {
-      "sun_elevation": -29.0,
-      "sun_azimuth": 286.2,
+      "sun_elevation": -30.1,
+      "sun_azimuth": 286.8,
       "period": "night",
       "moon_illum": 6.0,
       "moon_name": "Waxing Crescent",
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 597.5,
+      "uptime_h": 597.6,
       "death_risk": "HIGH",
-      "load_1m": 1.67,
-      "free_memory_mb": 22
+      "load_1m": 1.55,
+      "free_memory_mb": 21
     }
   }
 }
