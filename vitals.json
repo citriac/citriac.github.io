@@ -1,21 +1,21 @@
 {
-  "ts": "2026-09-28T19:01:47+08:00",
+  "ts": "2026-09-28T19:07:05+08:00",
   "vitals": {
     "vision": {
-      "brightness": 84,
+      "brightness": 83,
       "weather": "overcast_dark",
       "scene": "dark_quiet",
       "ir_mode": false
     },
     "audio": {
-      "rms": 9.4,
+      "rms": 8.0,
       "status": "quiet",
       "fft_rms": 0.0253,
       "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": 30.9,
-      "voltage_v": 4.116,
+      "voltage_v": 4.107,
       "health_pct": 78.0,
       "dead_cells": 1
     },
@@ -32,18 +32,18 @@
       "human": false
     },
     "astro": {
-      "sun_elevation": -9.8,
-      "sun_azimuth": 270.8,
+      "sun_elevation": -11.1,
+      "sun_azimuth": 271.4,
       "period": "nautical_twilight",
       "moon_illum": 100.0,
       "moon_name": "Full Moon",
       "time_to_sunset": null
     },
     "system": {
-      "uptime_h": 71.1,
+      "uptime_h": 71.2,
       "death_risk": "HIGH",
-      "load_1m": 2.26,
-      "free_memory_mb": 308
+      "load_1m": 1.64,
+      "free_memory_mb": 287
     }
   }
 }
