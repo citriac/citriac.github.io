@@ -1,17 +1,17 @@
 {
-  "ts": "2026-10-20T06:32:33+08:00",
+  "ts": "2026-10-20T06:40:04+08:00",
   "vitals": {
     "vision": {
-      "brightness": 96,
-      "weather": "cloudy",
-      "scene": "dark_quiet",
+      "brightness": null,
+      "weather": null,
+      "scene": null,
       "ir_mode": false
     },
     "audio": {
-      "rms": 13.2,
-      "status": "quiet",
-      "fft_rms": null,
-      "fft_band": null
+      "rms": null,
+      "status": null,
+      "fft_rms": 0.0253,
+      "fft_band": "sub_bass"
     },
     "body": {
       "temperature_c": null,
@@ -20,30 +20,30 @@
       "dead_cells": null
     },
     "air": {
-      "pm25": null,
-      "pm25_level": null,
-      "uv_index": null,
-      "uv_level": null,
-      "aqi": null
+      "pm25": 37.7,
+      "pm25_level": "Unhealthy_Sensitive",
+      "uv_index": 0.0,
+      "uv_level": "Low",
+      "aqi": 94
     },
     "social": {
-      "devices": null,
-      "extra": null,
-      "human": null
+      "devices": 4,
+      "extra": 2,
+      "human": true
     },
     "astro": {
-      "sun_elevation": null,
-      "sun_azimuth": null,
-      "period": null,
-      "moon_illum": null,
-      "moon_name": null,
-      "time_to_sunset": null
+      "sun_elevation": -0.7,
+      "sun_azimuth": 102.1,
+      "period": "civil_twilight",
+      "moon_illum": 49.0,
+      "moon_name": "First Quarter",
+      "time_to_sunset": 11.5
     },
     "system": {
-      "uptime_h": 0.2,
+      "uptime_h": 0.3,
       "death_risk": "LOW",
-      "load_1m": 670.51,
-      "free_memory_mb": 51
+      "load_1m": 487.06,
+      "free_memory_mb": 17
     }
   }
 }
